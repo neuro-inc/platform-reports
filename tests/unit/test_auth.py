@@ -135,6 +135,7 @@ class TestAuthService:
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/user/job", action="read")]
         )
+        api_client.jobs.status.assert_awaited_once_with("job")
 
     @pytest.mark.asyncio
     async def test_check_node_exporter_query_permissions(
@@ -167,10 +168,7 @@ class TestAuthService:
 
     @pytest.mark.asyncio
     async def test_check_kube_state_metrics_query_with_empty_pod_permissions(
-        self,
-        service: AuthService,
-        auth_client: mock.AsyncMock,
-        api_client: mock.AsyncMock,
+        self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
             user_name="user", query="kube_pod_labels{job='kube-state-metrics',pod=''}",
@@ -182,10 +180,7 @@ class TestAuthService:
 
     @pytest.mark.asyncio
     async def test_check_kube_state_metrics_query_with_multiple_pod_permissions(
-        self,
-        service: AuthService,
-        auth_client: mock.AsyncMock,
-        api_client: mock.AsyncMock,
+        self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
@@ -211,6 +206,7 @@ class TestAuthService:
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/user/job", action="read")]
         )
+        api_client.jobs.status.assert_awaited_once_with("job")
 
     @pytest.mark.asyncio
     async def test_check_kubelet_query_without_pod_permissions(
@@ -226,10 +222,7 @@ class TestAuthService:
 
     @pytest.mark.asyncio
     async def test_check_kubelet_query_with_empty_pod_permissions(
-        self,
-        service: AuthService,
-        auth_client: mock.AsyncMock,
-        api_client: mock.AsyncMock,
+        self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
@@ -242,10 +235,7 @@ class TestAuthService:
 
     @pytest.mark.asyncio
     async def test_check_kubelet_query_with_multiple_pod_permissions(
-        self,
-        service: AuthService,
-        auth_client: mock.AsyncMock,
-        api_client: mock.AsyncMock,
+        self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
@@ -271,3 +261,4 @@ class TestAuthService:
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/user/job", action="read")]
         )
+        api_client.jobs.status.assert_awaited_once_with("job")

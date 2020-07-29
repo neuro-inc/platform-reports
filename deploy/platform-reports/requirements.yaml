@@ -1,0 +1,7 @@
+dependencies:
+  - name: prometheus-operator
+    version: "8.15.5"
+    repository: "@stable"
+  - name: thanos
+    version: "0.3.23"
+    repository: "@banzaicloud"

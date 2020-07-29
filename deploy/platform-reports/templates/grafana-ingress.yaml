@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: grafana
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  annotations:
+    ingress.kubernetes.io/auth-trust-headers: "true"
+    ingress.kubernetes.io/auth-type: forward
+    ingress.kubernetes.io/auth-url: {{ .Values.platform.authUrl }}/oauth/authorize
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefix
+spec:
+  rules:
+    # Route only dashboard requests through proxy
+    # Proxy checks if user is authorized to access dashboard
+    - host: {{ .Values.grafanaProxy.ingress.host }}
+      http:
+        paths:
+        - backend:
+            serviceName: grafana-proxy
+            servicePort: 80
+          path: /d/{tail:.+} # dashboard path prefix
+    - host: {{ .Values.grafanaProxy.ingress.host }}
+      http:
+        paths:
+        - backend:
+            serviceName: grafana
+            servicePort: 80
+          path: /

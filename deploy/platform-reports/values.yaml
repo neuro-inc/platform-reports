@@ -1,0 +1,271 @@
+prometheusProxy:
+  image:
+    repository: $IMAGE_REPO
+    tag: $IMAGE_TAG
+  replicas: 1
+  resources: {}
+
+grafanaProxy:
+  image:
+    repository: $IMAGE_REPO
+    tag: $IMAGE_TAG
+  replicas: 1
+  resources: {}
+
+prometheus-operator:
+  nameOverride: prometheus
+  fullnameOverride: prometheus
+
+  defaultRules:
+    create: false
+
+  alertmanager:
+    enabled: false
+
+  kubeApiServer:
+    enabled: false
+
+  kubeControllerManager:
+    enabled: false
+
+  coreDns:
+    enabled: false
+
+  kubeDns:
+    enabled: false
+
+  kubeEtcd:
+    enabled: false
+
+  kubeScheduler:
+    enabled: false
+
+  kubeProxy:
+    enabled: false
+
+  kubeStateMetrics:
+    enabled: true
+    serviceMonitor:
+      interval: 15s
+
+  kube-state-metrics:
+    nameOverride: kube-state-metrics
+    fullnameOverride: kube-state-metrics
+
+    namespace: platform-jobs
+
+    collectors:
+      # enabled
+      nodes: true
+      pods: true
+
+      # disabled
+      certificatesigningrequests: false
+      configmaps: false
+      cronjobs: false
+      daemonsets: false
+      deployments: false
+      endpoints: false
+      horizontalpodautoscalers: false
+      ingresses: false
+      jobs: false
+      limitranges: false
+      mutatingwebhookconfigurations: false
+      namespaces: false
+      networkpolicies: false
+      persistentvolumeclaims: false
+      persistentvolumes: false
+      poddisruptionbudgets: false
+      replicasets: false
+      replicationcontrollers: false
+      resourcequotas: false
+      secrets: false
+      services: false
+      statefulsets: false
+      storageclasses: false
+      validatingwebhookconfigurations: false
+      verticalpodautoscalers: false
+      volumeattachments: false
+
+  kubelet:
+    enabled: true
+    serviceMonitor:
+      interval: 15s
+      https: false
+      probes: false
+      resource: false
+
+      cAdvisor: true
+
+      cAdvisorMetricRelabelings:
+        - sourceLabels: [namespace, pod_name]
+          regex: "^platform-jobs;job-.+$"
+          action: keep
+
+  nodeExporter:
+    enabled: true
+
+  prometheus-node-exporter:
+    nameOverride: prometheus-node-exporter
+    fullnameOverride: prometheus-node-exporter
+
+    extraArgs:
+      - --collector.systemd
+      - --collector.processes
+      - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)
+      - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+
+  prometheusOperator:
+    serviceMonitor:
+      selfMonitor: false
+
+  prometheus:
+    serviceMonitor:
+      selfMonitor: false
+    prometheusSpec:
+      replicas: 1
+      retention: 12h
+      thanos:
+        version: v0.13.0
+        objectStorageConfig:
+          name: thanos-object-storage-config
+          key: thanos-object-storage.yaml
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp2
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+
+  grafana:
+    enabled: true
+
+    defaultDashboardsEnabled: false
+
+    image:
+      tag: "7.1.0"
+
+    nameOverride: grafana
+    fullnameOverride: grafana
+
+    adminUser: admin
+    adminPassword: password
+
+    podAnnotations:
+      updatedAt: "$CURRENT_TIME"
+
+    ingress:
+      enabled: false
+
+    sidecar:
+      datasources:
+        enabled: false
+      dashboards:
+        enabled: false
+      notifiers:
+        enabled: false
+
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://prometheus-proxy:9090
+            access: proxy
+            isDefault: true
+            jsonData:
+              keepCookies:
+                - dat
+                - sat
+
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: 'default'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards/default
+
+    dashboardsConfigMaps:
+      default: grafana-default-dashboards
+
+    extraConfigmapMounts:
+      - name: home-dashboard
+        mountPath: /var/lib/grafana/dashboards/home
+        configMap: grafana-home-dashboard
+        readOnly: true
+
+    persistence:
+      enabled: false
+
+    grafana.ini:
+      # auth:
+      #   disable_login_form: true
+      #   disable_signout_menu: true
+      auth.anonymous:
+        enabled: true
+      analytics:
+        reporting_enabled: false
+        check_for_updates: false
+      users:
+        default_theme: light
+      snapshots:
+        external_enabled: false
+      dashboards:
+        default_home_dashboard_path: /var/lib/grafana/dashboards/home/home.json
+
+thanos:
+  nameOverride: thanos
+  fullnameOverride: thanos
+
+  image:
+    tag: v0.14.0
+
+  store:
+    dataVolume:
+      backend:
+        persistentVolumeClaim:
+          claimName: thanos-store
+    persistentVolumeClaim:
+      name: thanos-store
+      spec:
+        storageClassName: gp2
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+
+  compact:
+    retentionResolutionRaw: 0d
+    retentionResolution5m: 0d
+    retentionResolution1h: 0d
+    dataVolume:
+      backend:
+        persistentVolumeClaim:
+          claimName: thanos-compact
+    persistentVolumeClaim:
+      name: thanos-compact
+      spec:
+        storageClassName: gp2
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+
+  rule:
+    enabled: false
+
+  sidecar:
+    # NOTE: This is only the service references for the sidecar
+    enabled: true
+    selector:
+      app: prometheus

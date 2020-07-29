@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-proxy
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+    component: grafana-proxy
+spec:
+  replicas: {{ .Values.grafanaProxy.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "platform-reports.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: grafana-proxy
+  template:
+    metadata:
+      labels:
+        app: {{ include "platform-reports.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: grafana-proxy
+    spec:
+      containers:
+        - name: proxy
+          image: {{ .Values.grafanaProxy.image.repository }}:{{ .Values.grafanaProxy.image.tag }}
+          command: ["platform-reports", "grafana-proxy"]
+          env:
+            - name: NP_CLUSTER_NAME
+              value: {{ .Values.platform.clusterName }}
+            - name: NP_GRAFANA_HOST
+              value: grafana
+            - name: NP_GRAFANA_PORT
+              value: "80"
+            - name: NP_GRAFANA_PUBLIC_SCHEME
+              value: https
+            - name: NP_GRAFANA_PUBLIC_HOST
+              value: {{ .Values.grafanaProxy.ingress.host }}
+            - name: NP_GRAFANA_PUBLIC_PORT
+              value: "80"
+            - name: NP_AUTH_URL
+              value: {{ .Values.platform.authUrl }}
+            - name: NP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: platformservices-secret
+                  key: cluster_token
+            - name: NP_AUTH_ACCESS_TOKEN_COOKIE_NAME
+              value: {{ .Values.platform.accessTokenCookieName }}
+            - name: NP_API_URL
+              value: {{ .Values.platform.apiUrl }}
+          {{- if .Values.grafanaProxy.resources }}
+          resources: {{ toYaml .Values.grafanaProxy.resources | nindent 12 }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3

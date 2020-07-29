@@ -113,7 +113,7 @@ class TestParseQueryMetrics:
             sum by (pod) (
                 irate(container_cpu_usage_seconds_total{job="kubelet"}[5m])
             )
-            on(pod) group_left(container)
+            on (pod) group_left (container)
             sum by (pod,container) (container_memory_usage_bytes{job="kubelet"})
             """
         )

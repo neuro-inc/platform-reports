@@ -1,0 +1,15 @@
+.git/
+
+build
+dist
+*.egg-info
+*.egg/
+*.pyc
+*.swp
+.mypy_cache/
+.pytest_cache/
+**/__pycache__
+
+.tox
+.coverage
+html/*

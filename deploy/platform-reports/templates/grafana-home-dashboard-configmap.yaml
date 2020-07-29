@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-home-dashboard
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+data:
+{{ (.Files.Glob "dashboards/home/home.json").AsConfig | indent 2 }}

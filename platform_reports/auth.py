@@ -15,8 +15,8 @@ NODES_DASHBOARD_ID = "nodes"
 JOBS_DASHBOARD_ID = "jobs"
 JOB_DASHBOARD_ID = "job"
 
-_JOB_FILTER = "job"
-_POD_FILTER = "pod"
+JOB_FILTER = "job"
+POD_FILTER = "pod"
 
 
 class AuthService:
@@ -97,13 +97,13 @@ class AuthService:
         )
 
     def _check_all_metrics_have_job_filter(self, metrics: Sequence[Metric]) -> bool:
-        return all(_JOB_FILTER in m.filters for m in metrics)
+        return all(JOB_FILTER in m.filters for m in metrics)
 
     def _get_node_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
     ) -> List[Permission]:
         for metric in metrics:
-            if metric.filters[_JOB_FILTER].matches("node-exporter"):
+            if metric.filters[JOB_FILTER].matches("node-exporter"):
                 return [
                     Permission(
                         uri=(
@@ -120,12 +120,12 @@ class AuthService:
         platform_job_ids: List[str] = []
 
         for metric in metrics:
-            if metric.filters[_JOB_FILTER].matches("kube-state-metrics"):
+            if metric.filters[JOB_FILTER].matches("kube-state-metrics"):
                 if not self._has_pod_filter(metric):
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.filters[_POD_FILTER].value)
+                platform_job_ids.append(metric.filters[POD_FILTER].value)
 
         return await self._get_platform_job_permissions(platform_job_ids)
 
@@ -135,17 +135,17 @@ class AuthService:
         platform_job_ids: List[str] = []
 
         for metric in metrics:
-            if metric.filters[_JOB_FILTER].matches("kubelet"):
+            if metric.filters[JOB_FILTER].matches("kubelet"):
                 if not self._has_pod_filter(metric):
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.filters[_POD_FILTER].value)
+                platform_job_ids.append(metric.filters[POD_FILTER].value)
 
         return await self._get_platform_job_permissions(platform_job_ids)
 
     def _has_pod_filter(self, metric: Metric) -> bool:
-        pod_filter = metric.filters.get(_POD_FILTER)
+        pod_filter = metric.filters.get(POD_FILTER)
         return bool(
             pod_filter and pod_filter.operator == FilterOperator.EQ and pod_filter.value
         )

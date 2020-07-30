@@ -142,7 +142,7 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
-            user_name="user", query="node_cpu_seconds_total{job='node-exporter'}"
+            user_name="user", queries=["node_cpu_seconds_total{job='node-exporter'}"]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -159,7 +159,7 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
-            user_name="user", query="kube_pod_labels{job='kube-state-metrics'}",
+            user_name="user", queries=["kube_pod_labels{job='kube-state-metrics'}"]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -171,7 +171,8 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
-            user_name="user", query="kube_pod_labels{job='kube-state-metrics',pod=''}",
+            user_name="user",
+            queries=["kube_pod_labels{job='kube-state-metrics',pod=''}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -184,7 +185,7 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            query="kube_pod_labels{job='kube-state-metrics',pod=~'.+'}",
+            queries=["kube_pod_labels{job='kube-state-metrics',pod=~'.+'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -200,7 +201,7 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            query="kube_pod_labels{job='kube-state-metrics',pod='job'}",
+            queries=["kube_pod_labels{job='kube-state-metrics',pod='job'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -213,7 +214,8 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
         await service.check_query_permissions(
-            user_name="user", query="container_cpu_usage_seconds_total{job='kubelet'}",
+            user_name="user",
+            queries=["container_cpu_usage_seconds_total{job='kubelet'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -226,7 +228,7 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            query="container_cpu_usage_seconds_total{job='kubelet',pod=''}",
+            queries=["container_cpu_usage_seconds_total{job='kubelet',pod=''}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -239,7 +241,7 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            query="container_cpu_usage_seconds_total{job='kubelet',pod=~'.+'}",
+            queries=["container_cpu_usage_seconds_total{job='kubelet',pod=~'.+'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -255,7 +257,7 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            query="container_cpu_usage_seconds_total{job='kubelet',pod='job'}",
+            queries=["container_cpu_usage_seconds_total{job='kubelet',pod='job'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(

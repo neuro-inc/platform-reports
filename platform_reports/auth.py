@@ -69,8 +69,10 @@ class AuthService:
             return False
         return await self.check_permissions(user_name, permissions)
 
-    async def check_query_permissions(self, user_name: str, query: str) -> bool:
-        metrics = parse_query_metrics(query)
+    async def check_query_permissions(
+        self, user_name: str, queries: Sequence[str]
+    ) -> bool:
+        metrics = [m for q in queries for m in parse_query_metrics(q)]
 
         # NOTE: All metrics are required to have a job filter
         # (e.g. kubelet, node-exporter etc). Otherwise we need to have a registry

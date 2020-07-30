@@ -50,7 +50,7 @@ async def service_token(
     await user_factory(
         "cluster",
         [
-            Permission(uri="user://default", action="manage"),
+            Permission(uri="user://default", action="read"),
             Permission(uri="job://default", action="manage"),
         ],
     )

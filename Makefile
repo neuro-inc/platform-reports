@@ -116,7 +116,6 @@ helm_deploy: _helm_expand_vars
 		--install \
 		--wait \
 		--timeout 600 \
-		--tiller-namespace prometheus \
-		--namespace prometheus \
+		--namespace platform \
 		-f tmpdeploy/platform-reports/values.yaml \
 		-f tmpdeploy/platform-reports/values-$(HELM_ENV)-aws.yaml

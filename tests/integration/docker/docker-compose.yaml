@@ -1,0 +1,69 @@
+version: "3"
+services:
+
+  platform-auth:
+    image: 771188043543.dkr.ecr.us-east-1.amazonaws.com/platformauthapi:latest
+    environment:
+      - NP_AUTH_API_PORT=8080
+      - NP_JWT_SECRET=secret
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:8080/api/v1/ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.0.0
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:9100"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+    user: root
+
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.18.1
+    command:
+      - --web.console.templates=/etc/prometheus/consoles
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --config.file=/etc/prometheus/config/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=12h
+      - --web.enable-lifecycle
+      - --storage.tsdb.no-lockfile
+      - --web.external-url=http://prometheus:9090
+      - --web.route-prefix=/
+      - --storage.tsdb.max-block-duration=2h
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/config/prometheus.yaml
+    ports:
+      - 9090:9090
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:9090/-/healthy"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - node-exporter
+    user: root
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:7.1.0
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/nodes.json:/var/lib/grafana/dashboards/default/nodes.json
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana/dashboardproviders.yaml:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
+    ports:
+      - 3000:3000
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - prometheus
+    user: root

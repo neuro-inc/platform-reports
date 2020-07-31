@@ -1,3 +1,5 @@
+import time
+
 import aiohttp
 import pytest
 from aiohttp.web import HTTPForbidden, HTTPOk
@@ -37,6 +39,44 @@ class TestPrometheusProxy:
         async with client.get(
             (prometheus_proxy_server / "api/v1/query").with_query(
                 query='node_cpu_seconds_total{job="node-exporter"}'
+            ),
+            cookies={"dat": regular_user_token},
+        ) as response:
+            assert response.status == HTTPForbidden.status_code
+
+    @pytest.mark.asyncio
+    async def test_query_range(
+        self,
+        client: aiohttp.ClientSession,
+        cluster_admin_token: str,
+        prometheus_proxy_server: URL,
+    ) -> None:
+        now = int(time.time())
+        async with client.get(
+            (prometheus_proxy_server / "api/v1/query_range").with_query(
+                query='node_cpu_seconds_total{job="node-exporter"}',
+                step=5,
+                start=now - 60,
+                end=now,
+            ),
+            cookies={"dat": cluster_admin_token},
+        ) as response:
+            assert response.status == HTTPOk.status_code
+
+    @pytest.mark.asyncio
+    async def test_query_forbidden_range(
+        self,
+        client: aiohttp.ClientSession,
+        regular_user_token: str,
+        prometheus_proxy_server: URL,
+    ) -> None:
+        now = int(time.time())
+        async with client.get(
+            (prometheus_proxy_server / "api/v1/query_range").with_query(
+                query='node_cpu_seconds_total{job="node-exporter"}',
+                step=5,
+                start=now - 60,
+                end=now,
             ),
             cookies={"dat": regular_user_token},
         ) as response:

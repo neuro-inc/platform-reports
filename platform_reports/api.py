@@ -70,11 +70,12 @@ class PrometheusProxyHandler:
     async def handle(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_name)
 
+        # /query or /query_range
         if request.match_info["sub_path"].startswith("query"):
             query = request.query["query"]
             if not await self._auth_service.check_query_permissions(user_name, [query]):
                 return Response(status=HTTPForbidden.status_code)
-        elif request.match_info["sub_path"].startswith("series"):
+        elif request.match_info["sub_path"] == "series":
             queries = request.query.getall("match[]")
             if not await self._auth_service.check_query_permissions(user_name, queries):
                 return Response(status=HTTPForbidden.status_code)

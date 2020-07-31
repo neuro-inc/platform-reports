@@ -48,11 +48,7 @@ async def service_token(
     token_factory: Callable[[str], str],
 ) -> str:
     await user_factory(
-        "cluster",
-        [
-            Permission(uri="user://default", action="read"),
-            Permission(uri="job://default", action="manage"),
-        ],
+        "cluster", [Permission(uri="user://default", action="read")],
     )
     return token_factory("cluster")
 
@@ -84,6 +80,19 @@ async def regular_user_token(
 
 
 @pytest.fixture
+def platform_auth_server() -> URL:
+    return URL("http://localhost:8080")
+
+
+@pytest.fixture
+async def platform_api_server(
+    platform_api_app: aiohttp.web.Application,
+) -> AsyncIterator[URL]:
+    async with create_local_app_server(app=platform_api_app, port=8380) as address:
+        yield URL.build(scheme="http", host=address.host, port=address.port)
+
+
+@pytest.fixture
 def platform_auth_config(
     platform_auth_server: URL, service_token: str
 ) -> PlatformAuthConfig:
@@ -112,6 +121,17 @@ def prometheus_proxy_config(
 
 
 @pytest.fixture
+async def prometheus_proxy_server(
+    prometheus_proxy_config: PrometheusProxyConfig,
+) -> AsyncIterator[URL]:
+    async with create_local_app_server(
+        app=create_prometheus_proxy_app(prometheus_proxy_config),
+        port=prometheus_proxy_config.server.port,
+    ) as address:
+        yield URL.build(scheme="http", host=address.host, port=address.port)
+
+
+@pytest.fixture
 def grafana_proxy_config(
     platform_auth_config: PlatformAuthConfig, platform_api_config: PlatformApiConfig
 ) -> GrafanaProxyConfig:
@@ -124,30 +144,6 @@ def grafana_proxy_config(
         cluster_name="default",
         access_token_cookie_name="dat",
     )
-
-
-@pytest.fixture
-def platform_auth_server() -> URL:
-    return URL("http://localhost:8080")
-
-
-@pytest.fixture
-async def platform_api_server(
-    platform_api_app: aiohttp.web.Application,
-) -> AsyncIterator[URL]:
-    async with create_local_app_server(app=platform_api_app, port=8380) as address:
-        yield URL.build(scheme="http", host=address.host, port=address.port)
-
-
-@pytest.fixture
-async def prometheus_proxy_server(
-    prometheus_proxy_config: PrometheusProxyConfig,
-) -> AsyncIterator[URL]:
-    async with create_local_app_server(
-        app=create_prometheus_proxy_app(prometheus_proxy_config),
-        port=prometheus_proxy_config.server.port,
-    ) as address:
-        yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
 @pytest.fixture

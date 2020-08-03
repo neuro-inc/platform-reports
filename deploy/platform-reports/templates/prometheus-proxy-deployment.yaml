@@ -45,13 +45,13 @@ spec:
           {{- end }}
           readinessProbe:
             httpGet:
-              path: /ping
+              path: /api/v1/ping
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /ping
+              path: /api/v1/ping
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 3

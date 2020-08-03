@@ -62,9 +62,16 @@ class AuthService:
             ]
         elif dashboard_id == JOB_DASHBOARD_ID:
             job_id = params.get("var-job_id")
-            if not job_id:
-                return True
-            permissions = await self._get_platform_job_permissions([job_id])
+            if job_id:
+                permissions = await self._get_platform_job_permissions([job_id])
+            else:
+                # If no job id is specified, check that user has access
+                # to his own jobs in cluster.
+                permissions = [
+                    Permission(
+                        uri=f"job://{self._cluster_name}/{user_name}", action="read"
+                    ),
+                ]
         else:
             return False
         return await self.check_permissions(user_name, permissions)

@@ -4,7 +4,7 @@ from typing import Any, AsyncIterator, Callable, Coroutine, Sequence
 
 import aiohttp
 import pytest
-from neuro_auth_client import Permission
+from neuro_auth_client import Cluster, Permission
 from yarl import URL
 
 from platform_reports.api import create_grafana_proxy_app, create_prometheus_proxy_app
@@ -42,24 +42,28 @@ async def create_local_app_server(
         await runner.cleanup()
 
 
+UserFactory = Callable[
+    [str, Sequence[Cluster], Sequence[Permission]], Coroutine[Any, Any, None]
+]
+
+
 @pytest.fixture
 async def service_token(
-    user_factory: Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]],
-    token_factory: Callable[[str], str],
+    user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
     await user_factory(
-        "cluster", [Permission(uri="user://default", action="read")],
+        "cluster", [], [Permission(uri="user://", action="read")],
     )
     return token_factory("cluster")
 
 
 @pytest.fixture
 async def cluster_admin_token(
-    user_factory: Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]],
-    token_factory: Callable[[str], str],
+    user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
     await user_factory(
         "cluster-admin",
+        [Cluster(name="default")],
         [
             Permission(uri="cluster://default/admin", action="manage"),
             Permission(uri="job://default", action="manage"),
@@ -70,13 +74,26 @@ async def cluster_admin_token(
 
 @pytest.fixture
 async def regular_user_token(
-    user_factory: Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]],
-    token_factory: Callable[[str], str],
+    user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
     await user_factory(
-        "user", [Permission(uri="job://default/user", action="manage")],
+        "user",
+        [Cluster(name="default")],
+        [Permission(uri="job://default/user", action="manage")],
     )
     return token_factory("user")
+
+
+@pytest.fixture
+async def other_cluster_user_token(
+    user_factory: UserFactory, token_factory: Callable[[str], str]
+) -> str:
+    await user_factory(
+        "other-user",
+        [Cluster(name="neuro-public")],
+        [Permission(uri="job://neuro-public/other-user", action="manage")],
+    )
+    return token_factory("other-user")
 
 
 @pytest.fixture

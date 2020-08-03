@@ -3,7 +3,7 @@ from typing import Any, Callable, Coroutine, Sequence
 import aiohttp
 import pytest
 from jose import jwt
-from neuro_auth_client import AuthClient, Permission, User
+from neuro_auth_client import AuthClient, Cluster, Permission, User
 from yarl import URL
 
 
@@ -22,13 +22,17 @@ def token_factory() -> Callable[[str], str]:
 @pytest.fixture
 def user_factory(
     token_factory: Callable[[str], str], platform_auth_server: URL
-) -> Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]]:
-    async def _create(name: str, permissions: Sequence[Permission] = ()) -> None:
+) -> Callable[
+    [str, Sequence[Cluster], Sequence[Permission]], Coroutine[Any, Any, None]
+]:
+    async def _create(
+        name: str, clusters: Sequence[Cluster], permissions: Sequence[Permission] = ()
+    ) -> None:
         async with AuthClient(
             url=platform_auth_server, token=token_factory("admin")
         ) as client:
             try:
-                await client.add_user(User(name=name))
+                await client.add_user(User(name=name, clusters=list(clusters)))
             except aiohttp.ClientResponseError as ex:
                 if "already exists" not in ex.message:
                     raise

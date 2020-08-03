@@ -22,7 +22,6 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from neuro_auth_client import AuthClient, Permission
 from neuromation.api import Client as ApiClient, Factory as ClientFactory
 from platform_logging import init_logging
-from yarl import URL
 
 from .auth import AuthService
 from .config import (
@@ -113,6 +112,7 @@ class GrafanaProxyHandler:
         self._app.router.add_get(
             "/d/{dashboard_id}/{dashboard_name}", self.handle_get_dashboard
         )
+        self._app.router.add_route("*", "/{sub_path:.*}", self.handle)
 
     @property
     def _config(self) -> GrafanaProxyConfig:
@@ -125,6 +125,27 @@ class GrafanaProxyHandler:
     @property
     def _auth_service(self) -> AuthService:
         return self._app["auth_service"]
+
+    async def handle(self, request: Request) -> StreamResponse:
+        user_name = _get_user_name(request, self._config.access_token_cookie_name)
+
+        if not await self._auth_service.check_permissions(
+            user_name,
+            [
+                Permission(
+                    uri=(f"job://{self._config.cluster_name}/{user_name}"),
+                    action="read",
+                )
+            ],
+        ):
+            return Response(status=HTTPForbidden.status_code)
+
+        return await _proxy_request(
+            client=self._grafana_client,
+            proxy_server=self._config.public_server,
+            upstream_server=self._config.grafana_server,
+            request=request,
+        )
 
     async def handle_get_dashboard(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_name)
@@ -172,15 +193,13 @@ async def _proxy_request(
         url=upstream_url,
         headers=upstream_request_headers,
         skip_auto_headers=("Content-Type",),
+        allow_redirects=False,
         data=data,
     ) as upstream_response:
         logger.debug("upstream response: %s", upstream_response)
 
-        response_headers = _prepare_response_headers(
-            upstream_response.headers, proxy_server
-        )
         response = aiohttp.web.StreamResponse(
-            status=upstream_response.status, headers=response_headers
+            status=upstream_response.status, headers=upstream_response.headers.copy()
         )
 
         await response.prepare(request)
@@ -199,27 +218,10 @@ def _prepare_upstream_request_headers(
 ) -> CIMultiDict[str]:
     request_headers: CIMultiDict[str] = headers.copy()
 
-    for name in ("Host", "Transfer-Encoding", "Connection"):
+    for name in ("Transfer-Encoding", "Connection"):
         request_headers.pop(name, None)
 
     return request_headers
-
-
-def _prepare_response_headers(
-    headers: CIMultiDictProxy[str], proxy_server: ServerConfig
-) -> CIMultiDict[str]:
-    response_headers: CIMultiDict[str] = headers.copy()
-
-    if "Location" in response_headers:
-        location = URL(response_headers["Location"])
-        if location.is_absolute():
-            response_headers["Location"] = str(
-                location.with_scheme(proxy_server.scheme)
-                .with_host(proxy_server.host)
-                .with_port(proxy_server.port)
-            )
-
-    return response_headers
 
 
 @middleware

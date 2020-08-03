@@ -148,6 +148,30 @@ class TestGrafanaProxy:
             assert response.status == HTTPOk.status_code
 
     @pytest.mark.asyncio
+    async def test_main(
+        self,
+        client: aiohttp.ClientSession,
+        cluster_admin_token: str,
+        grafana_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            grafana_proxy_server, cookies={"dat": cluster_admin_token},
+        ) as response:
+            assert response.status == HTTPOk.status_code
+
+    @pytest.mark.asyncio
+    async def test_main_forbidden(
+        self,
+        client: aiohttp.ClientSession,
+        other_cluster_user_token: str,
+        grafana_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            grafana_proxy_server, cookies={"dat": other_cluster_user_token},
+        ) as response:
+            assert response.status == HTTPForbidden.status_code
+
+    @pytest.mark.asyncio
     async def test_dashboard(
         self,
         client: aiohttp.ClientSession,

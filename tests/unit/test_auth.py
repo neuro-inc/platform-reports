@@ -119,7 +119,9 @@ class TestAuthService:
     ) -> None:
         await service.check_dashboard_permissions("user", JOB_DASHBOARD_ID, MultiDict())
 
-        auth_client.assert_not_awaited()
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user", action="read")],
+        )
 
     @pytest.mark.asyncio
     async def test_check_job_dashboard_with_job_id_permissions(

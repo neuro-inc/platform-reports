@@ -65,6 +65,8 @@ class AuthService:
             if job_id:
                 permissions = await self._get_platform_job_permissions([job_id])
             else:
+                # If no job id is specified, check that user has access
+                # to his own jobs in cluster.
                 permissions = [
                     Permission(
                         uri=f"job://{self._cluster_name}/{user_name}", action="read"

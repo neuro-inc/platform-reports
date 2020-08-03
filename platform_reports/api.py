@@ -79,6 +79,9 @@ class PrometheusProxyHandler:
             if not await self._auth_service.check_query_permissions(user_name, queries):
                 return Response(status=HTTPForbidden.status_code)
         else:
+            # Potentially user can request any data in prometheus.
+            # We need to check the maximum set of permissions which are required
+            # to access any data inside in prometheus.
             if not await self._auth_service.check_permissions(
                 user_name,
                 [
@@ -129,6 +132,7 @@ class GrafanaProxyHandler:
     async def handle(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_name)
 
+        # Check that user has access to his own jobs in cluster.
         if not await self._auth_service.check_permissions(
             user_name,
             [

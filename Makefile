@@ -78,7 +78,6 @@ endif
 ifeq ($(ARTIFACTORY_PASSWORD),)
 	$(error Artifactory password is not specified)
 endif
-	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	@helm repo add neuro-local-public \
 		$(ARTIFACTORY_HELM_REPO) \
 		--username ${ARTIFACTORY_USERNAME} \
@@ -105,12 +104,14 @@ endif
 
 artifactory_helm_push: _helm_expand_vars
 	find tmpdeploy/platform-reports -type f -name 'values-*' -delete
+	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	helm dependency update tmpdeploy/platform-reports
 	helm package --version=$(TAG) tmpdeploy/platform-reports/
 	helm push-artifactory platform-reports-$(TAG).tgz neuro-local-public
 	rm platform-reports-$(TAG).tgz
 
 helm_deploy: _helm_expand_vars
+	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	helm dependency update tmpdeploy/platform-reports
 	helm upgrade platform-reports tmpdeploy/platform-reports \
 		--install \

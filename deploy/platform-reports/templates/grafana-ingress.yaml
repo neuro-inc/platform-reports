@@ -11,19 +11,17 @@ metadata:
     traefik.frontend.rule.type: PathPrefix
 spec:
   rules:
-    # Route data source requests directly to grafana
-    # Prometheus proxy is responsible for authorization
     - host: {{ .Values.grafanaProxy.ingress.host }}
       http:
         paths:
-        - backend:
-            serviceName: grafana
-            servicePort: 80
-          path: /api/datasources/proxy/{tail:.+}
+          - backend:
+              serviceName: grafana-proxy
+              servicePort: 80
+            path: /api/dashboards
     - host: {{ .Values.grafanaProxy.ingress.host }}
       http:
         paths:
-        - backend:
-            serviceName: grafana-proxy
-            servicePort: 80
-          path: /
+          - backend:
+              serviceName: grafana
+              servicePort: 80
+            path: /

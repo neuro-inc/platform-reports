@@ -18,9 +18,13 @@ spec:
         release: {{ .Release.Name | quote }}
         component: grafana-proxy
     spec:
+      {{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName | quote }}
+      {{- end }}
       containers:
         - name: proxy
-          image: {{ .Values.grafanaProxy.image.repository }}:{{ .Values.grafanaProxy.image.tag }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           command: ["platform-reports", "grafana-proxy"]
           env:
             - name: NP_CLUSTER_NAME

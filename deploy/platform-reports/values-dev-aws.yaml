@@ -1,0 +1,59 @@
+platform:
+  authUrl: https://dev.neu.ro
+  apiUrl: https://dev.neu.ro/api/v1
+  accessTokenCookieName: dat
+  clusterName: default
+
+prometheusProxy:
+  replicas: 2
+
+grafanaProxy:
+  replicas: 2
+  ingress:
+    host: metrics-dev.neu.ro
+
+prometheus-operator:
+  prometheus:
+    prometheusSpec:
+      podMetadata:
+        annotations:
+          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp2
+
+  prometheusOperator:
+    kubeletService:
+      namespace: platform
+
+  kubelet:
+    namespace: platform
+
+  grafana:
+    adminPassword: password
+
+thanos:
+  store:
+    persistentVolumeClaim:
+      spec:
+        storageClassName: gp2
+    annotations:
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+
+  bucket:
+    annotations:
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+
+  compact:
+    persistentVolumeClaim:
+      spec:
+        storageClassName: gp2
+    annotations:
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+
+  objstore:
+    type: S3
+    config:
+      bucket: neuro-dev-metrics
+      endpoint: s3.us-east-1.amazonaws.com

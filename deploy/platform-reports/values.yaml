@@ -1,16 +1,28 @@
+objectStoreSupported: true
+
+platform:
+  accessTokenCookieName: sat
+
+image:
+  repository: $IMAGE_REPO
+  tag: $IMAGE_TAG
+
 prometheusProxy:
-  image:
-    repository: $IMAGE_REPO
-    tag: $IMAGE_TAG
-  replicas: 1
-  resources: {}
+  prometheus:
+    host: thanos-query-http
+    post: 10902
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
 grafanaProxy:
-  image:
-    repository: $IMAGE_REPO
-    tag: $IMAGE_TAG
-  replicas: 1
-  resources: {}
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
 prometheus-operator:
   nameOverride: prometheus
@@ -45,14 +57,13 @@ prometheus-operator:
 
   kubeStateMetrics:
     enabled: true
+
     serviceMonitor:
       interval: 15s
 
   kube-state-metrics:
     nameOverride: kube-state-metrics
     fullnameOverride: kube-state-metrics
-
-    namespace: platform-jobs
 
     collectors:
       # enabled
@@ -89,21 +100,19 @@ prometheus-operator:
 
   kubelet:
     enabled: true
+
     serviceMonitor:
       interval: 15s
       https: false
       probes: false
       resource: false
-
       cAdvisor: true
-
-      cAdvisorMetricRelabelings:
-        - sourceLabels: [namespace, pod_name]
-          regex: "^platform-jobs;job-.+$"
-          action: keep
 
   nodeExporter:
     enabled: true
+
+    serviceMonitor:
+      interval: 15s
 
   prometheus-node-exporter:
     nameOverride: prometheus-node-exporter
@@ -116,6 +125,9 @@ prometheus-operator:
       - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
 
   prometheusOperator:
+    kubeletService:
+      enabled: true
+
     serviceMonitor:
       selfMonitor: false
 
@@ -130,10 +142,13 @@ prometheus-operator:
         objectStorageConfig:
           name: thanos-object-storage-config
           key: thanos-object-storage.yaml
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: gp2
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
@@ -151,7 +166,6 @@ prometheus-operator:
     fullnameOverride: grafana
 
     adminUser: admin
-    adminPassword: password
 
     podAnnotations:
       updatedAt: "$CURRENT_TIME"
@@ -185,18 +199,28 @@ prometheus-operator:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: 'default'
+          - name: 'admin'
             orgId: 1
-            folder: ''
+            folder: 'Admin'
             type: file
             disableDeletion: false
             editable: true
             allowUiUpdates: true
             options:
-              path: /var/lib/grafana/dashboards/default
+              path: /var/lib/grafana/dashboards/admin
+          - name: 'user'
+            orgId: 1
+            folder: 'User'
+            type: file
+            disableDeletion: false
+            editable: true
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards/user
 
     dashboardsConfigMaps:
-      default: grafana-default-dashboards
+      admin: grafana-admin-dashboards
+      user: grafana-user-dashboards
 
     extraConfigmapMounts:
       - name: home-dashboard
@@ -208,9 +232,6 @@ prometheus-operator:
       enabled: false
 
     grafana.ini:
-      # auth:
-      #   disable_login_form: true
-      #   disable_signout_menu: true
       auth.anonymous:
         enabled: true
       analytics:
@@ -222,6 +243,9 @@ prometheus-operator:
         external_enabled: false
       dashboards:
         default_home_dashboard_path: /var/lib/grafana/dashboards/home/home.json
+
+    serviceMonitor:
+      selfMonitor: false
 
 thanos:
   nameOverride: thanos
@@ -238,7 +262,6 @@ thanos:
     persistentVolumeClaim:
       name: thanos-store
       spec:
-        storageClassName: gp2
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
@@ -255,7 +278,6 @@ thanos:
     persistentVolumeClaim:
       name: thanos-compact
       spec:
-        storageClassName: gp2
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:

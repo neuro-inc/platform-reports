@@ -71,7 +71,9 @@ jobs:
       - name: Update kube config
         run: make eks_login
       - name: Install helm
-        run: make helm_install
+        run: |
+          make helm_install
+          make artifactory_helm_repo_add
       - name: Deploy to kubernetes
         run: make helm_deploy
   release:

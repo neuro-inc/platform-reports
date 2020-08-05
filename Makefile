@@ -78,7 +78,7 @@ endif
 ifeq ($(ARTIFACTORY_PASSWORD),)
 	$(error Artifactory password is not specified)
 endif
-	helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com
+	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	@helm repo add neuro-local-public \
 		$(ARTIFACTORY_HELM_REPO) \
 		--username ${ARTIFACTORY_USERNAME} \

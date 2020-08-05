@@ -10,7 +10,7 @@ image:
 prometheusProxy:
   prometheus:
     host: thanos-query-http
-    post: 10902
+    port: 10902
   replicas: 2
   resources:
     requests:

@@ -113,7 +113,7 @@ class GrafanaProxyHandler:
 
     def register(self) -> None:
         self._app.router.add_get(
-            "/d/{dashboard_id}/{dashboard_name}", self.handle_get_dashboard
+            "/api/dashboards/uid/{dashboard_id}", self.handle_get_dashboard
         )
         self._app.router.add_route("*", "/{sub_path:.*}", self.handle)
 

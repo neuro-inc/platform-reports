@@ -179,7 +179,7 @@ class TestGrafanaProxy:
         grafana_proxy_server: URL,
     ) -> None:
         async with client.get(
-            grafana_proxy_server / "d/nodes/nodes",
+            grafana_proxy_server / "api/dashboards/uid/nodes",
             cookies={"dat": cluster_admin_token},
         ) as response:
             assert response.status == HTTPOk.status_code
@@ -192,6 +192,7 @@ class TestGrafanaProxy:
         grafana_proxy_server: URL,
     ) -> None:
         async with client.get(
-            grafana_proxy_server / "d/nodes/nodes", cookies={"dat": regular_user_token},
+            grafana_proxy_server / "api/dashboards/uid/nodes",
+            cookies={"dat": regular_user_token},
         ) as response:
             assert response.status == HTTPForbidden.status_code

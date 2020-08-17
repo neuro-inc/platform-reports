@@ -4,8 +4,8 @@ platform:
   accessTokenCookieName: sat
 
 image:
-  repository: $IMAGE_REPO
-  tag: $IMAGE_TAG
+  repository: "$IMAGE_REPO"
+  tag: "$IMAGE_TAG"
 
 prometheusProxy:
   prometheus:

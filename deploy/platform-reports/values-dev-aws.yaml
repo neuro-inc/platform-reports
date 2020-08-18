@@ -15,6 +15,11 @@ grafanaProxy:
 prometheus-operator:
   prometheus:
     prometheusSpec:
+      thanos:
+        version: v0.13.0
+        objectStorageConfig:
+          name: thanos-object-storage-config
+          key: thanos-object-storage.yaml
       podMetadata:
         annotations:
           iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7

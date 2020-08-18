@@ -7,7 +7,6 @@ AWS_REGION ?= us-east-1
 TAG ?= latest
 
 IMAGE_BASE_REPO ?= $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-IMAGE_BASE_REPO = neuro-docker-local-public.jfrog.io
 IMAGE_REPO = $(IMAGE_BASE_REPO)/platform-reports
 IMAGE = $(IMAGE_REPO):$(TAG)
 

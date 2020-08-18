@@ -1,4 +1,6 @@
-objectStoreSupported: true
+objectStore:
+  supported: true
+  configMapName: thanos-object-storage-config
 
 platform:
   accessTokenCookieName: sat
@@ -137,11 +139,6 @@ prometheus-operator:
     prometheusSpec:
       replicas: 1
       retention: 12h
-      thanos:
-        version: v0.13.0
-        objectStorageConfig:
-          name: thanos-object-storage-config
-          key: thanos-object-storage.yaml
       resources:
         requests:
           cpu: "500m"

@@ -5,4 +5,4 @@ dependencies:
   - name: thanos
     version: "0.3.23"
     repository: "@banzaicloud"
-    condition: objectStoreSupported
+    condition: objectStore.supported

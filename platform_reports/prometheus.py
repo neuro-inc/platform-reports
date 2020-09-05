@@ -1,100 +1,25 @@
 import enum
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Sequence
 
+from antlr4 import CommonTokenStream, InputStream, ParseTreeWalker
+from antlr4.error.ErrorListener import ErrorListener
+from antlr4.ParserRuleContext import ParserRuleContext
+from antlr4.Recognizer import Recognizer
+from antlr4.Token import Token
+from antlr4.tree.Tree import ParseTree
 
-_OPERATORS = [
-    "sum",
-    "min",
-    "max",
-    "avg",
-    "group",
-    "stddev",
-    "stdvar",
-    "count",
-    "count_values",
-    "bottomk",
-    "topk",
-    "quantile",
-    "and",
-    "or",
-    "unless",
-]
-
-_FUNCTIONS = [
-    "abs",
-    "absent",
-    "absent_over_time",
-    "ceil",
-    "changes",
-    "clamp_max",
-    "clamp_min",
-    "day_of_month",
-    "day_of_week",
-    "days_in_month",
-    "delta",
-    "deriv",
-    "exp",
-    "floor",
-    "histogram_quantile",
-    "holt_winters",
-    "hour",
-    "idelta",
-    "increase",
-    "irate",
-    "label_join",
-    "label_replace",
-    "ln",
-    "log2",
-    "log10",
-    "minute",
-    "month",
-    "predict_linear",
-    "rate",
-    "resets",
-    "round",
-    "scalar",
-    "sort",
-    "sort_desc",
-    "sqrt",
-    "time",
-    "timestamp",
-    "vector",
-    "year",
-    "avg_over_time",
-    "min_over_time",
-    "max_over_time",
-    "sum_over_time",
-    "count_over_time",
-    "quantile_over_time",
-    "stddev_over_time",
-    "stdvar_over_time",
-]
-
-_METRICS_RE = re.compile(
-    "|".join(
-        [
-            r"-?[0-9]+(?:\.[0-9]+)?",  # number
-            r"'(?:[^'\\]|\\.)*'",  # single quoted string
-            r'"(?:[^"\\]|\\.)*"',  # double quoted string
-            r"(?:by|without)[ \t]*\([^)]+\)",  # aggregations
-            r"(?:on|ignoring|group_left|group_right)[ \t]*\([^)]+\)",  # joins
-            r"\[[^]]+\]",  # interval
-            *sorted(_OPERATORS + _FUNCTIONS, key=len, reverse=True),
-            r"(?P<name>[0-9a-zA-Z_]+)?[ \t]*(?P<filters>\{[^}]*\})?",  # metric
-        ]
-    )
-)
-
-_FILTER_RE = (
-    r"(?P<label>[0-9a-zA-Z_]+)"
-    r"(?P<op>\=|\=\~|\!\=|\!\~)"
-    r"(?:'(?P<sq_value>(?:[^'\\]|\\.)*)'|\"(?P<dq_value>(?:[^\"\\]|\\.)*)\")"
-)
+from .promql_ast.PromQLLexer import PromQLLexer
+from .promql_ast.PromQLParser import PromQLParser
+from .promql_ast.PromQLParserListener import PromQLParserListener
 
 
-class FilterOperator(enum.Enum):
+class PromQLException(Exception):
+    pass
+
+
+class LabelMatcherOperator(enum.Enum):
     EQ = "="
     NE = "!="
     RE = "=~"
@@ -102,68 +27,123 @@ class FilterOperator(enum.Enum):
 
 
 @dataclass(frozen=True)
-class Filter:
-    label: str
+class LabelMatcher:
+    name: str
     value: str
-    operator: FilterOperator
+    operator: LabelMatcherOperator
 
     def __repr__(self) -> str:
-        return repr(f"{self.label}{self.operator.value}{self.value}")
+        return repr(f"{self.name}{self.operator.value}{self.value}")
 
     def matches(self, label_value: str) -> bool:
-        if self.operator == FilterOperator.EQ:
+        if self.operator == LabelMatcherOperator.EQ:
             return self.value == label_value
-        if self.operator == FilterOperator.NE:
+        if self.operator == LabelMatcherOperator.NE:
             return self.value != label_value
-        if self.operator == FilterOperator.RE:
+        if self.operator == LabelMatcherOperator.RE:
             return bool(re.match(self.value, label_value))
-        if self.operator == FilterOperator.NRE:
+        if self.operator == LabelMatcherOperator.NRE:
             return not re.match(self.value, label_value)
         return False
+
+    @classmethod
+    def equal(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.EQ)
+
+    @classmethod
+    def not_equal(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.NE)
+
+    @classmethod
+    def regex(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.RE)
+
+    @classmethod
+    def not_regex(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.NRE)
 
 
 @dataclass(frozen=True)
 class Metric:
     name: str
-    filters: Mapping[str, Filter]
+    label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
 
 
 def parse_query_metrics(query: str) -> Sequence[Metric]:
-    result: List[Metric] = []
-
-    for match in re.finditer(_METRICS_RE, query):
-        groups = match.groupdict()
-        name = groups["name"] or ""
-        filters = _parse_filters(groups["filters"])
-        if name or filters:
-            result.append(Metric(name=name, filters=filters))
-
-    return result
+    ast = parse_expression_ast(query)
+    listener = MetricListener()
+    walk_expression_ast(listener, ast)
+    return listener.metrics
 
 
-def _parse_filters(filters_str: Optional[str]) -> Dict[str, Filter]:
-    result: Dict[str, Filter] = {}
-
-    if not filters_str:
-        return result
-
-    for match in re.finditer(_FILTER_RE, filters_str):
-        groups = match.groupdict()
-
-        label = groups["label"]
-        assert label
-
-        operator = groups["op"]
-        assert operator
-
-        sq_value = groups["sq_value"] or ""
-        if sq_value:
-            value = sq_value
-        else:
-            value = groups["dq_value"] or ""
-
-        result[label] = Filter(
-            label=label, operator=FilterOperator(operator), value=value
+class PromQLErrorListener(ErrorListener):
+    def syntaxError(
+        self,
+        recognizer: Recognizer,
+        offending_symbol: Token,
+        line: int,
+        column: int,
+        message: str,
+        e: Optional[Exception],
+    ) -> None:
+        raise PromQLException(
+            f"{line}:{column}: error at {offending_symbol.text!r}: {message}"
         )
 
-    return result
+
+class MetricListener(PromQLParserListener):
+    def __init__(self) -> None:
+        self._metrics: List[Metric] = []
+
+    @property
+    def metrics(self) -> Sequence[Metric]:
+        return self._metrics
+
+    def exitInstantSelector(self, ctx: PromQLParser.InstantSelectorContext) -> None:
+        metric_name_ctx = ctx.METRIC_NAME()
+        metric_name = metric_name_ctx.getText() if metric_name_ctx else ""
+        self._metrics.append(
+            Metric(name=metric_name, label_matchers=self._get_label_matchers(ctx))
+        )
+
+    def _get_operator_ctx(
+        self, ctx: PromQLParser.VectorOperationContext
+    ) -> ParserRuleContext:
+        return (
+            ctx.powOp()
+            or ctx.multOp()
+            or ctx.addOp()
+            or ctx.compareOp()
+            or ctx.andUnlessOp()
+            or ctx.orOp()
+        )
+
+    def _get_label_matchers(
+        self, ctx: PromQLParser.InstantSelectorContext
+    ) -> Dict[str, LabelMatcher]:
+        list_ctx: PromQLParser.LabelMatcherListContext = ctx.labelMatcherList()
+        if not list_ctx:
+            return {}
+        result: Dict[str, LabelMatcher] = {}
+        for matcher in list_ctx.labelMatcher():
+            assert isinstance(matcher, PromQLParser.LabelMatcherContext)
+            name = matcher.labelName().getText()
+            result[name] = LabelMatcher(
+                name=name,
+                operator=LabelMatcherOperator(matcher.labelMatcherOperator().getText()),
+                value=matcher.STRING().getText()[1:-1],
+            )
+        return result
+
+
+def parse_expression_ast(expression: str) -> ParseTree:
+    error_listener = PromQLErrorListener()
+    parser = PromQLParser(CommonTokenStream(PromQLLexer(InputStream(expression))))
+    parser.removeErrorListeners()
+    parser.addErrorListener(error_listener)
+    return parser.expression()
+
+
+def walk_expression_ast(listener: PromQLParserListener, ast: ParseTree) -> None:
+    walker = ParseTreeWalker()
+    walker.walk(listener, ast)

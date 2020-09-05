@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 tmpdeploy/
+
+platform_reports/promql_ast/*
+!platform_reports/promql_ast/*.g4

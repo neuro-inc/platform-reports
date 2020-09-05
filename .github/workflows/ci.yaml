@@ -16,6 +16,10 @@ jobs:
     steps:
       - name: Checkout commit
         uses: actions/checkout@v2
+      - name: Install java
+        uses: actions/setup-java@v1
+        with:
+          java-version: "1.13"
       - name: Install python
         uses: actions/setup-python@v2
         with:
@@ -26,7 +30,9 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
-        run: make setup
+        run: |
+          sudo -E make setup_antlr4
+          make setup
       - name: Lint
         run: make lint
       - name: Run unit tests
@@ -56,6 +62,14 @@ jobs:
     steps:
       - name: Checkout commit
         uses: actions/checkout@v2
+      - name: Install java
+        uses: actions/setup-java@v1
+        with:
+          java-version: "1.13"
+      - name: Setup antlr4 parser
+        run: |
+          sudo -E make setup_antlr4
+          make setup_antlr4_parser
       - name: Set tag
         run: echo ::set-env name=TAG::$GITHUB_SHA
       - name: Configure AWS credentials
@@ -90,6 +104,14 @@ jobs:
     steps:
       - name: Checkout commit
         uses: actions/checkout@v2
+      - name: Install java
+        uses: actions/setup-java@v1
+        with:
+          java-version: "1.13"
+      - name: Setup antlr4 parser
+        run: |
+          sudo -E make setup_antlr4
+          make setup_antlr4_parser
       - name: Set tag
         run: echo ::set-env name=TAG::${GITHUB_REF#refs/tags/}
       - name: Push image to Artifactory

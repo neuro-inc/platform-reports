@@ -19,7 +19,20 @@ WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
 export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
 
-setup:
+ANTLR4_CLASSPATH = .:/usr/local/lib/antlr-4.8-complete.jar:$(CLASSPATH)
+ANTLR4 = java -Xmx500M -cp "$(ANTLR4_CLASSPATH)" org.antlr.v4.Tool
+
+setup_antlr4:
+	curl -O https://www.antlr.org/download/antlr-4.8-complete.jar
+	mv antlr-4.8-complete.jar /usr/local/lib/antlr-4.8-complete.jar
+
+setup_antlr4_parser:
+	cd platform_reports/promql_ast; \
+	find * -type f -not -name '*.g4' -delete; \
+	$(ANTLR4) -Dlanguage=Python3 -Werror -listener PromQLLexer.g4; \
+	$(ANTLR4) -Dlanguage=Python3 -Werror -listener PromQLParser.g4
+
+setup: setup_antlr4_parser
 	pip install -r requirements/dev.txt
 
 format:

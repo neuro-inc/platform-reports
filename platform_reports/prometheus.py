@@ -91,6 +91,7 @@ class PromQLErrorListener(ErrorListener):
         )
 
 
+# When Antlr traverses the AST it invokes corresponding methods of listener
 class MetricListener(PromQLParserListener):
     def __init__(self) -> None:
         self._metrics: List[Metric] = []
@@ -146,4 +147,4 @@ def parse_expression_ast(expression: str) -> ParseTree:
 
 def walk_expression_ast(listener: PromQLParserListener, ast: ParseTree) -> None:
     walker = ParseTreeWalker()
-    walker.walk(listener, ast)
+    walker.walk(listener, ast)  # depth-first search

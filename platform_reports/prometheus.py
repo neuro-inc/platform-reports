@@ -92,6 +92,7 @@ class PromQLErrorListener(ErrorListener):
 
 
 # When Antlr traverses the AST it invokes corresponding methods of listener
+# for each node. Every node has enter* and exit* methods.
 class MetricListener(PromQLParserListener):
     def __init__(self) -> None:
         self._metrics: List[Metric] = []

@@ -5,7 +5,6 @@ from typing import Dict, List, Mapping, Optional, Sequence
 
 from antlr4 import CommonTokenStream, InputStream, ParseTreeWalker
 from antlr4.error.ErrorListener import ErrorListener
-from antlr4.ParserRuleContext import ParserRuleContext
 from antlr4.Recognizer import Recognizer
 from antlr4.Token import Token
 from antlr4.tree.Tree import ParseTree
@@ -106,18 +105,6 @@ class MetricListener(PromQLParserListener):
         metric_name = metric_name_ctx.getText() if metric_name_ctx else ""
         self._metrics.append(
             Metric(name=metric_name, label_matchers=self._get_label_matchers(ctx))
-        )
-
-    def _get_operator_ctx(
-        self, ctx: PromQLParser.VectorOperationContext
-    ) -> ParserRuleContext:
-        return (
-            ctx.powOp()
-            or ctx.multOp()
-            or ctx.addOp()
-            or ctx.compareOp()
-            or ctx.andUnlessOp()
-            or ctx.orOp()
         )
 
     def _get_label_matchers(

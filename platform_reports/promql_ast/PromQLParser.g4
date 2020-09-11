@@ -61,17 +61,19 @@ offset: instantSelector OFFSET DURATION | matrixSelector OFFSET DURATION;
 
 // Functions
 
-function: FUNCTION LEFT_PAREN parameter (COMMA parameter)* RIGHT_PAREN;
-
-parameter:     literal | vector;
-parameterList: LEFT_PAREN (parameter (COMMA parameter)*)? RIGHT_PAREN;
+function
+    : FUNCTION LEFT_PAREN vectorOperation (COMMA vectorOperation)* RIGHT_PAREN
+    ;
 
 // Aggregations
 
 aggregation
     : AGGREGATION_OPERATOR parameterList
     | AGGREGATION_OPERATOR (by | without) parameterList
-    | AGGREGATION_OPERATOR parameterList ( by | without)
+    | AGGREGATION_OPERATOR parameterList (by | without)
+    ;
+parameterList
+    : LEFT_PAREN (vectorOperation (COMMA vectorOperation)*)? RIGHT_PAREN
     ;
 by:      BY labelNameList;
 without: WITHOUT labelNameList;
@@ -86,7 +88,7 @@ groupRight: GROUP_RIGHT labelNameList;
 
 // Label names
 
-labelName:     keyword | METRIC_NAME | LABEL_NAME;
+labelName:     keyword | LABEL_NAME;
 labelNameList: LEFT_PAREN (labelName (COMMA labelName)*)? RIGHT_PAREN;
 
 keyword

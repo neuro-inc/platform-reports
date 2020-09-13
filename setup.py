@@ -7,6 +7,7 @@ install_requires = (
     "platform-logging==0.3",
     "aiohttp==3.6.2",
     "python-jose==3.1.0",
+    "lark-parser==0.9.0",
 )
 
 setup(

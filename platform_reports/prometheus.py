@@ -1,100 +1,27 @@
 import enum
+import logging
 import re
-from dataclasses import dataclass
-from typing import Dict, List, Mapping, Optional, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Mapping, Sequence, Union
+
+from lark import Lark, Transformer, v_args
+from lark.exceptions import LarkError
+from lark.tree import Meta, Tree
+
+from .prometheus_grammars import PROMQL
 
 
-_OPERATORS = [
-    "sum",
-    "min",
-    "max",
-    "avg",
-    "group",
-    "stddev",
-    "stdvar",
-    "count",
-    "count_values",
-    "bottomk",
-    "topk",
-    "quantile",
-    "and",
-    "or",
-    "unless",
-]
-
-_FUNCTIONS = [
-    "abs",
-    "absent",
-    "absent_over_time",
-    "ceil",
-    "changes",
-    "clamp_max",
-    "clamp_min",
-    "day_of_month",
-    "day_of_week",
-    "days_in_month",
-    "delta",
-    "deriv",
-    "exp",
-    "floor",
-    "histogram_quantile",
-    "holt_winters",
-    "hour",
-    "idelta",
-    "increase",
-    "irate",
-    "label_join",
-    "label_replace",
-    "ln",
-    "log2",
-    "log10",
-    "minute",
-    "month",
-    "predict_linear",
-    "rate",
-    "resets",
-    "round",
-    "scalar",
-    "sort",
-    "sort_desc",
-    "sqrt",
-    "time",
-    "timestamp",
-    "vector",
-    "year",
-    "avg_over_time",
-    "min_over_time",
-    "max_over_time",
-    "sum_over_time",
-    "count_over_time",
-    "quantile_over_time",
-    "stddev_over_time",
-    "stdvar_over_time",
-]
-
-_METRICS_RE = re.compile(
-    "|".join(
-        [
-            r"-?[0-9]+(?:\.[0-9]+)?",  # number
-            r"'(?:[^'\\]|\\.)*'",  # single quoted string
-            r'"(?:[^"\\]|\\.)*"',  # double quoted string
-            r"(?:by|without)[ \t]*\([^)]+\)",  # aggregations
-            r"(?:on|ignoring|group_left|group_right)[ \t]*\([^)]+\)",  # joins
-            r"\[[^]]+\]",  # interval
-            *sorted(_OPERATORS + _FUNCTIONS, key=len, reverse=True),
-            r"(?P<name>[0-9a-zA-Z_]+)?[ \t]*(?P<filters>\{[^}]*\})?",  # metric
-        ]
-    )
-)
-
-_FILTER_RE = (
-    r"(?P<label>[0-9a-zA-Z_]+)"
-    r"(?P<op>\=|\=\~|\!\=|\!\~)"
-    r"(?:'(?P<sq_value>(?:[^'\\]|\\.)*)'|\"(?P<dq_value>(?:[^\"\\]|\\.)*)\")"
-)
+logger = logging.getLogger(__name__)
 
 
-class FilterOperator(enum.Enum):
+promql_parser = Lark(PROMQL, parser="lalr")
+
+
+class PromQLException(Exception):
+    pass
+
+
+class LabelMatcherOperator(enum.Enum):
     EQ = "="
     NE = "!="
     RE = "=~"
@@ -102,68 +29,108 @@ class FilterOperator(enum.Enum):
 
 
 @dataclass(frozen=True)
-class Filter:
-    label: str
+class LabelMatcher:
+    name: str
     value: str
-    operator: FilterOperator
+    operator: LabelMatcherOperator
 
     def __repr__(self) -> str:
-        return repr(f"{self.label}{self.operator.value}{self.value}")
+        return repr(f"{self.name}{self.operator.value}{self.value}")
 
     def matches(self, label_value: str) -> bool:
-        if self.operator == FilterOperator.EQ:
+        if self.operator == LabelMatcherOperator.EQ:
             return self.value == label_value
-        if self.operator == FilterOperator.NE:
+        if self.operator == LabelMatcherOperator.NE:
             return self.value != label_value
-        if self.operator == FilterOperator.RE:
+        if self.operator == LabelMatcherOperator.RE:
             return bool(re.match(self.value, label_value))
-        if self.operator == FilterOperator.NRE:
+        if self.operator == LabelMatcherOperator.NRE:
             return not re.match(self.value, label_value)
         return False
+
+    @classmethod
+    def equal(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.EQ)
+
+    @classmethod
+    def not_equal(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.NE)
+
+    @classmethod
+    def regex(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.RE)
+
+    @classmethod
+    def not_regex(cls, name: str, value: str) -> "LabelMatcher":
+        return cls(name=name, value=value, operator=LabelMatcherOperator.NRE)
 
 
 @dataclass(frozen=True)
 class Metric:
     name: str
-    filters: Mapping[str, Filter]
+    label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
 
 
-def parse_query_metrics(query: str) -> Sequence[Metric]:
-    result: List[Metric] = []
-
-    for match in re.finditer(_METRICS_RE, query):
-        groups = match.groupdict()
-        name = groups["name"] or ""
-        filters = _parse_filters(groups["filters"])
-        if name or filters:
-            result.append(Metric(name=name, filters=filters))
-
-    return result
+def parse_query(query: str) -> Sequence[Metric]:
+    try:
+        ast = promql_parser.parse(query)
+    except LarkError as ex:
+        logger.info("Error while parsing PromQL query: %s", ex)
+        raise PromQLException(f"Error while parsing PromQL query: {ex}")
+    transformer = VectorTransformer()
+    return transformer.transform(ast)
 
 
-def _parse_filters(filters_str: Optional[str]) -> Dict[str, Filter]:
-    result: Dict[str, Filter] = {}
-
-    if not filters_str:
+class VectorTransformer(Transformer[List[Metric]]):
+    def __default__(self, data: str, children: List[Any], meta: Meta) -> List[Metric]:
+        result: List[Metric] = []
+        for child in children:
+            if isinstance(child, list):
+                result.extend(child)
         return result
 
-    for match in re.finditer(_FILTER_RE, filters_str):
-        groups = match.groupdict()
+    @v_args(tree=True)
+    def label_matcher_list(self, tree: Tree) -> Tree:
+        return tree
 
-        label = groups["label"]
-        assert label
+    @v_args(tree=True)
+    def label_matcher(self, tree: Tree) -> Tree:
+        return tree
 
-        operator = groups["op"]
-        assert operator
+    def instant_selector_with_metric(
+        self, children: List[Union[str, Tree]]
+    ) -> List[Metric]:
+        label_matchers: List[Tree] = []
+        if len(children) > 1:
+            label_matchers = children[1].children  # type: ignore
+        return [
+            Metric(
+                name=children[0].value,  # type: ignore
+                label_matchers=self._get_label_matchers(label_matchers),
+            )
+        ]
 
-        sq_value = groups["sq_value"] or ""
-        if sq_value:
-            value = sq_value
-        else:
-            value = groups["dq_value"] or ""
+    def instant_selector_without_metric(
+        self, children: List[Union[str, Tree]]
+    ) -> List[Metric]:
+        label_matchers: List[Tree] = []
+        if children:
+            label_matchers = children[0].children  # type: ignore
+        return [
+            Metric(name="", label_matchers=self._get_label_matchers(label_matchers))
+        ]
 
-        result[label] = Filter(
-            label=label, operator=FilterOperator(operator), value=value
-        )
-
-    return result
+    def _get_label_matchers(
+        self, label_matchers: List[Tree]
+    ) -> Dict[str, LabelMatcher]:
+        result: Dict[str, LabelMatcher] = {}
+        for label_matcher in label_matchers:
+            name = label_matcher.children[0].value  # type: ignore
+            result[name] = LabelMatcher(
+                name=name,
+                operator=LabelMatcherOperator(
+                    label_matcher.children[1].value  # type: ignore
+                ),
+                value=label_matcher.children[2].value[1:-1],  # type: ignore
+            )
+        return result

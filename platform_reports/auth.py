@@ -5,7 +5,7 @@ from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
 from neuromation.api import Client as ApiClient
 
-from .prometheus import FilterOperator, Metric, parse_query_metrics
+from .prometheus import LabelMatcherOperator, Metric, parse_query
 
 
 logger = logging.getLogger(__name__)
@@ -15,8 +15,8 @@ NODES_DASHBOARD_ID = "nodes"
 JOBS_DASHBOARD_ID = "jobs"
 JOB_DASHBOARD_ID = "job"
 
-JOB_FILTER = "job"
-POD_FILTER = "pod"
+JOB_MATCHER = "job"
+POD_MATCHER = "pod"
 
 
 class AuthService:
@@ -79,7 +79,7 @@ class AuthService:
     async def check_query_permissions(
         self, user_name: str, queries: Sequence[str]
     ) -> bool:
-        metrics = [m for q in queries for m in parse_query_metrics(q)]
+        metrics = [m for q in queries for m in parse_query(q)]
 
         # NOTE: All metrics are required to have a job filter
         # (e.g. kubelet, node-exporter etc). Otherwise we need to have a registry
@@ -106,13 +106,13 @@ class AuthService:
         )
 
     def _check_all_metrics_have_job_filter(self, metrics: Sequence[Metric]) -> bool:
-        return all(JOB_FILTER in m.filters for m in metrics)
+        return all(JOB_MATCHER in m.label_matchers for m in metrics)
 
     def _get_node_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
     ) -> List[Permission]:
         for metric in metrics:
-            if metric.filters[JOB_FILTER].matches("node-exporter"):
+            if metric.label_matchers[JOB_MATCHER].matches("node-exporter"):
                 return [
                     Permission(
                         uri=(
@@ -129,12 +129,12 @@ class AuthService:
         platform_job_ids: List[str] = []
 
         for metric in metrics:
-            if metric.filters[JOB_FILTER].matches("kube-state-metrics"):
-                if not self._has_pod_filter(metric):
+            if metric.label_matchers[JOB_MATCHER].matches("kube-state-metrics"):
+                if not self._has_pod_matcher(metric):
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.filters[POD_FILTER].value)
+                platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
 
         return await self._get_platform_job_permissions(platform_job_ids)
 
@@ -144,20 +144,18 @@ class AuthService:
         platform_job_ids: List[str] = []
 
         for metric in metrics:
-            if metric.filters[JOB_FILTER].matches("kubelet"):
-                if not self._has_pod_filter(metric):
+            if metric.label_matchers[JOB_MATCHER].matches("kubelet"):
+                if not self._has_pod_matcher(metric):
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.filters[POD_FILTER].value)
+                platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
 
         return await self._get_platform_job_permissions(platform_job_ids)
 
-    def _has_pod_filter(self, metric: Metric) -> bool:
-        pod_filter = metric.filters.get(POD_FILTER)
-        return bool(
-            pod_filter and pod_filter.operator == FilterOperator.EQ and pod_filter.value
-        )
+    def _has_pod_matcher(self, metric: Metric) -> bool:
+        f = metric.label_matchers.get(POD_MATCHER)
+        return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
 
     async def _get_platform_job_permissions(
         self, job_ids: Sequence[str], action: str = "read"

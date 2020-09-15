@@ -1,11 +1,11 @@
 import logging
-from typing import Iterable, List, Sequence
+from typing import Dict, Iterable, List, Sequence
 
 from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
 from neuromation.api import Client as ApiClient
 
-from .prometheus import LabelMatcherOperator, Metric, parse_query
+from .prometheus import Join, LabelMatcherOperator, Metric, Vector, parse_query
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ JOB_DASHBOARD_ID = "job"
 
 JOB_MATCHER = "job"
 POD_MATCHER = "pod"
+USER_LABEL_MATCHER = "label_platform_neuromation_io_user"
 
 
 class AuthService:
@@ -63,7 +64,10 @@ class AuthService:
         elif dashboard_id == JOB_DASHBOARD_ID:
             job_id = params.get("var-job_id")
             if job_id:
-                permissions = await self._get_platform_job_permissions([job_id])
+                permissions_service = PermissionsService(
+                    self._api_client, self._cluster_name
+                )
+                permissions = await permissions_service.get_job_permissions([job_id])
             else:
                 # If no job id is specified, check that user has access
                 # to his own jobs in cluster.
@@ -79,34 +83,75 @@ class AuthService:
     async def check_query_permissions(
         self, user_name: str, queries: Sequence[str]
     ) -> bool:
-        metrics = [m for q in queries for m in parse_query(q)]
+        vectors = self._parse_queries(queries)
 
         # NOTE: All metrics are required to have a job filter
         # (e.g. kubelet, node-exporter etc). Otherwise we need to have a registry
         # with all the metrics which are exported by Prometheus jobs.
-        if not self._check_all_metrics_have_job_filter(metrics):
-            return False
+        for vector in vectors:
+            if not self._check_all_metrics_have_job_matcher(vector):
+                return False
 
+        permissions_service = PermissionsService(self._api_client, self._cluster_name)
+        permissions = await permissions_service.get_vector_permissions(
+            user_name, vectors
+        )
+        return await self.check_permissions(user_name, permissions)
+
+    def _parse_queries(self, queries: Sequence[str]) -> Sequence[Vector]:
+        result: List[Vector] = []
+        for query in queries:
+            vector = parse_query(query)
+            if vector:
+                result.append(vector)
+        return result
+
+    def _check_all_metrics_have_job_matcher(self, vector: Vector) -> bool:
+        if isinstance(vector, Metric):
+            return JOB_MATCHER in vector.label_matchers
+        if isinstance(vector, Join):
+            return self._check_all_metrics_have_job_matcher(
+                vector.left
+            ) and self._check_all_metrics_have_job_matcher(vector.right)
+        return False
+
+
+class PermissionsService:
+    def __init__(self, api_client: ApiClient, cluster_name: str) -> None:
+        self._api_client = api_client
+        self._cluster_name = cluster_name
+        self._job_permissions: Dict[str, Permission] = {}
+
+    async def get_vector_permissions(
+        self, user_name: str, vectors: Sequence[Vector]
+    ) -> Sequence[Permission]:
+        permissions: List[Permission] = []
+        for vector in vectors:
+            permissions.extend(
+                self._get_strongest_permissions(
+                    await self._get_vector_permissions(user_name, vector)
+                )
+            )
+        return self._get_strongest_permissions(permissions)
+
+    async def _get_vector_permissions(
+        self, user_name: str, vector: Vector
+    ) -> Sequence[Permission]:
+        if isinstance(vector, Metric):
+            permissions = await self._get_metric_permissions(user_name, vector)
+        if isinstance(vector, Join):
+            permissions = await self._get_join_permissions(user_name, vector)
+        return permissions
+
+    async def _get_metric_permissions(
+        self, user_name: str, metric: Metric
+    ) -> Sequence[Permission]:
         # Check permissions for all collector jobs which are configured in Prometheus
-        node_exporter_premissions = self._get_node_exporter_permissions(
-            user_name, metrics
+        return (
+            *self._get_node_exporter_permissions(user_name, [metric]),
+            *await self._get_kube_state_metrics_permissions(user_name, [metric]),
+            *await self._get_kubelet_permissions(user_name, [metric]),
         )
-        kube_state_metrics_permissions = await self._get_kube_state_metrics_permissions(
-            user_name, metrics
-        )
-        kubelet_permissions = await self._get_kubelet_permissions(user_name, metrics)
-
-        return await self.check_permissions(
-            user_name,
-            (
-                node_exporter_premissions
-                + kube_state_metrics_permissions
-                + kubelet_permissions
-            ),
-        )
-
-    def _check_all_metrics_have_job_filter(self, metrics: Sequence[Metric]) -> bool:
-        return all(JOB_MATCHER in m.label_matchers for m in metrics)
 
     def _get_node_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
@@ -126,17 +171,29 @@ class AuthService:
     async def _get_kube_state_metrics_permissions(
         self, user_name: str, metrics: Sequence[Metric]
     ) -> List[Permission]:
+        permissions: List[Permission] = []
         platform_job_ids: List[str] = []
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("kube-state-metrics"):
-                if not self._has_pod_matcher(metric):
+                if self._has_pod_matcher(metric):
+                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                elif self._has_user_label_matcher(metric):
+                    user_name = metric.label_matchers[USER_LABEL_MATCHER].value
+                    permissions.append(
+                        Permission(
+                            uri=f"job://{self._cluster_name}/{user_name}", action="read"
+                        )
+                    )
+                else:
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
 
-        return await self._get_platform_job_permissions(platform_job_ids)
+        return [
+            *permissions,
+            *await self.get_job_permissions(platform_job_ids),
+        ]
 
     async def _get_kubelet_permissions(
         self, user_name: str, metrics: Sequence[Metric]
@@ -145,26 +202,80 @@ class AuthService:
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("kubelet"):
-                if not self._has_pod_matcher(metric):
+                if self._has_pod_matcher(metric):
+                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                else:
                     return [
                         Permission(uri=f"job://{self._cluster_name}", action="read")
                     ]
-                platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
 
-        return await self._get_platform_job_permissions(platform_job_ids)
+        return await self.get_job_permissions(platform_job_ids)
+
+    async def _get_join_permissions(
+        self, user_name: str, join: Join
+    ) -> Sequence[Permission]:
+        left_permissions = await self._get_vector_permissions(user_name, join.left)
+        right_permissions = await self._get_vector_permissions(user_name, join.right)
+        permissions = (*left_permissions, *right_permissions)
+
+        if "or" == join.operator:
+            return self._get_strongest_permissions(permissions)
+
+        if "pod" in join.labels:
+            return self._get_weakest_permissions(permissions)
+
+        return self._get_strongest_permissions(permissions)
+
+    def _get_strongest_permissions(
+        self, permissions: Sequence[Permission]
+    ) -> Sequence[Permission]:
+        result: List[Permission] = []
+        permissions = sorted(permissions, key=lambda p: p.uri)
+        i = 0
+        while i < len(permissions):
+            shortest = permissions[i]
+            result.append(shortest)
+
+            while i < len(permissions) and permissions[i].uri.startswith(shortest.uri):
+                i += 1
+        return result
+
+    def _get_weakest_permissions(
+        self, permissions: Sequence[Permission]
+    ) -> Sequence[Permission]:
+        result: List[Permission] = []
+        permissions = sorted(permissions, key=lambda p: p.uri, reverse=True)
+        i = 0
+        while i < len(permissions):
+            longest = permissions[i]
+            result.append(longest)
+
+            while i < len(permissions) and longest.uri.startswith(permissions[i].uri):
+                i += 1
+        return result
 
     def _has_pod_matcher(self, metric: Metric) -> bool:
         f = metric.label_matchers.get(POD_MATCHER)
         return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
 
-    async def _get_platform_job_permissions(
+    def _has_user_label_matcher(self, metric: Metric) -> bool:
+        f = metric.label_matchers.get(USER_LABEL_MATCHER)
+        return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
+
+    async def get_job_permissions(
         self, job_ids: Sequence[str], action: str = "read"
     ) -> List[str]:
         result: List[Permission] = []
 
         for job_id in set(job_ids):
-            if job_id:
+            if not job_id:
+                continue
+            if job_id in self._job_permissions:
+                result.append(self._job_permissions[job_id])
+            else:
                 job = await self._api_client.jobs.status(job_id)
-                result.append(Permission(uri=str(job.uri), action="read"))
+                permission = Permission(uri=str(job.uri), action="read")
+                self._job_permissions[job_id] = permission
+                result.append(permission)
 
         return result

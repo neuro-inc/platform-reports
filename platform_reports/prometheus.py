@@ -1,8 +1,9 @@
+import abc
 import enum
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 from lark import Lark, Transformer, v_args
 from lark.exceptions import LarkError
@@ -65,29 +66,71 @@ class LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.NRE)
 
 
+class Vector(abc.ABC):
+    @abc.abstractproperty
+    def labels(self) -> Sequence[str]:
+        pass
+
+
 @dataclass(frozen=True)
-class Metric:
+class Join(Vector):
+    left: Vector
+    right: Vector
+    operator: str
+    on: Sequence[str] = field(default_factory=list)
+    ignoring: Sequence[str] = field(default_factory=list)
+
+    @property
+    def labels(self) -> Sequence[str]:
+        if self.on:
+            return self.on
+        children_labels = set((*self.left.labels, *self.right.labels))
+        return [label for label in children_labels if label not in self.ignoring]
+
+
+@dataclass(frozen=True)
+class Metric(Vector):
     name: str
     label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
 
+    @property
+    def labels(self) -> Sequence[str]:
+        name_label = self.label_matchers.get("__name__")
+        labels = set(self.label_matchers.keys())
+        job_label = self.label_matchers.get("job")
+        if job_label and job_label.matches("kubelet"):
+            labels.add("pod")
+        if (
+            job_label
+            and job_label.matches("kube-state-metrics")
+            and (
+                self.name.startswith("kube_pod_")
+                or name_label
+                and name_label.matches("kube_pod_")
+            )
+        ):
+            labels.add("pod")
+        return list(labels)
 
-def parse_query(query: str) -> Sequence[Metric]:
+
+def parse_query(query: str) -> Optional[Vector]:
     try:
         ast = promql_parser.parse(query)
     except LarkError as ex:
-        logger.info("Error while parsing PromQL query: %s", ex)
+        logger.warning("Error while parsing PromQL query: %s", ex)
         raise PromQLException(f"Error while parsing PromQL query: {ex}")
     transformer = VectorTransformer()
     return transformer.transform(ast)
 
 
-class VectorTransformer(Transformer[List[Metric]]):
-    def __default__(self, data: str, children: List[Any], meta: Meta) -> List[Metric]:
-        result: List[Metric] = []
+class VectorTransformer(Transformer[Optional[Vector]]):
+    def __default__(
+        self, data: str, children: List[Any], meta: Meta
+    ) -> Optional[Vector]:
         for child in children:
-            if isinstance(child, list):
-                result.extend(child)
-        return result
+            if isinstance(child, Vector):
+                return child
+        return None
 
     @v_args(tree=True)
     def label_matcher_list(self, tree: Tree) -> Tree:
@@ -97,28 +140,64 @@ class VectorTransformer(Transformer[List[Metric]]):
     def label_matcher(self, tree: Tree) -> Tree:
         return tree
 
-    def instant_selector_with_metric(
-        self, children: List[Union[str, Tree]]
-    ) -> List[Metric]:
+    @v_args(tree=True)
+    def grouping(self, tree: Tree) -> Tree:
+        return tree
+
+    @v_args(tree=True)
+    def on(self, tree: Tree) -> Tree:
+        return tree
+
+    @v_args(tree=True)
+    def ignoring(self, tree: Tree) -> Tree:
+        return tree
+
+    @v_args(tree=True)
+    def group_left(self, tree: Tree) -> Tree:
+        return tree
+
+    @v_args(tree=True)
+    def group_right(self, tree: Tree) -> Tree:
+        return tree
+
+    @v_args(tree=True)
+    def label_name_list(self, tree: Tree) -> Tree:
+        return tree
+
+    def instant_selector_with_metric(self, children: List[Union[str, Tree]]) -> Vector:
         label_matchers: List[Tree] = []
         if len(children) > 1:
             label_matchers = children[1].children  # type: ignore
-        return [
-            Metric(
-                name=children[0].value,  # type: ignore
-                label_matchers=self._get_label_matchers(label_matchers),
-            )
-        ]
+        return Metric(
+            name=children[0].value,  # type: ignore
+            label_matchers=self._get_label_matchers(label_matchers),
+        )
 
     def instant_selector_without_metric(
         self, children: List[Union[str, Tree]]
-    ) -> List[Metric]:
+    ) -> Vector:
         label_matchers: List[Tree] = []
         if children:
             label_matchers = children[0].children  # type: ignore
-        return [
-            Metric(name="", label_matchers=self._get_label_matchers(label_matchers))
-        ]
+        return Metric(name="", label_matchers=self._get_label_matchers(label_matchers))
+
+    def or_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
+
+    def and_unless_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
+
+    def comparison_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
+
+    def sum_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
+
+    def product_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
+
+    def power_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        return self._get_join(children)
 
     def _get_label_matchers(
         self, label_matchers: List[Tree]
@@ -133,4 +212,51 @@ class VectorTransformer(Transformer[List[Metric]]):
                 ),
                 value=label_matcher.children[2].value[1:-1],  # type: ignore
             )
+        return result
+
+    def _get_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+        vectors: List[Vector] = []
+        for child in children:
+            if isinstance(child, Vector):
+                vectors.append(child)
+        if not vectors:
+            return None
+        if len(vectors) > 2:
+            raise PromQLException("Operation has invalid number of arguments")
+        if len(vectors) == 1:
+            return vectors[0]
+        grouping: Optional[Tree] = None
+        if len(children) > 3:
+            grouping = children[2]  # type: ignore
+        assert not grouping or isinstance(grouping, Tree)
+        return Join(
+            left=vectors[0],
+            right=vectors[1],
+            operator=children[1].value,  # type: ignore
+            on=self._get_on_labels(grouping),
+            ignoring=self._get_ignoring_labels(grouping),
+        )
+
+    def _get_on_labels(self, grouping: Optional[Tree]) -> Sequence[str]:
+        if not grouping:
+            return []
+        if grouping.children[0].data == "on":  # type: ignore
+            return self._get_labels(
+                grouping.children[0].children[1].children  # type: ignore
+            )
+        return []
+
+    def _get_ignoring_labels(self, grouping: Optional[Tree]) -> Sequence[str]:
+        if not grouping:
+            return []
+        if grouping.children[0].data == "ignoring":  # type: ignore
+            return self._get_labels(
+                grouping.children[0].children[1].children  # type: ignore
+            )
+        return []
+
+    def _get_labels(self, labels: List[Union[str, Tree]]) -> Sequence[str]:
+        result: List[str] = []
+        for label_name in labels:
+            result.append(label_name.value)  # type: ignore
         return result

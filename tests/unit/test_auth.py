@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict, Sequence
 from unittest import mock
 
 import pytest
@@ -47,6 +47,60 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
     client = mock.AsyncMock(ApiClient)
     client.jobs.status = mock.AsyncMock(side_effect=get_job)
     return client
+
+
+class TestDashboards:
+    @pytest.fixture
+    def auth_service(
+        self, auth_client: AuthClient, api_client: ApiClient
+    ) -> AuthService:
+        return AuthService(auth_client, api_client, "default")
+
+    @pytest.mark.asyncio
+    async def test_admin_dashboards_permissions(
+        self,
+        auth_service: AuthService,
+        auth_client: mock.AsyncMock,
+        dashboard_expressions: Dict[str, Sequence[str]],
+    ) -> None:
+        async def get_missing_permissions(
+            user_name: str, permissions: Sequence[Permission]
+        ) -> Sequence[Permission]:
+            assert all(
+                p.uri
+                in ("cluster://default/admin/cloud_provider/infra", "job://default")
+                for p in permissions
+            )
+            return []
+
+        auth_client.get_missing_permissions.side_effect = get_missing_permissions
+
+        for key, exprs in dashboard_expressions.items():
+            if not key.startswith("admin/"):
+                continue
+            await auth_service.check_query_permissions("user", exprs)
+            auth_client.reset_mock()
+
+    @pytest.mark.asyncio
+    async def test_user_dashboards_permissions(
+        self,
+        auth_service: AuthService,
+        auth_client: mock.AsyncMock,
+        dashboard_expressions: Dict[str, Sequence[str]],
+    ) -> None:
+        async def get_missing_permissions(
+            user_name: str, permissions: Sequence[Permission]
+        ) -> Sequence[Permission]:
+            assert all(p.uri.startswith("job://default/user") for p in permissions)
+            return []
+
+        auth_client.get_missing_permissions.side_effect = get_missing_permissions
+
+        for key, exprs in dashboard_expressions.items():
+            if not key.startswith("user/"):
+                continue
+            await auth_service.check_query_permissions("user", exprs)
+            auth_client.reset_mock()
 
 
 class TestAuthService:
@@ -266,3 +320,138 @@ class TestAuthService:
             "user", [Permission(uri="job://default/user/job", action="read")]
         )
         api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
+    async def test_check_without_job_matcher(self, service: AuthService) -> None:
+        result = await service.check_query_permissions(
+            user_name="user", queries=["container_cpu_usage_seconds_total{pod='job'}"],
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_check_join_for_job_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics'}
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user/job", action="read")]
+        )
+        api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
+    async def test_check_join_platform_api_called_once(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics',pod='job'}
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user/job", action="read")]
+        )
+        api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
+    async def test_check_join_for_user_jobs_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_join_for_all_jobs_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics'}
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_join_without_on_for_user_jobs_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                *
+                container_cpu_usage_seconds_total{job='kubelet'}
+                """,
+                """
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                *
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                """,
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_or_join_for_all_jobs_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                or on(pod)
+                container_cpu_usage_seconds_total{job='kubelet'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")],
+        )

@@ -1,3 +1,5 @@
+from typing import Dict, Sequence
+
 import pytest
 
 from platform_reports.prometheus import (
@@ -7,6 +9,16 @@ from platform_reports.prometheus import (
     PromQLException,
     parse_query,
 )
+
+
+class TestDashboards:
+    def test_all_dashboards_expressions(
+        self, dashboard_expressions: Dict[str, Sequence[str]]
+    ) -> None:
+        print(dashboard_expressions.keys())
+        for key, exprs in dashboard_expressions.items():
+            for expr in exprs:
+                parse_query(expr)
 
 
 class TestParseQueryMetrics:
@@ -86,6 +98,23 @@ class TestParseQueryMetrics:
         result = parse_query("irate(container_cpu_usage_seconds_total[5m])")
         assert result == Metric(name="container_cpu_usage_seconds_total")
 
+    def test_metric_with_subquery(self) -> None:
+        result = parse_query("irate(container_cpu_usage_seconds_total[5m:])")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+        result = parse_query("irate(container_cpu_usage_seconds_total[5m:1m])")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+    def test_metric_with_offset(self) -> None:
+        result = parse_query("container_cpu_usage_seconds_total offset 5m")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+        result = parse_query("container_cpu_usage_seconds_total[5m] offset 5m")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+        result = parse_query("container_cpu_usage_seconds_total[5m:1m] offset 5m")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
     def test_metric_with_aggregation(self) -> None:
         result = parse_query(
             """
@@ -98,6 +127,14 @@ class TestParseQueryMetrics:
             name="container_cpu_usage_seconds_total",
             label_matchers={"job": LabelMatcher.equal(name="job", value="kubelet")},
         )
+
+        result = parse_query(
+            "sum(irate(container_cpu_usage_seconds_total[5m])) by (pod)"
+        )
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+        result = parse_query("sum(irate(container_cpu_usage_seconds_total[5m]))")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
 
     def test_metrics_one_to_many_join(self) -> None:
         result = parse_query(
@@ -119,5 +156,93 @@ class TestParseQueryMetrics:
                 label_matchers={"job": LabelMatcher.equal(name="job", value="kubelet")},
             ),
             operator="+",
+            on=["pod"],
+        )
+
+    def test_metrics_join_with_on_ignoring(self) -> None:
+        result = parse_query(
+            """
+            sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
+            + on (pod) group_right (container)
+            sum by (pod) (container_memory_usage_bytes)
+            """
+        )
+        assert result == Join(
+            left=Metric(name="container_cpu_usage_seconds_total"),
+            right=Metric(name="container_memory_usage_bytes"),
+            operator="+",
+            on=["pod"],
+        )
+
+        result = parse_query(
+            """
+            sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
+            + on (pod)
+            sum by (pod) (container_memory_usage_bytes)
+            """
+        )
+        assert result == Join(
+            left=Metric(name="container_cpu_usage_seconds_total"),
+            right=Metric(name="container_memory_usage_bytes"),
+            operator="+",
+            on=["pod"],
+        )
+
+    def test_metrics_join_with_ignoring(self) -> None:
+        result = parse_query(
+            """
+            sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
+            + ignoring (pod)
+            sum by (pod) (container_memory_usage_bytes)
+            """
+        )
+        assert result == Join(
+            left=Metric(name="container_cpu_usage_seconds_total"),
+            right=Metric(name="container_memory_usage_bytes"),
+            operator="+",
+            ignoring=["pod"],
+        )
+
+    def test_metrics_join_is_left_associative(self) -> None:
+        result = parse_query(
+            """
+            sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
+            -
+            sum by (pod) (container_memory_usage_bytes)
+            -
+            sum by (pod) (container_memory_usage_bytes)
+            """
+        )
+        assert result == Join(
+            left=Join(
+                left=Metric(name="container_cpu_usage_seconds_total"),
+                right=Metric(name="container_memory_usage_bytes"),
+                operator="-",
+            ),
+            right=Metric(name="container_memory_usage_bytes"),
+            operator="-",
+        )
+
+    def test_metrics_join_with_parens(self) -> None:
+        result = parse_query(
+            """
+            sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
+            - on (pod)
+            (
+                sum by (pod) (container_memory_usage_bytes)
+                - ignoring (pod)
+                sum by (pod) (container_memory_usage_bytes)
+            )
+            """
+        )
+        assert result == Join(
+            left=Metric(name="container_cpu_usage_seconds_total"),
+            right=Join(
+                left=Metric(name="container_memory_usage_bytes"),
+                right=Metric(name="container_memory_usage_bytes"),
+                operator="-",
+                ignoring=["pod"],
+            ),
+            operator="-",
             on=["pod"],
         )

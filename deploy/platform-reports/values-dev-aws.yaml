@@ -1,3 +1,6 @@
+nodePoolLabels:
+  gpu: cloud.google.com/gke-accelerator
+
 platform:
   authUrl: https://dev.neu.ro
   apiUrl: https://dev.neu.ro/api/v1

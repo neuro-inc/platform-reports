@@ -43,8 +43,8 @@ spec:
               value: ":9400"
 # Kubernetes exporter is available only if KubeletPodResources feature is enabled.
 # This feature is enabled by default starting from Kubernetes 1.15.
-{{- $kubeVersion := include "platform-reports.kubeVersion" . | semver }}
-{{- if ge (semver "1.15.0" | $kubeVersion.Compare) 0 }}
+{{- $kubeVersion := .Capabilities.KubeVersion | toString }}
+{{- if semverCompare ">=1.15-0" $kubeVersion }}
             - name: DCGM_EXPORTER_KUBERNETES
               value: "true"
 {{- end }}

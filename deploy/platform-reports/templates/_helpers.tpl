@@ -21,3 +21,7 @@ chart: {{ include "platform-reports.chart" . }}
 heritage: {{ .Release.Service | quote }}
 release: {{ .Release.Name | quote }}
 {{- end -}}
+
+{{- define "platform-reports.kubeVersion" }}
+{{- printf "%s.%s" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor -}}
+{{- end -}}

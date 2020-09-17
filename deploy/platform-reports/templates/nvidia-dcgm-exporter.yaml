@@ -72,7 +72,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: nvidia-dcgm
+  name: nvidia-dcgm-exporter
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
 spec:
   selector:

@@ -1,3 +1,4 @@
+# https://docs.nvidia.com/datacenter/dcgm/1.7/dcgm-api/group__dcgmFieldIdentifiers.html
 apiVersion: v1
 kind: ConfigMap
 metadata:

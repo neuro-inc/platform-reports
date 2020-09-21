@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Dict, Sequence
 
 import pytest
@@ -13,12 +14,42 @@ from platform_reports.prometheus import (
 
 class TestDashboards:
     def test_all_dashboards_expressions(
-        self, dashboard_expressions: Dict[str, Sequence[str]]
+        self, dashboards_expressions: Dict[str, Sequence[str]]
     ) -> None:
-        print(dashboard_expressions.keys())
-        for key, exprs in dashboard_expressions.items():
+        for key, exprs in dashboards_expressions.items():
             for expr in exprs:
                 parse_query(expr)
+
+
+class TestVector:
+    def test_labels(self) -> None:
+        metric = Metric(
+            name="container_cpu_usage_seconds_total",
+            label_matchers={"pod": LabelMatcher.equal(name="pod", value="job")},
+        )
+
+        assert metric.labels == ["pod"]
+
+        join = Join(
+            left=Metric(
+                name="container_cpu_usage_seconds_total",
+                label_matchers={"pod": LabelMatcher.equal(name="pod", value="job")},
+            ),
+            right=Metric(
+                name="kube_pod_labels",
+                label_matchers={
+                    "pod": LabelMatcher.equal(name="pod", value="job"),
+                    "user": LabelMatcher.equal(name="user", value="user"),
+                },
+            ),
+            operator="*",
+        )
+
+        assert sorted(join.labels) == []
+
+        assert replace(join, on=["pod"]).labels == ["pod"]
+
+        assert replace(join, ignoring=["user"]).labels == []
 
 
 class TestParseQueryMetrics:
@@ -105,6 +136,9 @@ class TestParseQueryMetrics:
         result = parse_query("irate(container_cpu_usage_seconds_total[5m:1m])")
         assert result == Metric(name="container_cpu_usage_seconds_total")
 
+        result = parse_query("irate(container_cpu_usage_seconds_total[5m])[30m:1m]")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
     def test_metric_with_offset(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total offset 5m")
         assert result == Metric(name="container_cpu_usage_seconds_total")
@@ -113,6 +147,9 @@ class TestParseQueryMetrics:
         assert result == Metric(name="container_cpu_usage_seconds_total")
 
         result = parse_query("container_cpu_usage_seconds_total[5m:1m] offset 5m")
+        assert result == Metric(name="container_cpu_usage_seconds_total")
+
+        result = parse_query("irate(container_cpu_usage_seconds_total[5m]) offset 30m")
         assert result == Metric(name="container_cpu_usage_seconds_total")
 
     def test_metric_with_aggregation(self) -> None:
@@ -159,7 +196,6 @@ class TestParseQueryMetrics:
             on=["pod"],
         )
 
-    def test_metrics_join_with_on_ignoring(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
@@ -174,6 +210,7 @@ class TestParseQueryMetrics:
             on=["pod"],
         )
 
+    def test_metrics_join_with_on(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))

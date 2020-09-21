@@ -3,7 +3,11 @@ start: vector_expression
 
 // Binary operations are defined separately in order to support precedence
 
-?vector_expression: or_join
+?vector_expression\
+    : or_join
+    | matrix_selector
+    | subquery_selector
+    | offset
 
 ?or_join\
     : and_unless_join
@@ -41,8 +45,6 @@ start: vector_expression
     : function
     | aggregation
     | instant_selector
-    | matrix_selector
-    | offset
     | NUMBER
     | STRING
 
@@ -55,12 +57,11 @@ instant_selector\
 label_matcher_list: label_matcher ("," label_matcher)*
 label_matcher: label_name /=~|=|!=|!~/ STRING
 
-matrix_selector: instant_selector time_range
-time_range: "[" DURATION "]" | "[" DURATION ":" DURATION? "]"
+matrix_selector: vector_expression "[" DURATION "]"
 
-offset\
-    : instant_selector OFFSET DURATION
-    | matrix_selector OFFSET DURATION
+subquery_selector: vector_expression "[" DURATION ":" DURATION? "]"
+
+offset: vector_expression OFFSET DURATION
 
 // Function
 

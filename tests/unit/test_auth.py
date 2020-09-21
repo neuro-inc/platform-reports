@@ -11,6 +11,7 @@ from platform_reports.auth import (
     JOB_DASHBOARD_ID,
     JOBS_DASHBOARD_ID,
     NODES_DASHBOARD_ID,
+    USER_JOBS_DASHBOARD_ID,
     AuthService,
 )
 
@@ -61,7 +62,7 @@ class TestDashboards:
         self,
         auth_service: AuthService,
         auth_client: mock.AsyncMock,
-        dashboard_expressions: Dict[str, Sequence[str]],
+        admin_dashboards_expressions: Dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]
@@ -75,9 +76,7 @@ class TestDashboards:
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for key, exprs in dashboard_expressions.items():
-            if not key.startswith("admin/"):
-                continue
+        for key, exprs in admin_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
@@ -86,7 +85,7 @@ class TestDashboards:
         self,
         auth_service: AuthService,
         auth_client: mock.AsyncMock,
-        dashboard_expressions: Dict[str, Sequence[str]],
+        user_dashboards_expressions: Dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]
@@ -96,9 +95,7 @@ class TestDashboards:
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for key, exprs in dashboard_expressions.items():
-            if not key.startswith("user/"):
-                continue
+        for key, exprs in user_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
@@ -192,6 +189,33 @@ class TestAuthService:
             "user", [Permission(uri="job://default/user/job", action="read")]
         )
         api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
+    async def test_check_user_jobs_dashboard_without_user_name_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", USER_JOBS_DASHBOARD_ID, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user", action="read")],
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_user_jobs_dashboard_with_user_name_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", USER_JOBS_DASHBOARD_ID, MultiDict({"var-user_name": "other_user"})
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/other_user", action="read")]
+        )
 
     @pytest.mark.asyncio
     async def test_check_node_exporter_query_permissions(
@@ -353,6 +377,29 @@ class TestAuthService:
         api_client.jobs.status.assert_awaited_once_with("job")
 
     @pytest.mark.asyncio
+    async def test_check_ignoring_join_for_all_jobs_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics'}
+                * ignoring(node)
+                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+        api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
     async def test_check_join_platform_api_called_once(
         self,
         service: AuthService,
@@ -414,7 +461,7 @@ class TestAuthService:
         )
 
     @pytest.mark.asyncio
-    async def test_check_join_without_on_for_user_jobs_permissions(
+    async def test_check_join_without_on_for_all_jobs_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_query_permissions(
@@ -434,7 +481,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user", action="read")]
+            "user", [Permission(uri="job://default", action="read")]
         )
 
     @pytest.mark.asyncio

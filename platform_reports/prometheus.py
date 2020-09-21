@@ -82,10 +82,14 @@ class Join(Vector):
 
     @property
     def labels(self) -> Sequence[str]:
+        # If 'on' is used than left and right vectors must contain 'on' labels.
         if self.on:
             return self.on
-        children_labels = set((*self.left.labels, *self.right.labels))
-        return [label for label in children_labels if label not in self.ignoring]
+        # If 'on' is not used than the labels list cannot be determined for now
+        # because there are functions that change labels. If there is a request for
+        # more accurate labels list query functions should be analyzed
+        # by VectorTransformer.
+        return []
 
 
 @dataclass(frozen=True)

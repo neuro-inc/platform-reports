@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 NODES_DASHBOARD_ID = "nodes"
 JOBS_DASHBOARD_ID = "jobs"
 JOB_DASHBOARD_ID = "job"
+USER_JOBS_DASHBOARD_ID = "user_jobs"
 
 JOB_MATCHER = "job"
 POD_MATCHER = "pod"
@@ -70,6 +71,23 @@ class AuthService:
                 permissions = await permissions_service.get_job_permissions([job_id])
             else:
                 # If no job id is specified, check that user has access
+                # to his own jobs in cluster.
+                permissions = [
+                    Permission(
+                        uri=f"job://{self._cluster_name}/{user_name}", action="read"
+                    ),
+                ]
+        elif dashboard_id == USER_JOBS_DASHBOARD_ID:
+            dashboard_user_name = params.get("var-user_name")
+            if dashboard_user_name:
+                permissions = [
+                    Permission(
+                        uri=f"job://{self._cluster_name}/{dashboard_user_name}",
+                        action="read",
+                    ),
+                ]
+            else:
+                # If no user name is specified, check that user has access
                 # to his own jobs in cluster.
                 permissions = [
                     Permission(

@@ -158,6 +158,7 @@ prometheus-operator:
     prometheusSpec:
       replicas: 1
       retention: 12h
+      scrapeInterval: 15s
       resources:
         requests:
           cpu: "500m"

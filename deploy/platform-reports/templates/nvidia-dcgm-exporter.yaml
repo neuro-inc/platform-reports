@@ -96,5 +96,11 @@ spec:
       release: {{ .Release.Name | quote }}
       component: nvidia-dcgm-exporter
   endpoints:
-  - port: metrics
-    path: /metrics
+    - port: metrics
+      path: /metrics
+      honorLabels: true
+      interval: 15s
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path

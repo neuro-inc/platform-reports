@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1596359647508,
+    "iteration": 1600701169454,
     "links": [],
     "panels": [
         {
@@ -169,7 +169,7 @@
             "pluginVersion": "7.1.0",
             "targets": [
                 {
-                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[5m])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -620,7 +620,7 @@
                 },
                 "overrides": []
             },
-            "fill": 3,
+            "fill": 2,
             "fillGradient": 0,
             "grid": {},
             "gridPos": {
@@ -635,7 +635,7 @@
             "legend": {
                 "alignAsTable": true,
                 "avg": false,
-                "current": false,
+                "current": true,
                 "max": true,
                 "min": false,
                 "show": true,
@@ -653,17 +653,23 @@
             "renderer": "flot",
             "seriesOverrides": [],
             "spaceLength": 10,
-            "stack": false,
+            "stack": true,
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[5m])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m]))",
                     "format": "time_series",
                     "hide": false,
                     "interval": "",
                     "intervalFactor": 1,
-                    "legendFormat": "Usage",
+                    "legendFormat": "Used",
                     "refId": "A"
+                },
+                {
+                    "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m]))",
+                    "interval": "",
+                    "legendFormat": "Free",
+                    "refId": "B"
                 }
             ],
             "thresholds": [],
@@ -687,10 +693,10 @@
             },
             "yaxes": [
                 {
-                    "format": "percent",
-                    "label": "",
+                    "format": "none",
+                    "label": "Core",
                     "logBase": 1,
-                    "max": "100",
+                    "max": null,
                     "min": "0",
                     "show": true
                 },
@@ -722,7 +728,7 @@
                 },
                 "overrides": []
             },
-            "fill": 3,
+            "fill": 2,
             "fillGradient": 0,
             "grid": {},
             "gridPos": {
@@ -840,7 +846,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -941,7 +947,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -1057,7 +1063,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -1096,7 +1102,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_network_receive_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[5m])) * 8",
+                            "expr": "sum(irate(container_network_receive_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m])) * 8",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1159,7 +1165,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -1198,7 +1204,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[5m])) * 8",
+                            "expr": "sum(irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m])) * 8",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1276,7 +1282,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -1313,7 +1319,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[5m]))",
+                            "expr": "sum(irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m]))",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1376,7 +1382,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 3,
+                    "fill": 2,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -1413,7 +1419,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_fs_writes_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[5m]))",
+                            "expr": "sum(irate(container_fs_writes_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m]))",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -1477,8 +1483,8 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "",
-                    "value": ""
+                    "text": "job-1b8078bc-b0c9-4ac9-9bc9-3822b4ae6ad7",
+                    "value": "job-1b8078bc-b0c9-4ac9-9bc9-3822b4ae6ad7"
                 },
                 "hide": 2,
                 "label": "Job id",

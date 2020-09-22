@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 install_requires = (
     "neuro_auth_client==19.11.25",
-    "neuromation==20.7.14",
+    "neuromation==20.9.3",
     "platform-logging==0.3",
     "aiohttp==3.6.2",
     "python-jose==3.1.0",

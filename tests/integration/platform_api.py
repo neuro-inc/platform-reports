@@ -11,6 +11,7 @@ def platform_api_app() -> aiohttp.web.Application:
                 "auth_url": "auth_url",
                 "token_url": "token_url",
                 "client_id": "client_id",
+                "logout_url": "logout_url",
                 "audience": "audience",
                 "clusters": [
                     {

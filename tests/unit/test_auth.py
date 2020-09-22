@@ -346,6 +346,61 @@ class TestAuthService:
         api_client.jobs.status.assert_awaited_once_with("job")
 
     @pytest.mark.asyncio
+    async def test_check_nvidia_dcgm_exporter_query_without_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user", queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_nvidia_dcgm_exporter_query_with_empty_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter',pod=''}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_nvidia_dcgm_exporter_query_with_multiple_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter',pod=~'.+'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_nvidia_dcgm_exporter_query_with_pod_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter',pod='job'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user/job", action="read")]
+        )
+        api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
     async def test_check_without_job_matcher(self, service: AuthService) -> None:
         result = await service.check_query_permissions(
             user_name="user", queries=["container_cpu_usage_seconds_total{pod='job'}"],

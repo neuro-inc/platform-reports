@@ -18,10 +18,11 @@ def dashboards_expressions() -> Dict[str, Sequence[str]]:
                 .replace('\\"', '"')
                 .replace("$__range", "15m")
                 .replace("$__interval", "15s")
+                .replace("$__rate_interval", "1m")
             )
         if not exprs:
             continue
-        key = str(path.relative_to(dashboards_path)).rstrip(".json")
+        key = str(path.relative_to(dashboards_path)).split(".")[0]
         result[key] = exprs
     return result
 

@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1600701169454,
+    "iteration": 1600774129176,
     "links": [],
     "panels": [
         {
@@ -93,7 +93,7 @@
                 },
                 "textMode": "name"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"}",
@@ -166,10 +166,10 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
-                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -238,7 +238,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "sum(container_memory_usage_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
@@ -310,10 +310,10 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
-                    "expr": "sum(container_accelerator_duty_cycle{job=\"kubelet\",pod=\"$job_id\"})",
+                    "expr": "avg(DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -322,7 +322,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Duty Cycle",
+            "title": "GPU Usage",
             "type": "gauge"
         },
         {
@@ -382,10 +382,10 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
-                    "expr": "sum(container_accelerator_memory_used_bytes{job=\"kubelet\",pod=\"$job_id\"}) / sum(container_accelerator_memory_total_bytes{job=\"kubelet\",pod=\"$job_id\"}) * 100",
+                    "expr": "avg(DCGM_FI_DEV_MEM_COPY_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -394,7 +394,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Memory Used",
+            "title": "GPU Memory Usage",
             "type": "gauge"
         },
         {
@@ -427,7 +427,7 @@
             },
             "gridPos": {
                 "h": 2,
-                "w": 4,
+                "w": 3,
                 "x": 0,
                 "y": 2
             },
@@ -446,7 +446,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -492,8 +492,8 @@
             },
             "gridPos": {
                 "h": 2,
-                "w": 4,
-                "x": 4,
+                "w": 3,
+                "x": 3,
                 "y": 2
             },
             "id": 11,
@@ -511,7 +511,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -531,7 +531,6 @@
             "fieldConfig": {
                 "defaults": {
                     "custom": {},
-                    "decimals": 0,
                     "mappings": [
                         {
                             "from": "",
@@ -551,7 +550,71 @@
                             }
                         ]
                     },
-                    "unit": "bytes"
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 2,
+                "x": 6,
+                "y": 2
+            },
+            "id": 33,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
+            "pluginVersion": "7.2.0-beta2",
+            "targets": [
+                {
+                    "expr": "sum by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "GPU",
+            "type": "stat"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {},
+                    "mappings": [
+                        {
+                            "from": "",
+                            "id": 0,
+                            "text": "N/A",
+                            "to": "",
+                            "type": 1,
+                            "value": "null"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "rgb(70, 76, 84)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "none"
                 },
                 "overrides": []
             },
@@ -574,21 +637,21 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "textMode": "name"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
-                    "expr": "sum(container_accelerator_memory_total_bytes{job=\"kubelet\",pod=\"$job_id\"})",
+                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
                     "instant": true,
                     "interval": "",
-                    "legendFormat": "",
+                    "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
                     "refId": "A"
                 }
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Memory",
+            "title": "GPU Model",
             "type": "stat"
         },
         {
@@ -646,8 +709,11 @@
             "linewidth": 1,
             "links": [],
             "nullPointMode": "null as zero",
+            "options": {
+                "alertThreshold": true
+            },
             "percentage": false,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -657,7 +723,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m]))",
+                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval]))",
                     "format": "time_series",
                     "hide": false,
                     "interval": "",
@@ -666,7 +732,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[1m]))",
+                    "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval]))",
                     "interval": "",
                     "legendFormat": "Free",
                     "refId": "B"
@@ -751,11 +817,14 @@
                 "values": true
             },
             "lines": true,
-            "linewidth": 2,
+            "linewidth": 1,
             "links": [],
             "nullPointMode": "null as zero",
+            "options": {
+                "alertThreshold": true
+            },
             "percentage": false,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.0-beta2",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -869,11 +938,14 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.0-beta2",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -883,11 +955,11 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(container_accelerator_duty_cycle{job=\"kubelet\",pod=\"$job_id\"})",
+                            "expr": "DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
-                            "legendFormat": "Duty Cycle",
+                            "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
                         }
                     ],
@@ -895,7 +967,7 @@
                     "timeFrom": null,
                     "timeRegions": [],
                     "timeShift": null,
-                    "title": "GPU Duty Cycle",
+                    "title": "GPU Usage",
                     "tooltip": {
                         "msResolution": true,
                         "shared": true,
@@ -947,7 +1019,7 @@
                         },
                         "overrides": []
                     },
-                    "fill": 2,
+                    "fill": 0,
                     "fillGradient": 0,
                     "grid": {},
                     "gridPos": {
@@ -970,26 +1042,35 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.0-beta2",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
                     "seriesOverrides": [],
                     "spaceLength": 10,
-                    "stack": true,
+                    "stack": false,
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(container_accelerator_memory_used_bytes{job=\"kubelet\",pod=\"$job_id\"})",
+                            "expr": "DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
-                            "legendFormat": "Usage",
+                            "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
+                        },
+                        {
+                            "expr": "max by(gpu) ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}))",
+                            "interval": "",
+                            "legendFormat": "Total",
+                            "refId": "B"
                         }
                     ],
                     "thresholds": [],
@@ -1013,7 +1094,7 @@
                     },
                     "yaxes": [
                         {
-                            "format": "bytes",
+                            "format": "mbytes",
                             "label": "",
                             "logBase": 1,
                             "max": null,
@@ -1088,7 +1169,7 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
                     "percentage": false,
@@ -1102,7 +1183,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_network_receive_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m])) * 8",
+                            "expr": "sum(irate(container_network_receive_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[$__rate_interval])) * 8",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1190,7 +1271,7 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
                     "percentage": false,
@@ -1204,7 +1285,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m])) * 8",
+                            "expr": "sum(irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[$__rate_interval])) * 8",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1305,7 +1386,7 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
                     "percentage": false,
@@ -1319,7 +1400,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m]))",
+                            "expr": "sum(irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "Rate",
@@ -1405,7 +1486,7 @@
                         "values": true
                     },
                     "lines": true,
-                    "linewidth": 2,
+                    "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
                     "percentage": false,
@@ -1419,7 +1500,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(container_fs_writes_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[1m]))",
+                            "expr": "sum(irate(container_fs_writes_bytes_total{job=\"kubelet\",pod=\"$job_id\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -1483,8 +1564,8 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "job-1b8078bc-b0c9-4ac9-9bc9-3822b4ae6ad7",
-                    "value": "job-1b8078bc-b0c9-4ac9-9bc9-3822b4ae6ad7"
+                    "text": "",
+                    "value": ""
                 },
                 "hide": 2,
                 "label": "Job id",

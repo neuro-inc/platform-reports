@@ -177,7 +177,7 @@ prometheus-operator:
     defaultDashboardsEnabled: false
 
     image:
-      tag: "7.1.0"
+      tag: "7.2.0-beta2" # TODO: upgrade to stable version >= 7.2.0
 
     nameOverride: grafana
     fullnameOverride: grafana

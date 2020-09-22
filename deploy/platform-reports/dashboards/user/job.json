@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1600782325672,
+    "iteration": 1600785700735,
     "links": [],
     "panels": [
         {
@@ -596,16 +596,7 @@
             "fieldConfig": {
                 "defaults": {
                     "custom": {},
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "N/A",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
+                    "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [

@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1600774129176,
+    "iteration": 1600782325672,
     "links": [],
     "panels": [
         {
@@ -81,7 +81,7 @@
             "id": 12,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
@@ -97,7 +97,8 @@
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"}",
-                    "instant": true,
+                    "format": "time_series",
+                    "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_user}}",
                     "refId": "A"
@@ -178,7 +179,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "CPU Used",
+            "title": "CPU Usage",
             "type": "gauge"
         },
         {
@@ -250,7 +251,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Memory Used",
+            "title": "Memory Usage",
             "type": "gauge"
         },
         {
@@ -434,7 +435,7 @@
             "id": 10,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
@@ -444,13 +445,13 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "textMode": "value"
             },
             "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
-                    "instant": true,
+                    "instant": false,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
@@ -499,7 +500,7 @@
             "id": 11,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
@@ -509,13 +510,13 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "textMode": "value"
             },
             "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
                     "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
-                    "instant": true,
+                    "instant": false,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
@@ -563,7 +564,7 @@
             "id": 33,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
@@ -579,7 +580,7 @@
             "targets": [
                 {
                     "expr": "sum by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
-                    "instant": true,
+                    "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
                     "refId": "A"
@@ -627,7 +628,7 @@
             "id": 19,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
@@ -643,7 +644,7 @@
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
-                    "instant": true,
+                    "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
                     "refId": "A"
@@ -891,7 +892,7 @@
             }
         },
         {
-            "collapsed": true,
+            "collapsed": false,
             "datasource": null,
             "gridPos": {
                 "h": 1,
@@ -900,224 +901,226 @@
                 "y": 13
             },
             "id": 21,
-            "panels": [
-                {
-                    "aliasColors": {},
-                    "bars": false,
-                    "dashLength": 10,
-                    "dashes": false,
-                    "datasource": "Prometheus",
-                    "editable": true,
-                    "error": false,
-                    "fieldConfig": {
-                        "defaults": {
-                            "custom": {}
-                        },
-                        "overrides": []
-                    },
-                    "fill": 2,
-                    "fillGradient": 0,
-                    "grid": {},
-                    "gridPos": {
-                        "h": 8,
-                        "w": 12,
-                        "x": 0,
-                        "y": 14
-                    },
-                    "hiddenSeries": false,
-                    "id": 3,
-                    "isNew": true,
-                    "legend": {
-                        "alignAsTable": true,
-                        "avg": false,
-                        "current": true,
-                        "max": true,
-                        "min": false,
-                        "show": true,
-                        "total": false,
-                        "values": true
-                    },
-                    "lines": true,
-                    "linewidth": 1,
-                    "links": [],
-                    "nullPointMode": "null as zero",
-                    "options": {
-                        "alertThreshold": true
-                    },
-                    "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
-                    "pointradius": 5,
-                    "points": false,
-                    "renderer": "flot",
-                    "seriesOverrides": [],
-                    "spaceLength": 10,
-                    "stack": true,
-                    "steppedLine": false,
-                    "targets": [
-                        {
-                            "expr": "DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
-                            "hide": false,
-                            "interval": "",
-                            "intervalFactor": 1,
-                            "legendFormat": "GPU {{gpu}}",
-                            "refId": "A"
-                        }
-                    ],
-                    "thresholds": [],
-                    "timeFrom": null,
-                    "timeRegions": [],
-                    "timeShift": null,
-                    "title": "GPU Usage",
-                    "tooltip": {
-                        "msResolution": true,
-                        "shared": true,
-                        "sort": 0,
-                        "value_type": "individual"
-                    },
-                    "type": "graph",
-                    "xaxis": {
-                        "buckets": null,
-                        "mode": "time",
-                        "name": null,
-                        "show": true,
-                        "values": []
-                    },
-                    "yaxes": [
-                        {
-                            "format": "percent",
-                            "label": "",
-                            "logBase": 1,
-                            "max": "100",
-                            "min": "0",
-                            "show": true
-                        },
-                        {
-                            "format": "short",
-                            "label": null,
-                            "logBase": 1,
-                            "max": null,
-                            "min": null,
-                            "show": true
-                        }
-                    ],
-                    "yaxis": {
-                        "align": false,
-                        "alignLevel": null
-                    }
-                },
-                {
-                    "aliasColors": {},
-                    "bars": false,
-                    "dashLength": 10,
-                    "dashes": false,
-                    "datasource": "Prometheus",
-                    "editable": true,
-                    "error": false,
-                    "fieldConfig": {
-                        "defaults": {
-                            "custom": {}
-                        },
-                        "overrides": []
-                    },
-                    "fill": 0,
-                    "fillGradient": 0,
-                    "grid": {},
-                    "gridPos": {
-                        "h": 8,
-                        "w": 12,
-                        "x": 12,
-                        "y": 14
-                    },
-                    "hiddenSeries": false,
-                    "id": 4,
-                    "isNew": true,
-                    "legend": {
-                        "alignAsTable": true,
-                        "avg": false,
-                        "current": true,
-                        "max": true,
-                        "min": false,
-                        "show": true,
-                        "total": false,
-                        "values": true
-                    },
-                    "lines": true,
-                    "linewidth": 1,
-                    "links": [],
-                    "nullPointMode": "null as zero",
-                    "options": {
-                        "alertThreshold": true
-                    },
-                    "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
-                    "pointradius": 5,
-                    "points": false,
-                    "renderer": "flot",
-                    "seriesOverrides": [],
-                    "spaceLength": 10,
-                    "stack": false,
-                    "steppedLine": false,
-                    "targets": [
-                        {
-                            "expr": "DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
-                            "hide": false,
-                            "interval": "",
-                            "intervalFactor": 1,
-                            "legendFormat": "GPU {{gpu}}",
-                            "refId": "A"
-                        },
-                        {
-                            "expr": "max by(gpu) ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}))",
-                            "interval": "",
-                            "legendFormat": "Total",
-                            "refId": "B"
-                        }
-                    ],
-                    "thresholds": [],
-                    "timeFrom": null,
-                    "timeRegions": [],
-                    "timeShift": null,
-                    "title": "GPU Memory Usage",
-                    "tooltip": {
-                        "msResolution": true,
-                        "shared": true,
-                        "sort": 0,
-                        "value_type": "individual"
-                    },
-                    "type": "graph",
-                    "xaxis": {
-                        "buckets": null,
-                        "mode": "time",
-                        "name": null,
-                        "show": true,
-                        "values": []
-                    },
-                    "yaxes": [
-                        {
-                            "format": "mbytes",
-                            "label": "",
-                            "logBase": 1,
-                            "max": null,
-                            "min": "0",
-                            "show": true
-                        },
-                        {
-                            "format": "short",
-                            "label": null,
-                            "logBase": 1,
-                            "max": null,
-                            "min": null,
-                            "show": true
-                        }
-                    ],
-                    "yaxis": {
-                        "align": false,
-                        "alignLevel": null
-                    }
-                }
-            ],
+            "panels": [],
             "title": "GPU",
             "type": "row"
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "editable": true,
+            "error": false,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {}
+                },
+                "overrides": []
+            },
+            "fill": 2,
+            "fillGradient": 0,
+            "grid": {},
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 14
+            },
+            "hiddenSeries": false,
+            "id": 3,
+            "isNew": true,
+            "legend": {
+                "alignAsTable": true,
+                "avg": false,
+                "current": true,
+                "max": true,
+                "min": false,
+                "show": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 1,
+            "links": [],
+            "nullPointMode": "null as zero",
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.2.0-beta2",
+            "pointradius": 5,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "expr": "DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
+                    "hide": false,
+                    "interval": "",
+                    "intervalFactor": 1,
+                    "legendFormat": "GPU {{gpu}}",
+                    "refId": "A"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "GPU Usage",
+            "tooltip": {
+                "msResolution": true,
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "format": "percent",
+                    "label": "",
+                    "logBase": 1,
+                    "max": "100",
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
+        },
+        {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "editable": true,
+            "error": false,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {}
+                },
+                "overrides": []
+            },
+            "fill": 0,
+            "fillGradient": 0,
+            "grid": {},
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 14
+            },
+            "hiddenSeries": false,
+            "id": 4,
+            "isNew": true,
+            "legend": {
+                "alignAsTable": true,
+                "avg": false,
+                "current": true,
+                "max": true,
+                "min": false,
+                "show": true,
+                "total": false,
+                "values": true
+            },
+            "lines": true,
+            "linewidth": 1,
+            "links": [],
+            "nullPointMode": "null as zero",
+            "options": {
+                "alertThreshold": true
+            },
+            "percentage": false,
+            "pluginVersion": "7.2.0-beta2",
+            "pointradius": 5,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+                {
+                    "expr": "DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
+                    "hide": false,
+                    "interval": "",
+                    "intervalFactor": 1,
+                    "legendFormat": "GPU {{gpu}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "max by(gpu) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
+                    "format": "time_series",
+                    "hide": false,
+                    "instant": false,
+                    "interval": "",
+                    "legendFormat": "Total",
+                    "refId": "B"
+                }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeRegions": [],
+            "timeShift": null,
+            "title": "GPU Memory Usage",
+            "tooltip": {
+                "msResolution": true,
+                "shared": true,
+                "sort": 0,
+                "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+                "buckets": null,
+                "mode": "time",
+                "name": null,
+                "show": true,
+                "values": []
+            },
+            "yaxes": [
+                {
+                    "format": "mbytes",
+                    "label": "",
+                    "logBase": 1,
+                    "max": null,
+                    "min": "0",
+                    "show": true
+                },
+                {
+                    "format": "short",
+                    "label": null,
+                    "logBase": 1,
+                    "max": null,
+                    "min": null,
+                    "show": true
+                }
+            ],
+            "yaxis": {
+                "align": false,
+                "alignLevel": null
+            }
         },
         {
             "collapsed": true,
@@ -1126,7 +1129,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 14
+                "y": 22
             },
             "id": 28,
             "panels": [
@@ -1151,7 +1154,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 15
+                        "y": 23
                     },
                     "hiddenSeries": false,
                     "id": 5,
@@ -1172,8 +1175,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.0-beta2",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1253,7 +1259,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 15
+                        "y": 23
                     },
                     "hiddenSeries": false,
                     "id": 6,
@@ -1274,8 +1280,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.0-beta2",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1345,7 +1354,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 15
+                "y": 23
             },
             "id": 30,
             "panels": [

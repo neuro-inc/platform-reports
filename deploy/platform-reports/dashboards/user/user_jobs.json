@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 3,
-    "iteration": 1600773585921,
+    "iteration": 1600782204716,
     "links": [],
     "panels": [
         {
@@ -582,7 +582,16 @@
             "fieldConfig": {
                 "defaults": {
                     "custom": {},
-                    "mappings": [],
+                    "mappings": [
+                        {
+                            "from": "",
+                            "id": 0,
+                            "text": "0",
+                            "to": "",
+                            "type": 1,
+                            "value": "null"
+                        }
+                    ],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
@@ -604,17 +613,17 @@
             "id": 38,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
                 "orientation": "auto",
                 "reduceOptions": {
                     "calcs": [
-                        "mean"
+                        "lastNotNull"
                     ],
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "textMode": "value"
             },
             "pluginVersion": "7.2.0-beta2",
             "targets": [

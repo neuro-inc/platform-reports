@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 3,
-    "iteration": 1600782204716,
+    "iteration": 1600848842694,
     "links": [],
     "panels": [
         {
@@ -94,6 +94,19 @@
                             {
                                 "id": "decimals",
                                 "value": 1
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 0,
+                                        "text": "0",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -134,6 +147,19 @@
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 0,
+                                        "text": "0",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -1876,8 +1902,8 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "",
-                    "value": ""
+                    "text": "neuro-cli-e2e",
+                    "value": "neuro-cli-e2e"
                 },
                 "hide": 2,
                 "label": "User Name",

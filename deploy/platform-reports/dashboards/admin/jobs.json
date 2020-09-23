@@ -572,7 +572,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Job Amounts",
+            "title": "Number of Jobs",
             "tooltip": {
                 "shared": true,
                 "sort": 2,
@@ -685,7 +685,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Total Job Amounts",
+            "title": "Total Number of Jobs",
             "transformations": [
                 {
                     "id": "organize",
@@ -1102,7 +1102,7 @@
                     "timeFrom": null,
                     "timeRegions": [],
                     "timeShift": null,
-                    "title": "GPU Consumption By User",
+                    "title": "GPU Consumption by User",
                     "tooltip": {
                         "msResolution": true,
                         "shared": true,

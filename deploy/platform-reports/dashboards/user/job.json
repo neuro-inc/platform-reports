@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1600785700735,
+    "iteration": 1600863565697,
     "links": [],
     "panels": [
         {
@@ -96,7 +96,7 @@
             "pluginVersion": "7.2.0-beta2",
             "targets": [
                 {
-                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"}",
+                    "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -536,7 +536,7 @@
                         {
                             "from": "",
                             "id": 0,
-                            "text": "N/A",
+                            "text": "0",
                             "to": "",
                             "type": 1,
                             "value": "null"

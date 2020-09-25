@@ -1,3 +1,5 @@
+logLevel: INFO
+
 nodePoolLabels:
   gpu: platform.neuromation.io/accelerator
 
@@ -284,10 +286,13 @@ thanos:
           requests:
             storage: 10Gi
 
+  # Compact service works with data in object storage
   compact:
     retentionResolutionRaw: 0d
     retentionResolution5m: 0d
     retentionResolution1h: 0d
+    extraArgs:
+      - --wait-interval=24h
     dataVolume:
       backend:
         persistentVolumeClaim:

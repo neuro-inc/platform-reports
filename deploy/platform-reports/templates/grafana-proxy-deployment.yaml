@@ -25,8 +25,10 @@ spec:
       containers:
         - name: proxy
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          command: ["platform-reports", "grafana-proxy"]
+          command: ["grafana-proxy"]
           env:
+            - name: NP_LOG_LEVEL
+              value: {{ .Values.logLevel }}
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName }}
             - name: NP_GRAFANA_HOST

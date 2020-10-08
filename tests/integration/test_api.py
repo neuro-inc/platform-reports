@@ -6,6 +6,22 @@ from aiohttp.web import HTTPForbidden, HTTPOk
 from yarl import URL
 
 
+class TestMetrics:
+    @pytest.mark.asyncio
+    async def test_ping(
+        self, client: aiohttp.ClientSession, metrics_server: URL
+    ) -> None:
+        async with client.get(metrics_server / "ping") as response:
+            assert response.status == HTTPOk.status_code
+
+    @pytest.mark.asyncio
+    async def test_metrics(
+        self, client: aiohttp.ClientSession, metrics_server: URL
+    ) -> None:
+        async with client.get(metrics_server / "metrics") as response:
+            assert response.status == HTTPOk.status_code
+
+
 class TestPrometheusProxy:
     @pytest.mark.asyncio
     async def test_ping(

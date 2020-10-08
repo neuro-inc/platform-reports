@@ -1,9 +1,11 @@
+import asyncio
+import copy
 import logging
-import sys
-from contextlib import AsyncExitStack, asynccontextmanager
+import os
+from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from pathlib import Path
 from tempfile import mktemp
-from typing import AsyncIterator, Awaitable, Callable
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict
 
 import aiohttp
 import aiohttp.web
@@ -21,16 +23,18 @@ from jose import jwt
 from multidict import CIMultiDict, CIMultiDictProxy
 from neuro_auth_client import AuthClient, Permission
 from neuromation.api import Client as ApiClient, Factory as ClientFactory
-from platform_logging import init_logging
+from platform_logging import DEFAULT_CONFIG, init_logging
 
 from .auth import AuthService
 from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
+    MetricsConfig,
     PlatformApiConfig,
     PrometheusProxyConfig,
     ServerConfig,
 )
+from .metrics import PriceCollector
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +49,36 @@ class ProbesHandler:
 
     async def handle_ping(self, request: Request) -> Response:
         return Response(text="Pong")
+
+
+class MetricsHandler:
+    def __init__(self, app: aiohttp.web.Application) -> None:
+        self._app = app
+
+    def register(self) -> None:
+        self._app.router.add_get("/metrics", self.handle)
+
+    @property
+    def _node_price_collector(self) -> PriceCollector:
+        return self._app["node_price_collector"]
+
+    @property
+    def _config(self) -> MetricsConfig:
+        return self._app["config"]
+
+    async def handle(self, request: Request) -> Response:
+        node_price_per_hour = self._node_price_collector.current_price_per_hour
+        # https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
+        return Response(
+            text=f"""\
+# HELP node_price_per_hour The price of the node per hour.
+# TYPE node_price_per_hour gauge
+node_price_per_hour{{\
+node="{self._config.host_name}",\
+instance_type="{self._config.instance_type}",\
+currency="{node_price_per_hour.currency}"\
+}} {node_price_per_hour.value}"""
+        )
 
 
 class PrometheusProxyHandler:
@@ -249,6 +283,17 @@ async def handle_exceptions(
 
 
 @asynccontextmanager
+async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
+    task = asyncio.create_task(coro)
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+@asynccontextmanager
 async def create_api_client(config: PlatformApiConfig) -> AsyncIterator[ApiClient]:
     tmp_config = Path(mktemp())
     platform_api_factory = ClientFactory(tmp_config)
@@ -260,6 +305,29 @@ async def create_api_client(config: PlatformApiConfig) -> AsyncIterator[ApiClien
     finally:
         if client:
             await client.close()
+
+
+def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
+    app = aiohttp.web.Application()
+    ProbesHandler(app).register()
+    MetricsHandler(app).register()
+
+    app["config"] = config
+
+    async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
+        async with AsyncExitStack() as exit_stack:
+            node_price_collector = PriceCollector()
+            app["node_price_collector"] = node_price_collector
+
+            await exit_stack.enter_async_context(
+                run_task(await node_price_collector.start())
+            )
+
+            yield
+
+    app.cleanup_ctx.append(_init_app)
+
+    return app
 
 
 def create_prometheus_proxy_app(
@@ -304,7 +372,7 @@ def create_prometheus_proxy_app(
     return app
 
 
-def create_grafana_proxy_app(config: GrafanaProxyConfig,) -> aiohttp.web.Application:
+def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application(middlewares=[handle_exceptions])
     ProbesHandler(app).register()
     GrafanaProxyHandler(app).register()
@@ -341,29 +409,41 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig,) -> aiohttp.web.Applica
     return app
 
 
-def main() -> None:  # pragma: no coverage
-    init_logging()
+def create_logging_config() -> Dict[str, Any]:
+    config: Dict[str, Any] = copy.deepcopy(DEFAULT_CONFIG)
+    config["root"]["level"] = os.environ.get("NP_LOG_LEVEL", "INFO")
+    return config
 
-    if len(sys.argv) != 2:
-        logger.error("Incorrect number of arguments")
-        sys.exit(1)
 
-    if sys.argv[1] == "prometheus-proxy":
-        prometheus_config = EnvironConfigFactory().create_prometheus_proxy()
-        logging.info("Loaded config: %r", prometheus_config)
-        aiohttp.web.run_app(
-            create_prometheus_proxy_app(prometheus_config),
-            host=prometheus_config.server.host,
-            port=prometheus_config.server.port,
-        )
-    elif sys.argv[1] == "grafana-proxy":
-        grafana_config = EnvironConfigFactory().create_grafana_proxy()
-        logging.info("Loaded config: %r", grafana_config)
-        aiohttp.web.run_app(
-            create_grafana_proxy_app(grafana_config),
-            host=grafana_config.server.host,
-            port=grafana_config.server.port,
-        )
-    else:
-        logger.error("Incorrect argument value")
-        sys.exit(1)
+def run_metrics_server() -> None:  # pragma: no coverage
+    init_logging(create_logging_config())
+
+    config = EnvironConfigFactory().create_metrics()
+    logging.info("Loaded config: %r", config)
+    aiohttp.web.run_app(
+        create_metrics_app(config), host=config.server.host, port=config.server.port,
+    )
+
+
+def run_prometheus_proxy() -> None:  # pragma: no coverage
+    init_logging(create_logging_config())
+
+    config = EnvironConfigFactory().create_prometheus_proxy()
+    logging.info("Loaded config: %r", config)
+    aiohttp.web.run_app(
+        create_prometheus_proxy_app(config),
+        host=config.server.host,
+        port=config.server.port,
+    )
+
+
+def run_grafana_proxy() -> None:  # pragma: no coverage
+    init_logging(create_logging_config())
+
+    config = EnvironConfigFactory().create_grafana_proxy()
+    logging.info("Loaded config: %r", config)
+    aiohttp.web.run_app(
+        create_grafana_proxy_app(config),
+        host=config.server.host,
+        port=config.server.port,
+    )

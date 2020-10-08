@@ -17,6 +17,12 @@ setup(
     packages=find_packages(),
     python_requires=">=3.7",
     install_requires=install_requires,
-    entry_points={"console_scripts": ["platform-reports=platform_reports.api:main"]},
+    entry_points={
+        "console_scripts": [
+            "metrics-server=platform_reports.api:run_metrics_server",
+            "prometheus-proxy=platform_reports.api:run_prometheus_proxy",
+            "grafana-proxy=platform_reports.api:run_grafana_proxy",
+        ]
+    },
     zip_safe=False,
 )

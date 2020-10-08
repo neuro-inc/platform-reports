@@ -7,9 +7,14 @@ import pytest
 from neuro_auth_client import Cluster, Permission
 from yarl import URL
 
-from platform_reports.api import create_grafana_proxy_app, create_prometheus_proxy_app
+from platform_reports.api import (
+    create_grafana_proxy_app,
+    create_metrics_app,
+    create_prometheus_proxy_app,
+)
 from platform_reports.config import (
     GrafanaProxyConfig,
+    MetricsConfig,
     PlatformApiConfig,
     PlatformAuthConfig,
     PrometheusProxyConfig,
@@ -121,6 +126,19 @@ def platform_api_config(
     platform_api_server: URL, service_token: str
 ) -> PlatformApiConfig:
     return PlatformApiConfig(url=platform_api_server / "api/v1", token=service_token)
+
+
+@pytest.fixture
+def metrics_config() -> MetricsConfig:
+    return MetricsConfig(server=ServerConfig(port=9500), host_name="host")
+
+
+@pytest.fixture
+async def metrics_server(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
+    async with create_local_app_server(
+        app=create_metrics_app(metrics_config), port=metrics_config.server.port,
+    ) as address:
+        yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
 @pytest.fixture

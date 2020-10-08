@@ -1528,7 +1528,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "sum(irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                    "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
                     "format": "time_series",
                     "interval": "",
                     "intervalFactor": 2,
@@ -1537,7 +1537,7 @@
                     "step": 240
                 },
                 {
-                    "expr": "sum(irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                    "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
                     "format": "time_series",
                     "interval": "",
                     "intervalFactor": 2,
@@ -1642,7 +1642,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "100 - 100 * sum(node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"}) / sum(node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                    "expr": "100 - 100 * sum by(mountpoint) (node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"}) / sum by(mountpoint) (node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                     "format": "time_series",
                     "interval": "",
                     "intervalFactor": 2,
@@ -2156,7 +2156,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -2165,7 +2165,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -2271,7 +2271,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"} - node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"} - node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -2463,7 +2463,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\",device=~\"[a-z]*[a-z]\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Reads completed",
@@ -2471,7 +2471,7 @@
                             "step": 480
                         },
                         {
-                            "expr": "sum(irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\",device=~\"[a-z]*[a-z]\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "interval": "",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Writes completed",
@@ -2602,7 +2602,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\",device=~\"[a-z]*[a-z]\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -2612,7 +2612,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\",device=~\"[a-z]*[a-z]\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -2720,7 +2720,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\",device=~\"[a-z]*[a-z]\"} [5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"} [5m]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -6698,7 +6698,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_processes_state{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(state) (node_processes_state{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7149,7 +7149,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_schedstat_running_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_running_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7158,7 +7158,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(node_schedstat_waiting_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_waiting_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7605,7 +7605,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_interrupts_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(type,info) (irate(node_interrupts_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7699,7 +7699,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_schedstat_timeslices_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_timeslices_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8112,7 +8112,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_hwmon_temp_celsius{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(chip,sensor) (node_hwmon_temp_celsius{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8121,7 +8121,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(node_hwmon_temp_crit_celsius{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(chip,sensor) (node_hwmon_temp_crit_celsius{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8220,7 +8220,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_cooling_device_cur_state{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(name,type) (node_cooling_device_cur_state{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -8230,7 +8230,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(node_cooling_device_max_state{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(name,type) (node_cooling_device_max_state{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8323,7 +8323,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_power_supply_online{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(power_supply) (node_power_supply_online{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -8438,7 +8438,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_systemd_socket_accepted_connections_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(name) (irate(node_systemd_socket_accepted_connections_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8798,14 +8798,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Reads completed",
                             "refId": "A",
                             "step": 8
                         },
                         {
-                            "expr": "sum(irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Writes completed",
                             "refId": "B",
@@ -8991,7 +8991,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Read bytes",
@@ -8999,7 +8999,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum(irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Written bytes",
@@ -9188,7 +9188,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_read_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "hide": false,
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Read time",
@@ -9196,7 +9196,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum(irate(node_disk_write_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_write_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "hide": false,
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Write time",
@@ -9381,7 +9381,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_io_time_weighted_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_weighted_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - IO time weighted",
                             "refId": "A",
@@ -9569,14 +9569,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_reads_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Read merged",
                             "refId": "A",
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_disk_writes_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Write merged",
                             "refId": "B",
@@ -9760,14 +9760,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - IO time",
                             "refId": "A",
                             "step": 8
                         },
                         {
-                            "expr": "sum(irate(node_disk_discard_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discard_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - discard time",
@@ -9952,7 +9952,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_disk_io_now{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_disk_io_now{instance=\"$instance\",job=\"node-exporter\"})",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - IO now",
@@ -10135,7 +10135,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_disk_discards_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discards_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Discards completed",
@@ -10143,7 +10143,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum(irate(node_disk_discards_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discards_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "interval": "",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Discards merged",
@@ -10261,7 +10261,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -10364,7 +10364,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_filesystem_files_free{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_files_free{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -10574,7 +10574,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_filesystem_files{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_files{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -10681,7 +10681,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_filesystem_readonly{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_readonly{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{mountpoint}} - ReadOnly",
@@ -10689,7 +10689,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(node_filesystem_device_error{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
+                            "expr": "sum by(mountpoint) (node_filesystem_device_error{instance=\"$instance\",job=\"node-exporter\",device!=\"rootfs\"})",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -10816,7 +10816,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -10825,7 +10825,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -10935,7 +10935,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive errors",
@@ -10943,7 +10943,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Rransmit errors",
@@ -11052,7 +11052,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive drop",
@@ -11060,7 +11060,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit drop",
@@ -11169,7 +11169,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive compressed",
@@ -11177,7 +11177,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit compressed",
@@ -11286,7 +11286,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_multicast_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_multicast_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive multicast",
@@ -11395,7 +11395,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive fifo",
@@ -11403,7 +11403,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_network_transmit_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit fifo",
@@ -11512,7 +11512,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_receive_frame_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_frame_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -11617,7 +11617,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_transmit_carrier_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_carrier_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Statistic transmit_carrier",
@@ -11726,7 +11726,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_network_transmit_colls_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_colls_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit colls",
@@ -11938,7 +11938,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_arp_entries{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_arp_entries{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{ device }} - ARP entries",
@@ -12037,7 +12037,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_network_mtu_bytes{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_network_mtu_bytes{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{ device }} - Bytes",
@@ -12137,7 +12137,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_network_speed_bytes{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_network_speed_bytes{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{ device }} - Speed",
@@ -12237,7 +12237,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_network_transmit_queue_length{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_network_transmit_queue_length{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{ device }} -   Interface transmit queue length",
@@ -12347,7 +12347,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_softnet_processed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_processed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -12356,7 +12356,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_softnet_dropped_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_dropped_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -12461,7 +12461,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_softnet_times_squeezed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_times_squeezed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -12566,7 +12566,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(node_network_up{operstate=\"up\",instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(interface) (node_network_up{operstate=\"up\",instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{interface}} - Operational state UP",
@@ -12574,7 +12574,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(node_network_carrier{instance=\"$instance\",job=\"node-exporter\"})",
+                            "expr": "sum by(device) (node_network_carrier{instance=\"$instance\",job=\"node-exporter\"})",
                             "format": "time_series",
                             "instant": false,
                             "legendFormat": "{{device}} - Physical link state",

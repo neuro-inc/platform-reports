@@ -38,7 +38,7 @@ spec:
                 | jq '.metadata.labels' \
                 | jq '. + {"node.kubernetes.io/instance-type": ."beta.kubernetes.io/instance-type"}' \
                 | jq -r '."node.kubernetes.io/instance-type"' \
-                > instance_type
+                > /etc/metrics_server/instance_type
           env:
             - name: NODE_NAME
               valueFrom:

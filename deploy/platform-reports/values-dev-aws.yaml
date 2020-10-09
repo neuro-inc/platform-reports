@@ -1,11 +1,20 @@
 nodePoolLabels:
   gpu: cloud.google.com/gke-accelerator
 
+cloudProvider:
+  type: aws
+  region: us-east-1
+
 platform:
   authUrl: https://dev.neu.ro
   apiUrl: https://dev.neu.ro/api/v1
   accessTokenCookieName: dat
   clusterName: default
+
+metricsServer:
+  podMetadata:
+    annotations:
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-d04bce531282b98cb801932de6c118c7
 
 prometheusProxy:
   replicas: 2

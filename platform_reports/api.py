@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import mktemp
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict
 
+import aiobotocore
 import aiohttp
 import aiohttp.web
 from aiohttp.web import (
@@ -34,7 +35,7 @@ from .config import (
     PrometheusProxyConfig,
     ServerConfig,
 )
-from .metrics import PriceCollector
+from .metrics import AWSNodePriceCollector, PriceCollector
 
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,6 @@ class MetricsHandler:
 
     async def handle(self, request: Request) -> Response:
         node_price_per_hour = self._node_price_collector.current_price_per_hour
-        # https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
         return Response(
             text=f"""\
 # HELP node_price_per_hour The price of the node per hour.
@@ -316,7 +316,24 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
-            node_price_collector = PriceCollector()
+            if config.cloud_provider == "aws":
+                session = aiobotocore.get_session()
+                ssm_client = await exit_stack.enter_async_context(
+                    session.create_client("ssm", config.region)
+                )
+                pricing_client = await exit_stack.enter_async_context(
+                    session.create_client("pricing", config.region)
+                )
+                node_price_collector = await exit_stack.enter_async_context(
+                    AWSNodePriceCollector(
+                        ssm_client=ssm_client,
+                        pricing_client=pricing_client,
+                        region=config.region,
+                        instance_type=config.instance_type,
+                    )
+                )
+            else:
+                node_price_collector = PriceCollector()
             app["node_price_collector"] = node_price_collector
 
             await exit_stack.enter_async_context(

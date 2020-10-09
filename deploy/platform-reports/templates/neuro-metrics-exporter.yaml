@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neuro-metrics-exporter
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: {{ include "platform-reports.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: neuro-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: {{ include "platform-reports.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: neuro-metrics-exporter
+    spec:
+      tolerations:
+        # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.
+        # This, along with the annotation above marks this pod as a critical add-on.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+      {{- if .Values.cloudProvider }}
+      initContainers:
+        - image: "lachlanevenson/k8s-kubectl:v1.16.15"
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              apk add --update --no-cache jq
+              kubectl get node $NODE_NAME -o json \
+                | jq '.metadata.labels' \
+                | jq '. + {"node.kubernetes.io/instance-type": ."beta.kubernetes.io/instance-type"}' \
+                | jq -r '."node.kubernetes.io/instance-type"' \
+                > instance_type
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: config
+              mountPath: /etc/metrics_server
+      {{- end }}
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          name: neuro-metrics-exporter
+          command: ["metrics-server"]
+          env:
+            - name: NP_LOG_LEVEL
+              value: {{ .Values.logLevel }}
+            - name: NP_METRICS_API_PORT
+              value: {{ .Values.metricsServer.port | quote }}
+            - name: NP_HOST_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            {{- if .Values.cloudProvider }}
+            - name: NP_CLOUD_PROVIDER
+              value: {{ .Values.metricsServer.port | quote }}
+            - name: NP_REGION
+              value: {{ .Values.metricsServer.port | quote }}
+            - name: NP_INSTANCE_TYPE_PATH
+              value: /etc/metrics_server/instance_type
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metricsServer.port }}
+          {{- if .Values.metricsServer.resources }}
+          resources: {{ toYaml .Values.metricsServer.resources | nindent 12 }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.metricsServer.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.metricsServer.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          volumeMounts:
+            - name: config
+              readOnly: true
+              mountPath: /etc/metrics_server
+      volumes:
+        - name: config
+          emptyDir: {}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: neuro-metrics-exporter
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+    component: neuro-metrics-exporter
+spec:
+  selector:
+    app: {{ include "platform-reports.name" . }}
+    release: {{ .Release.Name | quote }}
+    component: neuro-metrics-exporter
+  ports:
+    - name: metrics
+      port: {{ .Values.metricsServer.port }}
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: neuro-metrics-exporter
+  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "platform-reports.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: neuro-metrics-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      honorLabels: true
+      interval: 15s
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path

@@ -6,7 +6,10 @@ AWS_REGION ?= us-east-1
 
 TAG ?= latest
 
-IMAGE_BASE_REPO ?= $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+IMAGE_BASE_REPO_gke   ?= $(GKE_DOCKER_REGISTRY)/$(GKE_PROJECT_ID)
+IMAGE_BASE_REPO_aws   ?= $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+IMAGE_BASE_REPO_azure ?= $(AZURE_DEV_ACR_NAME).azurecr.io
+IMAGE_BASE_REPO  ?= ${IMAGE_BASE_REPO_${CLOUD_PROVIDER}}
 IMAGE_REPO = $(IMAGE_BASE_REPO)/platform-reports
 IMAGE = $(IMAGE_REPO):$(TAG)
 
@@ -64,6 +67,9 @@ artifactory_docker_login:
 eks_login:
 	aws eks --region $(AWS_REGION) update-kubeconfig --name $(AWS_CLUSTER_NAME)
 
+aks_login:
+	az aks get-credentials --resource-group $(AZURE_DEV_RG_NAME) --name $(CLUSTER_NAME)
+
 helm_install:
 	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)
 	helm init --client-only
@@ -119,4 +125,4 @@ helm_deploy: _helm_expand_vars
 		--timeout 600 \
 		--namespace platform \
 		-f tmpdeploy/platform-reports/values.yaml \
-		-f tmpdeploy/platform-reports/values-$(HELM_ENV)-aws.yaml
+		-f tmpdeploy/platform-reports/values-$(HELM_ENV)-$(CLOUD_PROVIDER).yaml

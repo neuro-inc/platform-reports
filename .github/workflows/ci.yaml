@@ -45,7 +45,7 @@ jobs:
   deploy_dev:
     name: Deploy on dev
     runs-on: ubuntu-latest
-    needs: test
+#    needs: test
     if: github.ref == 'refs/heads/master'
     env:
       PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
@@ -80,7 +80,7 @@ jobs:
   deploy_dev_azure:
     name: Deploy on dev Azure
     runs-on: ubuntu-latest
-    needs: test
+#    needs: test
     if: github.ref == 'refs/heads/deploy-to-azure'
     env:
       PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
@@ -118,7 +118,7 @@ jobs:
   release:
     name: Release package
     runs-on: ubuntu-latest
-    needs: test
+#    needs: test
     if: github.event_name == 'release'
     env:
       PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}

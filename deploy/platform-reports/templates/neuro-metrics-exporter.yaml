@@ -63,9 +63,9 @@ spec:
                   fieldPath: spec.nodeName
             {{- if .Values.cloudProvider }}
             - name: NP_CLOUD_PROVIDER
-              value: {{ .Values.metricsServer.port | quote }}
+              value: {{ .Values.cloudProvider.type | quote }}
             - name: NP_REGION
-              value: {{ .Values.metricsServer.port | quote }}
+              value: {{ .Values.cloudProvider.region | quote }}
             - name: NP_INSTANCE_TYPE_PATH
               value: /etc/metrics_server/instance_type
             {{- end }}

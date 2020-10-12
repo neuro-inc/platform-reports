@@ -318,15 +318,11 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
         async with AsyncExitStack() as exit_stack:
             if config.cloud_provider == "aws":
                 session = aiobotocore.get_session()
-                ssm_client = await exit_stack.enter_async_context(
-                    session.create_client("ssm", config.region)
-                )
                 pricing_client = await exit_stack.enter_async_context(
                     session.create_client("pricing", config.region)
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AWSNodePriceCollector(
-                        ssm_client=ssm_client,
                         pricing_client=pricing_client,
                         region=config.region,
                         instance_type=config.instance_type,

@@ -17,6 +17,7 @@ spec:
         app: {{ include "platform-reports.name" . }}
         release: {{ .Release.Name | quote }}
         component: neuro-metrics-exporter
+      annotations: {{ toYaml .Values.metricsServer.podMetadata.annotations | nindent 8 }}
     spec:
       tolerations:
         # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.

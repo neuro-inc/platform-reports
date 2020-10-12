@@ -2,11 +2,11 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass
+from importlib.resources import path
 from types import TracebackType
 from typing import Awaitable, Dict, Optional, Type
 
 from aiobotocore.client import AioBaseClient
-from pkg_resources import resource_filename
 
 
 logger = logging.getLogger(__name__)
@@ -98,9 +98,10 @@ class AWSNodePriceCollector(PriceCollector):
     def _get_region_long_names(self) -> Dict[str, str]:
         result: Dict[str, str] = {}
         # https://github.com/boto/botocore/blob/master/botocore/data/endpoints.json
-        endpoints_file = resource_filename("botocore", "data/endpoints.json")
-        with open(endpoints_file, "r") as f:
-            endpoints = json.load(f)
+        with path("botocore", "data") as data_path:
+            endpoints_path = data_path / "endpoints.json"
+            with endpoints_path.open("r", encoding="utf-8") as f:
+                endpoints = json.load(f)
         for partition in endpoints["partitions"]:
             regions = partition["regions"]
             for region in regions:

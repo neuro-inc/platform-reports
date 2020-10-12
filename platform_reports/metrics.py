@@ -6,6 +6,7 @@ from types import TracebackType
 from typing import Awaitable, Dict, Optional, Type
 
 from aiobotocore.client import AioBaseClient
+from pkg_resources import resource_filename
 
 
 logger = logging.getLogger(__name__)
@@ -71,14 +72,12 @@ class PriceCollector:
 class AWSNodePriceCollector(PriceCollector):
     def __init__(
         self,
-        ssm_client: AioBaseClient,
         pricing_client: AioBaseClient,
         region: str,
         instance_type: str,
         interval_s: float = 3600,
     ) -> None:
         super().__init__(interval_s)
-        self._ssm_client = ssm_client
         self._pricing_client = pricing_client
         self._region = region
         self._region_long_name = ""
@@ -86,7 +85,8 @@ class AWSNodePriceCollector(PriceCollector):
 
     async def __aenter__(self) -> PriceCollector:
         await super().__aenter__()
-        self._region_long_name = await self._get_region_long_name()
+        region_long_names = self._get_region_long_names()
+        self._region_long_name = region_long_names[self._region]
         logger.info(
             "Initialized AWS price collector for %s instance in %s region",
             self._instance_type,
@@ -94,11 +94,20 @@ class AWSNodePriceCollector(PriceCollector):
         )
         return self
 
-    async def _get_region_long_name(self) -> str:
-        response = await self._ssm_client.get_parameter(
-            Name=f"/aws/service/global-infrastructure/regions/{self._region}/longName"
-        )
-        return response["Parameter"]["Value"]
+    # The pricing API requires human readable names for some reason
+    def _get_region_long_names(self) -> Dict[str, str]:
+        result: Dict[str, str] = {}
+        # https://github.com/boto/botocore/blob/master/botocore/data/endpoints.json
+        endpoints_file = resource_filename("botocore", "data/endpoints.json")
+        with open(endpoints_file, "r") as f:
+            endpoints = json.load(f)
+        for partition in endpoints["partitions"]:
+            regions = partition["regions"]
+            for region in regions:
+                result[region] = regions[region]["description"]
+        # The Osaka region is special and is not on the list of endpoints in botocore
+        result["ap-northeast-3"] = "Asia Pacific (Osaka-Local)"
+        return result
 
     async def get_latest_price_per_hour(self) -> Price:
         response = await self._pricing_client.get_products(

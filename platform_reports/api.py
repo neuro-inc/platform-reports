@@ -75,7 +75,6 @@ class MetricsHandler:
 # TYPE node_price_per_hour gauge
 node_price_per_hour{{\
 node="{self._config.host_name}",\
-instance_type="{self._config.instance_type}",\
 currency="{node_price_per_hour.currency}"\
 }} {node_price_per_hour.value}"""
         )

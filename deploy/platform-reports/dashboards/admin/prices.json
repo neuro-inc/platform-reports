@@ -89,7 +89,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by(label_beta_kubernetes_io_instance_type,currency,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max by(node,label_beta_kubernetes_io_instance_type,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left(currency) max by(node,currency) (sum_over_time(node_price_per_hour{job=\"neuro-metrics-exporter\",currency!=\"\"}[$__range]))) * ($__interval_ms / 3600000)",
+                    "expr": "sum by(label_beta_kubernetes_io_instance_type,currency,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max by(node,label_beta_kubernetes_io_instance_type,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left(currency) max by(node,currency) (sum_over_time(node_price_per_hour{job=\"neuro-metrics-exporter\",currency!=\"\"}[$__range]))) * (15000 / 3600000)",
                     "format": "table",
                     "hide": false,
                     "instant": true,

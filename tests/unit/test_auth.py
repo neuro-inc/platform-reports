@@ -11,6 +11,7 @@ from platform_reports.auth import (
     JOB_DASHBOARD_ID,
     JOBS_DASHBOARD_ID,
     NODES_DASHBOARD_ID,
+    PRICES_DASHBOARD_ID,
     USER_JOBS_DASHBOARD_ID,
     AuthService,
 )
@@ -218,6 +219,18 @@ class TestAuthService:
         )
 
     @pytest.mark.asyncio
+    async def test_check_prices_dashboard_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", PRICES_DASHBOARD_ID, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")],
+        )
+
+    @pytest.mark.asyncio
     async def test_check_node_exporter_query_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock,
     ) -> None:
@@ -393,6 +406,62 @@ class TestAuthService:
         await service.check_query_permissions(
             user_name="user",
             queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter',pod='job'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default/user/job", action="read")]
+        )
+        api_client.jobs.status.assert_awaited_once_with("job")
+
+    @pytest.mark.asyncio
+    async def test_check_neuro_metrics_exporter_query_without_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["node_price_per_hour{job='neuro-metrics-exporter'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_neuro_metrics_exporter_query_with_empty_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["node_price_per_hour{job='neuro-metrics-exporter',pod=''}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_neuro_metrics_exporter_query_with_multiple_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["node_price_per_hour{job='neuro-metrics-exporter',pod=~'.+'}"],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    @pytest.mark.asyncio
+    async def test_check_neuro_metrics_exporter_query_with_pod_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        api_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=["DCGM_FI_DEV_COUNT{job='neuro-metrics-exporter',pod='job'}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(

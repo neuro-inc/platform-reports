@@ -15,6 +15,7 @@ NODES_DASHBOARD_ID = "nodes"
 JOBS_DASHBOARD_ID = "jobs"
 JOB_DASHBOARD_ID = "job"
 USER_JOBS_DASHBOARD_ID = "user_jobs"
+PRICES_DASHBOARD_ID = "prices"
 
 JOB_MATCHER = "job"
 POD_MATCHER = "pod"
@@ -94,6 +95,10 @@ class AuthService:
                         uri=f"job://{self._cluster_name}/{user_name}", action="read"
                     ),
                 ]
+        elif dashboard_id == PRICES_DASHBOARD_ID:
+            permissions = [
+                Permission(uri=f"job://{self._cluster_name}", action="read"),
+            ]
         else:
             return False
         return await self.check_permissions(user_name, permissions)
@@ -156,10 +161,10 @@ class PermissionsService:
         self, user_name: str, vector: Vector
     ) -> Sequence[Permission]:
         if isinstance(vector, Metric):
-            permissions = await self._get_metric_permissions(user_name, vector)
+            return await self._get_metric_permissions(user_name, vector)
         if isinstance(vector, Join):
-            permissions = await self._get_join_permissions(user_name, vector)
-        return permissions
+            return await self._get_join_permissions(user_name, vector)
+        return []
 
     async def _get_metric_permissions(
         self, user_name: str, metric: Metric
@@ -170,6 +175,7 @@ class PermissionsService:
             *await self._get_kube_state_metrics_permissions(user_name, [metric]),
             *await self._get_kubelet_permissions(user_name, [metric]),
             *await self._get_nvidia_dcgm_exporter_permissions(user_name, [metric]),
+            *await self._get_neuro_metrics_exporter_permissions(user_name, [metric]),
         )
 
     def _get_node_exporter_permissions(
@@ -237,6 +243,22 @@ class PermissionsService:
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("nvidia-dcgm-exporter"):
+                if self._has_pod_matcher(metric):
+                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                else:
+                    return [
+                        Permission(uri=f"job://{self._cluster_name}", action="read")
+                    ]
+
+        return await self.get_job_permissions(platform_job_ids)
+
+    async def _get_neuro_metrics_exporter_permissions(
+        self, user_name: str, metrics: Sequence[Metric]
+    ) -> List[Permission]:
+        platform_job_ids: List[str] = []
+
+        for metric in metrics:
+            if metric.label_matchers[JOB_MATCHER].matches("neuro-metrics-exporter"):
                 if self._has_pod_matcher(metric):
                     platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
                 else:

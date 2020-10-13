@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 3,
-    "iteration": 1600848842694,
+    "iteration": 1602510303690,
     "links": [],
     "panels": [
         {
@@ -211,7 +211,7 @@
                     }
                 ]
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
@@ -386,7 +386,7 @@
                     }
                 ]
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(label_platform_neuromation_io_user, pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range]))",
@@ -544,7 +544,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "pointradius": 2,
             "points": false,
             "renderer": "flot",
@@ -651,7 +651,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "count (max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range])))",
@@ -723,7 +723,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -829,7 +829,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -935,7 +935,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1056,7 +1056,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1161,7 +1161,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1280,7 +1280,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1384,7 +1384,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1505,7 +1505,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1611,7 +1611,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",

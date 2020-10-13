@@ -16,7 +16,7 @@
     "gnetId": 1860,
     "graphTooltip": 0,
     "id": 3,
-    "iteration": 1600358176799,
+    "iteration": 1602510303690,
     "links": [],
     "panels": [
         {
@@ -241,7 +241,7 @@
                     }
                 ]
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "node_uname_info{job=\"node-exporter\"} * on(nodename) group_left(label_platform_neuromation_io_nodepool) label_replace(count by(node,label_platform_neuromation_io_nodepool) (kube_node_labels{job=\"kube-state-metrics\"}),\"nodename\",\"$1\",\"node\",\"(.+)\")",
@@ -457,7 +457,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "(1 - sum(irate(node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\",mode=\"idle\"}[5m])) / count(count by (cpu) (node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\"}))) * 100",
@@ -536,7 +536,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "avg(node_load5{instance=\"$instance\",job=\"node-exporter\"}) / count(count(node_cpu_seconds_total{instance=\"$instance\",job=\"node-exporter\"}) by (cpu)) * 100",
@@ -616,7 +616,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "avg(node_load15{instance=\"$instance\",job=\"node-exporter\"}) /  count(count(node_cpu_seconds_total{instance=\"$instance\",job=\"node-exporter\"}) by (cpu)) * 100",
@@ -689,7 +689,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "100 - 100 * sum(node_memory_MemAvailable_bytes{instance=\"$instance\",job=\"node-exporter\"}) / sum(node_memory_MemTotal_bytes{instance=\"$instance\",job=\"node-exporter\"})",
@@ -765,7 +765,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "100 - 100 * sum(node_filesystem_avail_bytes{instance=\"$instance\",job=\"node-exporter\",mountpoint=\"/\",fstype!=\"rootfs\"}) / sum(node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",mountpoint=\"/\",fstype!=\"rootfs\"})",
@@ -835,7 +835,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "count(count by (cpu) (node_cpu_seconds_total{instance=\"$instance\",job=\"node-exporter\"}))",
@@ -904,7 +904,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(node_filesystem_size_bytes{instance=\"$instance\",job=\"node-exporter\",mountpoint=\"/\",fstype!=\"rootfs\"})",
@@ -976,7 +976,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(node_memory_MemTotal_bytes{instance=\"$instance\",job=\"node-exporter\"})",
@@ -1047,7 +1047,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(node_time_seconds{instance=\"$instance\",job=\"node-exporter\"} - node_boot_time_seconds{instance=\"$instance\",job=\"node-exporter\"})",
@@ -1137,7 +1137,7 @@
             "maxPerRow": 6,
             "nullPointMode": "null",
             "percentage": true,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1326,7 +1326,7 @@
             "maxPerRow": 6,
             "nullPointMode": "null",
             "percentage": false,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1513,7 +1513,7 @@
             "links": [],
             "nullPointMode": "null",
             "percentage": false,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1632,7 +1632,7 @@
             "maxPerRow": 6,
             "nullPointMode": "null",
             "percentage": false,
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -2823,7 +2823,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -2916,7 +2916,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3016,7 +3016,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3110,7 +3110,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3203,7 +3203,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3297,7 +3297,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3390,7 +3390,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",
@@ -3483,7 +3483,7 @@
                     "linewidth": 1,
                     "nullPointMode": "null as zero",
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 2,
                     "points": false,
                     "renderer": "flot",

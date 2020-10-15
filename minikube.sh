@@ -12,6 +12,7 @@ function minikube::start {
     minikube config set WantUpdateNotification false
     minikube start --kubernetes-version=v1.16.15 --wait=all --wait-timeout=5m
     kubectl config use-context minikube
+    kubectl label node minikube node.kubernetes.io/instance-type=minikube
 }
 
 case "${1:-}" in

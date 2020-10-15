@@ -14,6 +14,7 @@ from platform_reports.api import (
 )
 from platform_reports.config import (
     GrafanaProxyConfig,
+    KubeConfig,
     MetricsConfig,
     PlatformApiConfig,
     PlatformAuthConfig,
@@ -133,15 +134,19 @@ def platform_api_config(
 
 
 @pytest.fixture
-def metrics_config() -> MetricsConfig:
-    return MetricsConfig(server=ServerConfig(port=9500), host_name="host")
+def metrics_config(kube_config: KubeConfig) -> MetricsConfig:
+    return MetricsConfig(
+        server=ServerConfig(port=9500), kube=kube_config, node_name="minikube"
+    )
 
 
 @pytest.fixture
 async def metrics_server(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
+    app = create_metrics_app(metrics_config)
     async with create_local_app_server(
-        app=create_metrics_app(metrics_config), port=metrics_config.server.port,
+        app=app, port=metrics_config.server.port,
     ) as address:
+        assert app["instance_type"] == "minikube"
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 

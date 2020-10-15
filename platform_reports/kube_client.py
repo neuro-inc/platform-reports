@@ -73,7 +73,7 @@ class KubeClient:
         return ssl_context
 
     async def __aenter__(self) -> "KubeClient":
-        self._client = await self.create_http_client()
+        self._client = await self._create_http_client()
         return self
 
     async def __aexit__(
@@ -84,13 +84,9 @@ class KubeClient:
     ) -> None:
         await self.aclose()
 
-    async def create_http_client(
-        self, *, force_close: bool = False
-    ) -> aiohttp.ClientSession:
+    async def _create_http_client(self) -> aiohttp.ClientSession:
         connector = aiohttp.TCPConnector(
-            limit=self._config.conn_pool_size,
-            ssl=self._create_ssl_context(),
-            force_close=force_close,
+            limit=self._config.conn_pool_size, ssl=self._create_ssl_context()
         )
         if self._config.auth_type == KubeClientAuthType.TOKEN:
             token = self._config.token

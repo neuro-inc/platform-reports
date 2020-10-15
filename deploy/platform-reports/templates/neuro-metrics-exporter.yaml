@@ -26,29 +26,6 @@ spec:
           operator: Exists
         - effect: NoSchedule
           operator: Exists
-      {{- if .Values.cloudProvider }}
-      initContainers:
-        - image: "lachlanevenson/k8s-kubectl:v1.16.15"
-          name: config-loader
-          command: ["/bin/sh"]
-          args:
-            - -c
-            - |
-              apk add --update --no-cache jq
-              kubectl get node $NODE_NAME -o json \
-                | jq '.metadata.labels' \
-                | jq '. + {"node.kubernetes.io/instance-type": ."beta.kubernetes.io/instance-type"}' \
-                | jq -r '."node.kubernetes.io/instance-type"' \
-                > /etc/metrics_server/instance_type
-          env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - name: config
-              mountPath: /etc/metrics_server
-      {{- end }}
       containers:
         - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: neuro-metrics-exporter
@@ -58,7 +35,7 @@ spec:
               value: {{ .Values.logLevel }}
             - name: NP_METRICS_API_PORT
               value: {{ .Values.metricsServer.port | quote }}
-            - name: NP_HOST_NAME
+            - name: NP_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
@@ -67,8 +44,6 @@ spec:
               value: {{ .Values.cloudProvider.type | quote }}
             - name: NP_REGION
               value: {{ .Values.cloudProvider.region | quote }}
-            - name: NP_INSTANCE_TYPE_PATH
-              value: /etc/metrics_server/instance_type
             {{- end }}
           ports:
             - name: metrics
@@ -88,13 +63,6 @@ spec:
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
-          volumeMounts:
-            - name: config
-              readOnly: true
-              mountPath: /etc/metrics_server
-      volumes:
-        - name: config
-          emptyDir: {}
 ---
 kind: Service
 apiVersion: v1

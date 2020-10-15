@@ -13,8 +13,8 @@ platform:
 
 metricsServer:
   podMetadata:
-    annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-d04bce531282b98cb801932de6c118c7
+#    annotations:
+#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-d04bce531282b98cb801932de6c118c7
 
 prometheusProxy:
   replicas: 2
@@ -22,7 +22,7 @@ prometheusProxy:
 grafanaProxy:
   replicas: 2
   ingress:
-    host: metrics-dev-azure.neu.ro
+    host: metrics-dev.neu.ro
 
 prometheus-operator:
   prometheus:
@@ -33,12 +33,12 @@ prometheus-operator:
           name: thanos-object-storage-config
           key: thanos-object-storage.yaml
       podMetadata:
-        annotations:
-          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+#        annotations:
+#          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: gp2
+            storageClassName: standard
 
   prometheusOperator:
     kubeletService:
@@ -54,23 +54,24 @@ thanos:
   store:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
-    annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+        storageClassName: standard
+#    annotations:
+#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
 
   bucket:
-    annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+#    annotations:
+#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
 
   compact:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
-    annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+        storageClassName: standard
+#    annotations:
+#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
 
   objstore:
-    type: S3
+    type: AZURE
     config:
-      bucket: neuro-dev-metrics
-      endpoint: s3.us-east-1.amazonaws.com
+      container: neuro-metrics-dev
+      storage_account: "st4006d4f97475ef17167b"
+      storage_account_key: "RQVBHaqd4L+lWAPQXcuUC0sbonEARxN8PijYA4tRnWqAby0bFGmvBr8fzSnYJIBsEdwEiBPkvAg8HEEqfFU0zw=="

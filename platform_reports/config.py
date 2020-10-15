@@ -1,3 +1,4 @@
+import enum
 import logging
 import os
 from dataclasses import dataclass, field
@@ -9,6 +10,27 @@ from yarl import URL
 
 
 logger = logging.getLogger(__name__)
+
+
+class KubeClientAuthType(enum.Enum):
+    NONE = "none"
+    TOKEN = "token"
+    CERTIFICATE = "certificate"
+
+
+@dataclass(frozen=True)
+class KubeConfig:
+    url: URL
+    cert_authority_path: Optional[str] = None
+    cert_authority_data_pem: Optional[str] = None
+    auth_type: KubeClientAuthType = KubeClientAuthType.TOKEN
+    auth_cert_path: Optional[str] = None
+    auth_cert_key_path: Optional[str] = None
+    token: Optional[str] = None
+    token_path: Optional[str] = None
+    conn_timeout_s: int = 300
+    read_timeout_s: int = 100
+    conn_pool_size: int = 100
 
 
 @dataclass(frozen=True)

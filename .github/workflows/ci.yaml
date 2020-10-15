@@ -39,6 +39,10 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v1
+      - name: Start minikube
+        run: |
+          ./minikube.sh install
+          ./minikube.sh start
       - name: Run integration tests
         run: make test_integration
   deploy_dev:

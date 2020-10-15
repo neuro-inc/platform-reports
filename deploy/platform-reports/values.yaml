@@ -13,6 +13,7 @@ platform:
 image:
   repository: "$IMAGE_REPO"
   tag: "$IMAGE_TAG"
+  slimTag: "$IMAGE_SLIM_TAG"
 
 metricsServer:
   port: 9500

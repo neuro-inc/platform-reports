@@ -20,14 +20,11 @@ spec:
       annotations: {{ toYaml .Values.metricsServer.podMetadata.annotations | nindent 8 }}
     spec:
       tolerations:
-        # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.
-        # This, along with the annotation above marks this pod as a critical add-on.
-        - key: CriticalAddonsOnly
-          operator: Exists
         - effect: NoSchedule
           operator: Exists
       containers:
-        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        # Use slim image version to reduce service startup time
+        - image: {{ .Values.image.repository }}:{{ .Values.image.slimTag }}
           name: neuro-metrics-exporter
           command: ["metrics-server"]
           env:
@@ -56,7 +53,7 @@ spec:
               path: /ping
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
-            periodSeconds: 10
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /ping

@@ -1,11 +1,13 @@
+import enum
 import logging
 import ssl
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace, TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Sequence, Type
 
 import aiohttp
+from yarl import URL
 
 from .config import KubeClientAuthType, KubeConfig
 
@@ -30,6 +32,84 @@ class Node:
     @classmethod
     def from_payload(cls, payload: Dict[str, Any]) -> "Node":
         return cls(metadata=Metadata.from_payload(payload["metadata"]))
+
+
+class PodPhase(str, enum.Enum):
+    PENDING = "Pending"
+    RUNNING = "Running"
+    SUCCEEDED = "Succeeded"
+    FAILED = "Failed"
+    UNKNOWN = "Unknown"
+
+
+@dataclass(frozen=True)
+class PodStatus:
+    phase: PodPhase
+
+    @classmethod
+    def from_payload(cls, payload: Dict[str, Any]) -> "PodStatus":
+        return cls(phase=PodPhase(payload.get("phase", "Unknown")))
+
+
+@dataclass(frozen=True)
+class Resources:
+    cpu_m: int = 0
+    memory_mb: int = 0
+    gpu: int = 0
+
+    @classmethod
+    def from_payload(cls, payload: Dict[str, Any]) -> "Resources":
+        return cls(
+            cpu_m=cls._parse_cpu_m(payload.get("cpu", "0")),
+            memory_mb=cls._parse_memory_mb(payload.get("memory", "0Mi")),
+            gpu=int(payload.get("nvidia.com/gpu", 0)),
+        )
+
+    @classmethod
+    def _parse_cpu_m(cls, value: str) -> int:
+        if value.endswith("m"):
+            return int(value[:-1])
+        return int(float(value) * 1000)
+
+    @classmethod
+    def _parse_memory_mb(cls, value: str) -> int:
+        if value.endswith("Gi"):
+            return int(value[:-2]) * 1024
+        if value.endswith("Mi"):
+            return int(value[:-2])
+        raise ValueError("Memory unit is not supported")
+
+
+@dataclass(frozen=True)
+class Container:
+    name: str
+    resource_requests: Resources = field(default_factory=Resources)
+
+    @classmethod
+    def from_payload(cls, payload: Dict[str, Any]) -> "Container":
+        return cls(
+            name=payload["name"],
+            resource_requests=Resources.from_payload(
+                payload.get("resources", {}).get("requests", {})
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class Pod:
+    metadata: Metadata
+    status: PodStatus
+    containers: Sequence[Container]
+
+    @classmethod
+    def from_payload(cls, payload: Dict[str, Any]) -> "Pod":
+        return cls(
+            metadata=Metadata.from_payload(payload["metadata"]),
+            status=PodStatus.from_payload(payload.get("status", {})),
+            containers=[
+                Container.from_payload(c) for c in payload["spec"]["containers"]
+            ],
+        )
 
 
 class KubeClient:
@@ -113,6 +193,11 @@ class KubeClient:
         assert self._client
         await self._client.close()
 
+    def _get_pods_url(self, namespace: str) -> URL:
+        if namespace:
+            return self._config.url / "api/v1/namespaces" / namespace / "pods"
+        return self._config.url / "api/v1/pods"
+
     async def get_node(self, name: str) -> Node:
         assert self._client
         async with self._client.get(
@@ -122,3 +207,20 @@ class KubeClient:
             payload = await response.json()
             assert payload["kind"] == "Node"
             return Node.from_payload(payload)
+
+    async def get_pods(
+        self, namespace: str = "", field_selector: str = "", label_selector: str = "",
+    ) -> Sequence[Pod]:
+        assert self._client
+        params: Dict[str, str] = {}
+        if field_selector:
+            params["fieldSelector"] = field_selector
+        if label_selector:
+            params["labelSelector"] = label_selector
+        async with self._client.get(
+            self._get_pods_url(namespace), params=params or None
+        ) as response:
+            response.raise_for_status()
+            payload = await response.json()
+            assert payload["kind"] == "PodList"
+            return [Pod.from_payload(i) for i in payload["items"]]

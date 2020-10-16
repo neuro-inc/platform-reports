@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1600863565697,
+    "iteration": 1602510303690,
     "links": [],
     "panels": [
         {
@@ -93,7 +93,7 @@
                 },
                 "textMode": "name"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
@@ -167,7 +167,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
@@ -239,7 +239,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(container_memory_usage_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
@@ -311,7 +311,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "avg(DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
@@ -383,7 +383,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "avg(DCGM_FI_DEV_MEM_COPY_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
@@ -447,7 +447,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -512,7 +512,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -576,7 +576,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "sum by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
@@ -631,7 +631,7 @@
                 },
                 "textMode": "name"
             },
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
@@ -705,7 +705,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -816,7 +816,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -940,7 +940,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1044,7 +1044,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.0-beta2",
+            "pluginVersion": "7.2.1",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1170,7 +1170,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1275,7 +1275,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.0-beta2",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",

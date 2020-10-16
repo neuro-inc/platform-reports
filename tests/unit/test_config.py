@@ -1,13 +1,10 @@
-import tempfile
-from pathlib import Path
-from typing import Iterator
-
-import pytest
 from yarl import URL
 
 from platform_reports.config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
+    KubeClientAuthType,
+    KubeConfig,
     MetricsConfig,
     PlatformApiConfig,
     PlatformAuthConfig,
@@ -17,30 +14,32 @@ from platform_reports.config import (
 
 
 class TestEnvironConfigFactory:
-    @pytest.fixture
-    def temp_file(self) -> Iterator[Path]:
-        temp_file_path = Path(tempfile.mktemp())
-        temp_file_path.touch()
-        yield temp_file_path
-        temp_file_path.unlink(missing_ok=True)
-
     def test_create_metrics_defaults(self) -> None:
         env = {
-            "NP_HOST_NAME": "host",
+            "NP_NODE_NAME": "node",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
 
-        assert result == MetricsConfig(server=ServerConfig(), host_name="host")
+        assert result == MetricsConfig(
+            server=ServerConfig(),
+            kube=KubeConfig(
+                auth_type=KubeClientAuthType.TOKEN,
+                url=URL("https://kubernetes.default.svc"),
+                token_path="/var/run/secrets/kubernetes.io/serviceaccount/token",
+                cert_authority_path=(
+                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                ),
+            ),
+            node_name="node",
+        )
 
-    def test_create_metrics_custom(self, temp_file: Path) -> None:
-        temp_file.write_text("p2.xlarge")
+    def test_create_metrics_custom(self) -> None:
         env = {
             "NP_METRICS_API_SCHEME": "http",
             "NP_METRICS_API_HOST": "metrics",
             "NP_METRICS_API_PORT": "9500",
-            "NP_HOST_NAME": "host",
-            "NP_INSTANCE_TYPE_PATH": str(temp_file),
+            "NP_NODE_NAME": "node",
             "NP_CLOUD_PROVIDER": "aws",
             "NP_REGION": "us-east-1",
         }
@@ -49,8 +48,15 @@ class TestEnvironConfigFactory:
 
         assert result == MetricsConfig(
             server=ServerConfig(scheme="http", host="metrics", port=9500),
-            host_name="host",
-            instance_type="p2.xlarge",
+            kube=KubeConfig(
+                auth_type=KubeClientAuthType.TOKEN,
+                url=URL("https://kubernetes.default.svc"),
+                token_path="/var/run/secrets/kubernetes.io/serviceaccount/token",
+                cert_authority_path=(
+                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                ),
+            ),
+            node_name="node",
             cloud_provider="aws",
             region="us-east-1",
         )

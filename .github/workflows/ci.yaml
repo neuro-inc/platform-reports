@@ -8,53 +8,55 @@ on:
       - "*"
 
 jobs:
-#  test:
-#    name: Run tests
-#    runs-on: ubuntu-latest
-#    env:
-#      PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
-#    steps:
-#      - name: Checkout commit
-#        uses: actions/checkout@v2
-#      - name: Install python
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: "3.8"
-#      - name: Cache packages
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.cache/pip
-#          key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py') }}
-#      - name: Install dependencies
-#        run: make setup
-#      - name: Lint
-#        run: make lint
-#      - name: Run unit tests
-#        run: make test_unit
-#      - name: Configure AWS credentials
-#        uses: aws-actions/configure-aws-credentials@v1
-#        with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          aws-region: ${{ secrets.AWS_REGION }}
-#      - name: Login to AWS ECR
-#        uses: aws-actions/amazon-ecr-login@v1
-#      - name: Run integration tests
-#        run: make test_integration
-
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    env:
+      PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
+    steps:
+      - name: Checkout commit
+        uses: actions/checkout@v2
+      - name: Install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+      - name: Cache packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py') }}
+      - name: Install dependencies
+        run: make setup
+      - name: Lint
+        run: make lint
+      - name: Run unit tests
+        run: make test_unit
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Login to AWS ECR
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Start minikube
+        run: |
+          ./minikube.sh install
+          ./minikube.sh start
+      - name: Run integration tests
+        run: make test_integration
   deploy_dev:
     name: Deploy on dev
     runs-on: ubuntu-latest
-#    needs: test
+    needs: test
     if: github.ref == 'refs/heads/master'
     env:
       PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
-      CLUSTER_NAME: ${{ secrets.AWS_DEV_CLUSTER_NAME }}
+      AWS_CLUSTER_NAME: ${{ secrets.AWS_DEV_CLUSTER_NAME }}
       HELM_ENV: dev
       HELM_VERSION: ${{ secrets.HELM_VERSION }}
-      CLOUD_PROVIDER: aws
     steps:
       - name: Checkout commit
         uses: actions/checkout@v2
@@ -76,49 +78,10 @@ jobs:
         run: make helm_install
       - name: Deploy to kubernetes
         run: make helm_deploy
-
-  deploy_dev_azure:
-    name: Deploy on dev Azure
-    runs-on: ubuntu-latest
-#    needs: test
-    if: github.ref == 'refs/heads/deploy-to-azure'
-    env:
-      PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}
-      AZURE_DEV_ACR_NAME: ${{ secrets.AZURE_DEV_ACR_NAME }}
-      AZURE_DEV_REGION: ${{ secrets.AZURE_DEV_REGION }}
-      AZURE_DEV_RG_NAME: ${{ secrets.AZURE_DEV_RG_NAME }}
-      CLUSTER_NAME: dev
-      HELM_ENV: dev
-      HELM_VERSION: ${{ secrets.HELM_VERSION }}
-      CLOUD_PROVIDER: azure
-    steps:
-      - name: Checkout commit
-        uses: actions/checkout@v2
-      - name: Set tag
-        run: echo ::set-env name=TAG::$GITHUB_SHA
-      - name: Configure Azure credentials
-        uses: azure/login@v1.1
-        with:
-          creds: ${{secrets.AZURE_CREDENTIALS}}
-      - name: Login to Azure ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.AZURE_DEV_ACR_SERVER }}
-          username: ${{ secrets.AZURE_DEV_ACR_USERNAME }}
-          password: ${{ secrets.AZURE_DEV_ACR_PASSWORD }}
-      - name: Push image to ECR
-        run: make docker_push
-      - name: Update kube config
-        run: make aks_login
-      - name: Install helm
-        run: make helm_install
-      - name: Deploy to kubernetes
-        run: make helm_deploy
-
   release:
     name: Release package
     runs-on: ubuntu-latest
-#    needs: test
+    needs: test
     if: github.event_name == 'release'
     env:
       PIP_EXTRA_INDEX_URL: ${{ format('https://{0}:{1}@{2}/{0}/{3}', secrets.DEVPI_USER, secrets.DEVPI_PASS, secrets.DEVPI_HOST, secrets.DEVPI_INDEX) }}

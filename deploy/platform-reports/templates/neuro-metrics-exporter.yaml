@@ -17,39 +17,14 @@ spec:
         app: {{ include "platform-reports.name" . }}
         release: {{ .Release.Name | quote }}
         component: neuro-metrics-exporter
+      annotations: {{ toYaml .Values.metricsServer.podMetadata.annotations | nindent 8 }}
     spec:
       tolerations:
-        # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.
-        # This, along with the annotation above marks this pod as a critical add-on.
-        - key: CriticalAddonsOnly
-          operator: Exists
         - effect: NoSchedule
           operator: Exists
-      {{- if .Values.cloudProvider }}
-      initContainers:
-        - image: "lachlanevenson/k8s-kubectl:v1.16.15"
-          name: config-loader
-          command: ["/bin/sh"]
-          args:
-            - -c
-            - |
-              apk add --update --no-cache jq
-              kubectl get node $NODE_NAME -o json \
-                | jq '.metadata.labels' \
-                | jq '. + {"node.kubernetes.io/instance-type": ."beta.kubernetes.io/instance-type"}' \
-                | jq -r '."node.kubernetes.io/instance-type"' \
-                > /etc/metrics_server/instance_type
-          env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - name: config
-              mountPath: /etc/metrics_server
-      {{- end }}
       containers:
-        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        # Use slim image version to reduce service startup time
+        - image: {{ .Values.image.repository }}:{{ .Values.image.slimTag }}
           name: neuro-metrics-exporter
           command: ["metrics-server"]
           env:
@@ -57,17 +32,15 @@ spec:
               value: {{ .Values.logLevel }}
             - name: NP_METRICS_API_PORT
               value: {{ .Values.metricsServer.port | quote }}
-            - name: NP_HOST_NAME
+            - name: NP_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
             {{- if .Values.cloudProvider }}
             - name: NP_CLOUD_PROVIDER
-              value: {{ .Values.metricsServer.port | quote }}
+              value: {{ .Values.cloudProvider.type | quote }}
             - name: NP_REGION
-              value: {{ .Values.metricsServer.port | quote }}
-            - name: NP_INSTANCE_TYPE_PATH
-              value: /etc/metrics_server/instance_type
+              value: {{ .Values.cloudProvider.region | quote }}
             {{- end }}
           ports:
             - name: metrics
@@ -80,20 +53,13 @@ spec:
               path: /ping
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
-            periodSeconds: 10
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /ping
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
-          volumeMounts:
-            - name: config
-              readOnly: true
-              mountPath: /etc/metrics_server
-      volumes:
-        - name: config
-          emptyDir: {}
 ---
 kind: Service
 apiVersion: v1

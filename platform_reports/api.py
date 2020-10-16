@@ -35,6 +35,7 @@ from .config import (
     PrometheusProxyConfig,
     ServerConfig,
 )
+from .kube_client import KubeClient
 from .metrics import AWSNodePriceCollector, PriceCollector
 
 
@@ -74,8 +75,7 @@ class MetricsHandler:
 # HELP node_price_per_hour The price of the node per hour.
 # TYPE node_price_per_hour gauge
 node_price_per_hour{{\
-node="{self._config.host_name}",\
-instance_type="{self._config.instance_type}",\
+node="{self._config.node_name}",\
 currency="{node_price_per_hour.currency}"\
 }} {node_price_per_hour.value}"""
         )
@@ -307,6 +307,16 @@ async def create_api_client(config: PlatformApiConfig) -> AsyncIterator[ApiClien
             await client.close()
 
 
+async def get_node_instance_type(kube_client: KubeClient, node_name: str) -> str:
+    node = await kube_client.get_node(node_name)
+    instance_type = (
+        node.metadata.labels.get("node.kubernetes.io/instance-type")
+        or node.metadata.labels.get("beta.kubernetes.io/instance-type")
+        or ""
+    )
+    return instance_type
+
+
 def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     ProbesHandler(app).register()
@@ -316,20 +326,21 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
+            kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
+            instance_type = await get_node_instance_type(kube_client, config.node_name)
+            app["instance_type"] = instance_type
+
             if config.cloud_provider == "aws":
+                assert instance_type
                 session = aiobotocore.get_session()
-                ssm_client = await exit_stack.enter_async_context(
-                    session.create_client("ssm", config.region)
-                )
                 pricing_client = await exit_stack.enter_async_context(
                     session.create_client("pricing", config.region)
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AWSNodePriceCollector(
-                        ssm_client=ssm_client,
                         pricing_client=pricing_client,
                         region=config.region,
-                        instance_type=config.instance_type,
+                        instance_type=instance_type,
                     )
                 )
             else:

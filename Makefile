@@ -12,6 +12,7 @@ IMAGE_BASE_REPO_azure ?= $(AZURE_DEV_ACR_NAME).azurecr.io
 IMAGE_BASE_REPO  ?= ${IMAGE_BASE_REPO_${CLOUD_PROVIDER}}
 IMAGE_REPO = $(IMAGE_BASE_REPO)/platform-reports
 IMAGE = $(IMAGE_REPO):$(TAG)
+IMAGE_SLIM = $(IMAGE_REPO):$(TAG)-slim
 
 HELM_ENV ?= dev
 
@@ -49,7 +50,14 @@ test_integration:
 	exit $$exit_code
 
 docker_build:
-	docker build --build-arg PIP_EXTRA_INDEX_URL -t $(IMAGE) .
+	docker build \
+		--build-arg PIP_EXTRA_INDEX_URL \
+		--build-arg PYTHON_BASE=buster \
+		-t $(IMAGE) .
+	docker build \
+		--build-arg PIP_EXTRA_INDEX_URL \
+		--build-arg PYTHON_BASE=slim-buster \
+		-t $(IMAGE_SLIM) .
 
 docker_push: docker_build
 ifeq ($(TAG),latest)
@@ -57,6 +65,7 @@ ifeq ($(TAG),latest)
 endif
 	docker tag $(IMAGE) $(IMAGE_REPO):latest
 	docker push $(IMAGE)
+	docker push $(IMAGE_SLIM)
 	docker push $(IMAGE_REPO):latest
 
 artifactory_docker_login:
@@ -100,11 +109,13 @@ ifeq (,$(findstring Darwin,$(MACHINE)))
 	# Linux
 	sed -i "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
+	sed -i "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "s/\$$CURRENT_TIME/$(CURRENT_TIME)/g" tmpdeploy/platform-reports/values.yaml
 else
 	# Mac OS
 	sed -i "" -e "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "" -e "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
+	sed -i "" -e "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "" -e "s/\$$CURRENT_TIME/$(CURRENT_TIME)/g" tmpdeploy/platform-reports/values.yaml
 endif
 

@@ -1,4 +1,5 @@
 ARG PYTHON_VERSION=3.8.5
+ARG PYTHON_BASE=buster
 
 FROM python:${PYTHON_VERSION} AS requirements
 
@@ -14,7 +15,7 @@ RUN pip install --user -e . &&\
 
 
 # make service image
-FROM python:${PYTHON_VERSION} as service
+FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service
 
 WORKDIR /app
 

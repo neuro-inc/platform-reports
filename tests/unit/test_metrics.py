@@ -1,7 +1,7 @@
 import asyncio
 import json
 from contextlib import suppress
-from typing import Iterator
+from typing import AsyncIterator, Iterator
 from unittest import mock
 
 import pytest
@@ -40,28 +40,20 @@ class TestPriceCollector:
 
 class TestAWSNodePriceCollector:
     @pytest.fixture
-    def ssm_client(self) -> mock.AsyncMock:
-        result = mock.AsyncMock()
-        result.get_parameter.return_value = {
-            "Parameter": {"Value": "US East (N. Virginia)"}
-        }
-        return result
-
-    @pytest.fixture
     def pricing_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
 
     @pytest.fixture
-    def price_collector(
-        self, ssm_client: AioBaseClient, pricing_client: AioBaseClient
-    ) -> AWSNodePriceCollector:
-        return AWSNodePriceCollector(
-            ssm_client=ssm_client,
+    async def price_collector(
+        self, pricing_client: AioBaseClient
+    ) -> AsyncIterator[PriceCollector]:
+        async with AWSNodePriceCollector(
             pricing_client=pricing_client,
             region="us-east-1",
             instance_type="p2.xlarge",
             interval_s=0.1,
-        )
+        ) as result:
+            yield result
 
     async def test_get_latest_price_per_hour(
         self, price_collector: AWSNodePriceCollector, pricing_client: mock.AsyncMock
@@ -88,6 +80,24 @@ class TestAWSNodePriceCollector:
 
         result = await price_collector.get_latest_price_per_hour()
 
+        pricing_client.get_products.assert_awaited_once_with(
+            ServiceCode="AmazonEC2",
+            FormatVersion="aws_v1",
+            Filters=[
+                {"Type": "TERM_MATCH", "Field": "ServiceCode", "Value": "AmazonEC2"},
+                {"Type": "TERM_MATCH", "Field": "locationType", "Value": "AWS Region"},
+                {
+                    "Type": "TERM_MATCH",
+                    "Field": "location",
+                    "Value": "US East (N. Virginia)",
+                },
+                {"Type": "TERM_MATCH", "Field": "operatingSystem", "Value": "Linux"},
+                {"Type": "TERM_MATCH", "Field": "tenancy", "Value": "Shared"},
+                {"Type": "TERM_MATCH", "Field": "capacitystatus", "Value": "Used"},
+                {"Type": "TERM_MATCH", "Field": "preInstalledSw", "Value": "NA"},
+                {"Type": "TERM_MATCH", "Field": "instanceType", "Value": "p2.xlarge"},
+            ],
+        )
         assert result == Price(currency="USD", value=0.1)
 
     async def test_get_latest_price_per_hour_with_multiple_prices(

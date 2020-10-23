@@ -8,7 +8,7 @@ TAG ?= latest
 
 IMAGE_BASE_REPO_gke   ?= $(GKE_DOCKER_REGISTRY)/$(GKE_PROJECT_ID)
 IMAGE_BASE_REPO_aws   ?= $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-IMAGE_BASE_REPO_azure ?= $(AZURE_DEV_ACR_NAME).azurecr.io
+IMAGE_BASE_REPO_azure ?= $(AZURE_ACR_NAME).azurecr.io
 IMAGE_BASE_REPO  ?= ${IMAGE_BASE_REPO_${CLOUD_PROVIDER}}
 IMAGE_REPO = $(IMAGE_BASE_REPO)/platform-reports
 IMAGE = $(IMAGE_REPO):$(TAG)
@@ -73,11 +73,11 @@ artifactory_docker_login:
 		--username=$(ARTIFACTORY_USERNAME) \
 		--password=$(ARTIFACTORY_PASSWORD)
 
-eks_login:
-	aws eks --region $(AWS_REGION) update-kubeconfig --name $(AWS_CLUSTER_NAME)
+aws_k8s_login:
+	aws eks --region $(AWS_REGION) update-kubeconfig --name $(CLUSTER_NAME)
 
-aks_login:
-	az aks get-credentials --resource-group $(AZURE_DEV_RG_NAME) --name $(CLUSTER_NAME)
+azure_k8s_login:
+	az aks get-credentials --resource-group $(AZURE_RG_NAME) --name $(CLUSTER_NAME)
 
 helm_install:
 	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)

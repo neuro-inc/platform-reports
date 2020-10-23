@@ -1,0 +1,61 @@
+nodePoolLabels:
+  gpu: cloud.google.com/gke-accelerator
+
+cloudProvider:
+  type: azure
+  region: us-east-1
+
+platform:
+  authUrl: https://dev.neu.ro
+  apiUrl: https://dev.neu.ro/api/v1
+  accessTokenCookieName: dat
+  clusterName: default
+
+prometheusProxy:
+  replicas: 2
+
+grafanaProxy:
+  replicas: 2
+  ingress:
+    host: metrics-dev.neu.ro
+
+prometheus-operator:
+  prometheus:
+    prometheusSpec:
+      thanos:
+        version: v0.13.0
+        objectStorageConfig:
+          name: thanos-object-storage-config
+          key: thanos-object-storage.yaml
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: standard
+
+  prometheusOperator:
+    kubeletService:
+      namespace: platform
+
+  kubelet:
+    namespace: platform
+
+  grafana:
+    adminPassword: password
+
+thanos:
+  store:
+    persistentVolumeClaim:
+      spec:
+        storageClassName: standard
+
+  compact:
+    persistentVolumeClaim:
+      spec:
+        storageClassName: standard
+
+  objstore:
+    type: AZURE
+    config:
+      container: neuro-metrics-dev
+      storage_account: "st4006d4f97475ef17167b"
+      storage_account_key: "RQVBHaqd4L+lWAPQXcuUC0sbonEARxN8PijYA4tRnWqAby0bFGmvBr8fzSnYJIBsEdwEiBPkvAg8HEEqfFU0zw=="

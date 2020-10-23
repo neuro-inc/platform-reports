@@ -11,11 +11,6 @@ platform:
   accessTokenCookieName: dat
   clusterName: default
 
-metricsServer:
-  podMetadata:
-    annotations:
-#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-d04bce531282b98cb801932de6c118c7
-
 prometheusProxy:
   replicas: 2
 
@@ -32,9 +27,6 @@ prometheus-operator:
         objectStorageConfig:
           name: thanos-object-storage-config
           key: thanos-object-storage.yaml
-      podMetadata:
-        annotations:
-#          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
       storageSpec:
         volumeClaimTemplate:
           spec:
@@ -55,19 +47,11 @@ thanos:
     persistentVolumeClaim:
       spec:
         storageClassName: standard
-    annotations:
-#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
-
-  bucket:
-    annotations:
-#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
 
   compact:
     persistentVolumeClaim:
       spec:
         storageClassName: standard
-    annotations:
-#      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
 
   objstore:
     type: AZURE

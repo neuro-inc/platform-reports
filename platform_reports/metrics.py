@@ -41,7 +41,7 @@ class Collector(Generic[_TValue]):
                 logger.info("Next update will be in %s seconds", self._interval_s)
                 await asyncio.sleep(self._interval_s)
                 self._value = await self.get_latest_value()
-                logger.info("Updated value to %s per hour", self._value)
+                logger.info("Updated value to %s", self._value)
             except asyncio.CancelledError:
                 raise
             except Exception as ex:

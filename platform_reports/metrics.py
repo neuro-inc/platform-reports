@@ -15,6 +15,18 @@ from .kube_client import KubeClient, Pod, Resources
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class Price:
+    currency: str = ""
+    value: float = 0.0
+
+    def __str__(self) -> str:
+        return f"{self.value} ({self.currency})" if self.currency else str(self.value)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 _TValue = TypeVar("_TValue")
 
 
@@ -59,18 +71,6 @@ class Collector(Generic[_TValue]):
         traceback: Optional[TracebackType],
     ) -> None:
         pass
-
-
-@dataclass(frozen=True)
-class Price:
-    currency: str = ""
-    value: float = 0.0
-
-    def __str__(self) -> str:
-        return f"{self.value} ({self.currency})" if self.currency else str(self.value)
-
-    def __repr__(self) -> str:
-        return self.__str__()
 
 
 class AWSNodePriceCollector(Collector[Price]):

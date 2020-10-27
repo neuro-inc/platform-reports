@@ -53,9 +53,9 @@ kube_node_price_per_hour\{node="minikube",currency=""\} 0\.0
 
 \# HELP kube_pod_price_per_hour The price of the pod per hour.
 \# TYPE kube_pod_price_per_hour gauge
-(kube_node_price_per_hour\{pod=".+",currency=""\} 0\.0)+""",
+(kube_pod_price_per_hour\{pod=".+",currency=".*"\} 0\.0\s*)+""",
                     text,
-                )
+                ), text
 
 
 class TestPrometheusProxy:

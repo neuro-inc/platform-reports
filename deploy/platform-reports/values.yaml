@@ -78,6 +78,11 @@ prometheus-operator:
     serviceMonitor:
       interval: 15s
 
+      metricRelabelings:
+        - sourceLabels:
+            - label_beta_kubernetes_io_instance_type
+          targetLabel: label_node_kubernetes_io_instance_type
+
   kube-state-metrics:
     nameOverride: kube-state-metrics
     fullnameOverride: kube-state-metrics
@@ -125,7 +130,7 @@ prometheus-operator:
 
     serviceMonitor:
       interval: 15s
-      https: false
+      https: true
       probes: false
       resource: false
       cAdvisor: true
@@ -145,10 +150,17 @@ prometheus-operator:
     nameOverride: prometheus-node-exporter
     fullnameOverride: prometheus-node-exporter
 
+    securityContext:
+      runAsUser: 0
+
     extraHostVolumeMounts:
       - name: system-dbus-socket
         hostPath: /var/run/dbus/system_bus_socket
         mountPath: /var/run/dbus/system_bus_socket
+        readOnly: true
+      - name: systemd-private
+        hostPath: /run/systemd/private
+        mountPath: /run/systemd/private
         readOnly: true
 
     extraArgs:

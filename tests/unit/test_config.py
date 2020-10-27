@@ -6,8 +6,7 @@ from platform_reports.config import (
     KubeClientAuthType,
     KubeConfig,
     MetricsConfig,
-    PlatformApiConfig,
-    PlatformAuthConfig,
+    PlatformServiceConfig,
     PrometheusProxyConfig,
     ServerConfig,
 )
@@ -16,6 +15,9 @@ from platform_reports.config import (
 class TestEnvironConfigFactory:
     def test_create_metrics_defaults(self) -> None:
         env = {
+            "NP_CONFIG_URL": "http://dev.neu.ro",
+            "NP_CONFIG_TOKEN": "token",
+            "NP_CLUSTER_NAME": "default",
             "NP_NODE_NAME": "node",
         }
 
@@ -23,6 +25,9 @@ class TestEnvironConfigFactory:
 
         assert result == MetricsConfig(
             server=ServerConfig(),
+            platform_config=PlatformServiceConfig(
+                url=URL("http://dev.neu.ro"), token="token"
+            ),
             kube=KubeConfig(
                 auth_type=KubeClientAuthType.TOKEN,
                 url=URL("https://kubernetes.default.svc"),
@@ -31,6 +36,7 @@ class TestEnvironConfigFactory:
                     "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
                 ),
             ),
+            cluster_name="default",
             node_name="node",
         )
 
@@ -39,15 +45,24 @@ class TestEnvironConfigFactory:
             "NP_METRICS_API_SCHEME": "http",
             "NP_METRICS_API_HOST": "metrics",
             "NP_METRICS_API_PORT": "9500",
+            "NP_CONFIG_URL": "http://dev.neu.ro",
+            "NP_CONFIG_TOKEN": "token",
+            "NP_CLUSTER_NAME": "default",
             "NP_NODE_NAME": "node",
             "NP_CLOUD_PROVIDER": "aws",
             "NP_REGION": "us-east-1",
+            "NP_JOBS_NAMESPACE": "platform-jobs",
+            "NP_NODE_POOL_LABEL": "node-pool",
+            "NP_JOB_LABEL": "job",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
 
         assert result == MetricsConfig(
             server=ServerConfig(scheme="http", host="metrics", port=9500),
+            platform_config=PlatformServiceConfig(
+                url=URL("http://dev.neu.ro"), token="token"
+            ),
             kube=KubeConfig(
                 auth_type=KubeClientAuthType.TOKEN,
                 url=URL("https://kubernetes.default.svc"),
@@ -56,9 +71,13 @@ class TestEnvironConfigFactory:
                     "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
                 ),
             ),
+            cluster_name="default",
             node_name="node",
             cloud_provider="aws",
             region="us-east-1",
+            jobs_namespace="platform-jobs",
+            node_pool_label="node-pool",
+            job_label="job",
         )
 
     def test_create_prometheus_proxy_defaults(self) -> None:
@@ -79,10 +98,10 @@ class TestEnvironConfigFactory:
             access_token_cookie_name="dat",
             server=ServerConfig(),
             prometheus_server=ServerConfig(host="prometheus", port=9090),
-            platform_auth=PlatformAuthConfig(
+            platform_auth=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
-            platform_api=PlatformApiConfig(
+            platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
         )
@@ -111,10 +130,10 @@ class TestEnvironConfigFactory:
             prometheus_server=ServerConfig(
                 scheme="https", host="prometheus", port=9090
             ),
-            platform_auth=PlatformAuthConfig(
+            platform_auth=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
-            platform_api=PlatformApiConfig(
+            platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
         )
@@ -125,8 +144,6 @@ class TestEnvironConfigFactory:
             "NP_AUTH_ACCESS_TOKEN_COOKIE_NAME": "dat",
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
-            "NP_GRAFANA_PUBLIC_HOST": "grafana-public",
-            "NP_GRAFANA_PUBLIC_PORT": "80",
             "NP_AUTH_URL": "https://dev.neu.ro",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
@@ -138,12 +155,11 @@ class TestEnvironConfigFactory:
             cluster_name="default",
             access_token_cookie_name="dat",
             server=ServerConfig(),
-            public_server=ServerConfig(host="grafana-public", port=80),
             grafana_server=ServerConfig(host="grafana", port=3000),
-            platform_auth=PlatformAuthConfig(
+            platform_auth=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
-            platform_api=PlatformApiConfig(
+            platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
         )
@@ -158,9 +174,6 @@ class TestEnvironConfigFactory:
             "NP_GRAFANA_SCHEME": "https",
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
-            "NP_GRAFANA_PUBLIC_SCHEME": "https",
-            "NP_GRAFANA_PUBLIC_HOST": "grafana-public",
-            "NP_GRAFANA_PUBLIC_PORT": "80",
             "NP_AUTH_URL": "https://dev.neu.ro",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
@@ -172,12 +185,11 @@ class TestEnvironConfigFactory:
             cluster_name="default",
             access_token_cookie_name="dat",
             server=ServerConfig(scheme="https", host="platform-reports", port=80),
-            public_server=ServerConfig(scheme="https", host="grafana-public", port=80),
             grafana_server=ServerConfig(scheme="https", host="grafana", port=3000),
-            platform_auth=PlatformAuthConfig(
+            platform_auth=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
-            platform_api=PlatformApiConfig(
+            platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
         )

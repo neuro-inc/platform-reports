@@ -1,9 +1,14 @@
+import re
 import time
+from dataclasses import replace
+from typing import AsyncContextManager, Callable
 
 import aiohttp
 import pytest
 from aiohttp.web import HTTPForbidden, HTTPOk
 from yarl import URL
+
+from platform_reports.config import MetricsConfig
 
 
 class TestMetrics:
@@ -15,11 +20,42 @@ class TestMetrics:
             assert response.status == HTTPOk.status_code
 
     @pytest.mark.asyncio
-    async def test_metrics(
+    async def test_node_metrics(
         self, client: aiohttp.ClientSession, metrics_server: URL
     ) -> None:
         async with client.get(metrics_server / "metrics") as response:
-            assert response.status == HTTPOk.status_code
+            text = await response.text()
+            assert response.status == HTTPOk.status_code, text
+            assert (
+                text
+                == """\
+# HELP kube_node_price_per_hour The price of the node per hour.
+# TYPE kube_node_price_per_hour gauge
+kube_node_price_per_hour{node="minikube",currency=""} 0.0"""
+            )
+
+    @pytest.mark.asyncio
+    async def test_node_and_pod_metrics(
+        self,
+        client: aiohttp.ClientSession,
+        metrics_server_factory: Callable[[MetricsConfig], AsyncContextManager[URL]],
+        metrics_config: MetricsConfig,
+    ) -> None:
+        metrics_config = replace(metrics_config, job_label="")
+        async with metrics_server_factory(metrics_config) as server:
+            async with client.get(server / "metrics") as response:
+                text = await response.text()
+                assert response.status == HTTPOk.status_code, text
+                assert re.search(
+                    r"""\# HELP kube_node_price_per_hour The price of the node per hour\.
+\# TYPE kube_node_price_per_hour gauge
+kube_node_price_per_hour\{node="minikube",currency=""\} 0\.0
+
+\# HELP kube_pod_price_per_hour The price of the pod per hour.
+\# TYPE kube_pod_price_per_hour gauge
+(kube_node_price_per_hour\{pod=".+",currency=""\} 0\.0)+""",
+                    text,
+                )
 
 
 class TestPrometheusProxy:

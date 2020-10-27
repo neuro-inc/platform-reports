@@ -1,6 +1,13 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Callable, Coroutine, Sequence
+from typing import (
+    Any,
+    AsyncContextManager,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Sequence,
+)
 
 import aiohttp
 import pytest
@@ -16,8 +23,7 @@ from platform_reports.config import (
     GrafanaProxyConfig,
     KubeConfig,
     MetricsConfig,
-    PlatformApiConfig,
-    PlatformAuthConfig,
+    PlatformServiceConfig,
     PrometheusProxyConfig,
     ServerConfig,
 )
@@ -25,6 +31,7 @@ from platform_reports.config import (
 
 pytest_plugins = [
     "tests.integration.platform_auth",
+    "tests.integration.platform_config",
     "tests.integration.platform_api",
     "tests.integration.kube",
 ]
@@ -120,39 +127,79 @@ async def platform_api_server(
 
 
 @pytest.fixture
+async def platform_config_server(
+    platform_config_app: aiohttp.web.Application,
+) -> AsyncIterator[URL]:
+    async with create_local_app_server(app=platform_config_app, port=8480) as address:
+        yield URL.build(scheme="http", host=address.host, port=address.port)
+
+
+@pytest.fixture
 def platform_auth_config(
     platform_auth_server: URL, service_token: str
-) -> PlatformAuthConfig:
-    return PlatformAuthConfig(url=platform_auth_server, token=service_token)
+) -> PlatformServiceConfig:
+    return PlatformServiceConfig(url=platform_auth_server, token=service_token)
 
 
 @pytest.fixture
 def platform_api_config(
     platform_api_server: URL, service_token: str
-) -> PlatformApiConfig:
-    return PlatformApiConfig(url=platform_api_server / "api/v1", token=service_token)
-
-
-@pytest.fixture
-def metrics_config(kube_config: KubeConfig) -> MetricsConfig:
-    return MetricsConfig(
-        server=ServerConfig(port=9500), kube=kube_config, node_name="minikube"
+) -> PlatformServiceConfig:
+    return PlatformServiceConfig(
+        url=platform_api_server / "api/v1", token=service_token
     )
 
 
 @pytest.fixture
-async def metrics_server(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
-    app = create_metrics_app(metrics_config)
-    async with create_local_app_server(
-        app=app, port=metrics_config.server.port,
-    ) as address:
-        assert app["instance_type"] == "minikube"
-        yield URL.build(scheme="http", host=address.host, port=address.port)
+def platform_config_config(
+    platform_config_server: URL, service_token: str
+) -> PlatformServiceConfig:
+    return PlatformServiceConfig(url=platform_config_server, token=service_token)
+
+
+@pytest.fixture
+def metrics_config(
+    platform_config_config: PlatformServiceConfig, kube_config: KubeConfig
+) -> MetricsConfig:
+    return MetricsConfig(
+        server=ServerConfig(port=9500),
+        platform_config=platform_config_config,
+        kube=kube_config,
+        cluster_name="default",
+        node_name="minikube",
+    )
+
+
+@pytest.fixture
+async def metrics_server_factory() -> Callable[
+    [MetricsConfig], AsyncContextManager[URL]
+]:
+    @asynccontextmanager
+    async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
+        app = create_metrics_app(metrics_config)
+        async with create_local_app_server(
+            app=app, port=metrics_config.server.port,
+        ) as address:
+            assert app["instance_type"] == "minikube"
+            assert app["node_pool_name"] == "minikube-node-pool"
+            yield URL.build(scheme="http", host=address.host, port=address.port)
+
+    return _create
+
+
+@pytest.fixture
+async def metrics_server(
+    metrics_server_factory: Callable[[MetricsConfig], AsyncContextManager[URL]],
+    metrics_config: MetricsConfig,
+) -> AsyncIterator[URL]:
+    async with metrics_server_factory(metrics_config) as server:
+        yield server
 
 
 @pytest.fixture
 def prometheus_proxy_config(
-    platform_auth_config: PlatformAuthConfig, platform_api_config: PlatformApiConfig
+    platform_auth_config: PlatformServiceConfig,
+    platform_api_config: PlatformServiceConfig,
 ) -> PrometheusProxyConfig:
     return PrometheusProxyConfig(
         server=ServerConfig(port=8180),
@@ -177,11 +224,11 @@ async def prometheus_proxy_server(
 
 @pytest.fixture
 def grafana_proxy_config(
-    platform_auth_config: PlatformAuthConfig, platform_api_config: PlatformApiConfig
+    platform_auth_config: PlatformServiceConfig,
+    platform_api_config: PlatformServiceConfig,
 ) -> GrafanaProxyConfig:
     return GrafanaProxyConfig(
         server=ServerConfig(port=8280),
-        public_server=ServerConfig(port=8280),
         grafana_server=ServerConfig(port=3000),
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
@@ -202,8 +249,6 @@ async def grafana_proxy_server(
 
 
 @pytest.fixture
-async def client(
-    grafana_proxy_config: GrafanaProxyConfig,
-) -> AsyncIterator[aiohttp.ClientSession]:
+async def client() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session

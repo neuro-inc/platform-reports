@@ -35,12 +35,6 @@ spec:
               value: grafana
             - name: NP_GRAFANA_PORT
               value: "80"
-            - name: NP_GRAFANA_PUBLIC_SCHEME
-              value: https
-            - name: NP_GRAFANA_PUBLIC_HOST
-              value: {{ .Values.grafanaProxy.ingress.host }}
-            - name: NP_GRAFANA_PUBLIC_PORT
-              value: "80"
             - name: NP_AUTH_URL
               value: {{ .Values.platform.authUrl }}
             - name: NP_AUTH_TOKEN

@@ -5,7 +5,7 @@ import os
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from pathlib import Path
 from tempfile import mktemp
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping
 
 import aiobotocore
 import aiohttp
@@ -24,6 +24,7 @@ from jose import jwt
 from multidict import CIMultiDict, CIMultiDictProxy
 from neuro_auth_client import AuthClient, Permission
 from neuromation.api import Client as ApiClient, Factory as ClientFactory
+from platform_config_client.client import ConfigClient
 from platform_logging import DEFAULT_CONFIG, init_logging
 
 from .auth import AuthService
@@ -31,12 +32,12 @@ from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
     MetricsConfig,
-    PlatformApiConfig,
+    PlatformServiceConfig,
     PrometheusProxyConfig,
     ServerConfig,
 )
 from .kube_client import KubeClient
-from .metrics import AWSNodePriceCollector, PriceCollector
+from .metrics import AWSNodePriceCollector, Collector, PodPriceCollector, Price
 
 
 logger = logging.getLogger(__name__)
@@ -61,24 +62,52 @@ class MetricsHandler:
         self._app.router.add_get("/metrics", self.handle)
 
     @property
-    def _node_price_collector(self) -> PriceCollector:
+    def _node_price_collector(self) -> Collector[Price]:
         return self._app["node_price_collector"]
+
+    @property
+    def _pod_price_collector(self) -> Collector[Mapping[str, Price]]:
+        return self._app["pod_price_collector"]
 
     @property
     def _config(self) -> MetricsConfig:
         return self._app["config"]
 
     async def handle(self, request: Request) -> Response:
-        node_price_per_hour = self._node_price_collector.current_price_per_hour
-        return Response(
-            text=f"""\
-# HELP node_price_per_hour The price of the node per hour.
-# TYPE node_price_per_hour gauge
-node_price_per_hour{{\
+        text = [self._get_node_price_per_hour_text()]
+        pod_prices_per_hour_text = self._get_pod_prices_per_hour_text()
+        if pod_prices_per_hour_text:
+            text.append(pod_prices_per_hour_text)
+        return Response(text="\n\n".join(text))
+
+    def _get_node_price_per_hour_text(self) -> str:
+        node_price_per_hour = self._node_price_collector.current_value
+        return f"""\
+# HELP kube_node_price_per_hour The price of the node per hour.
+# TYPE kube_node_price_per_hour gauge
+kube_node_price_per_hour{{\
 node="{self._config.node_name}",\
 currency="{node_price_per_hour.currency}"\
 }} {node_price_per_hour.value}"""
-        )
+
+    def _get_pod_prices_per_hour_text(self) -> str:
+        pod_prices_per_hour = self._pod_price_collector.current_value
+        if not pod_prices_per_hour:
+            return ""
+        metrics: List[str] = [
+            """\
+# HELP kube_pod_price_per_hour The price of the pod per hour.
+# TYPE kube_pod_price_per_hour gauge"""
+        ]
+        for pod_name, pod_price in pod_prices_per_hour.items():
+            metrics.append(
+                f"""\
+kube_pod_price_per_hour{{\
+pod="{pod_name}",\
+currency="{pod_price.currency}"\
+}} {pod_price.value}"""
+            )
+        return "\n".join(metrics)
 
 
 class PrometheusProxyHandler:
@@ -135,7 +164,6 @@ class PrometheusProxyHandler:
 
         return await _proxy_request(
             client=self._prometheus_client,
-            proxy_server=self._config.server,
             upstream_server=self._config.prometheus_server,
             request=request,
         )
@@ -180,7 +208,6 @@ class GrafanaProxyHandler:
 
         return await _proxy_request(
             client=self._grafana_client,
-            proxy_server=self._config.public_server,
             upstream_server=self._config.grafana_server,
             request=request,
         )
@@ -196,7 +223,6 @@ class GrafanaProxyHandler:
 
         return await _proxy_request(
             client=self._grafana_client,
-            proxy_server=self._config.public_server,
             upstream_server=self._config.grafana_server,
             request=request,
         )
@@ -209,10 +235,7 @@ def _get_user_name(request: Request, access_token_cookie_name: str) -> str:
 
 
 async def _proxy_request(
-    client: aiohttp.ClientSession,
-    proxy_server: ServerConfig,
-    upstream_server: ServerConfig,
-    request: Request,
+    client: aiohttp.ClientSession, upstream_server: ServerConfig, request: Request,
 ) -> StreamResponse:
     upstream_url = (
         request.url.with_scheme(upstream_server.scheme)
@@ -294,7 +317,7 @@ async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
 
 
 @asynccontextmanager
-async def create_api_client(config: PlatformApiConfig) -> AsyncIterator[ApiClient]:
+async def create_api_client(config: PlatformServiceConfig) -> AsyncIterator[ApiClient]:
     tmp_config = Path(mktemp())
     platform_api_factory = ClientFactory(tmp_config)
     await platform_api_factory.login_with_token(url=config.url, token=config.token)
@@ -307,16 +330,6 @@ async def create_api_client(config: PlatformApiConfig) -> AsyncIterator[ApiClien
             await client.close()
 
 
-async def get_node_instance_type(kube_client: KubeClient, node_name: str) -> str:
-    node = await kube_client.get_node(node_name)
-    instance_type = (
-        node.metadata.labels.get("node.kubernetes.io/instance-type")
-        or node.metadata.labels.get("beta.kubernetes.io/instance-type")
-        or ""
-    )
-    return instance_type
-
-
 def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     ProbesHandler(app).register()
@@ -326,9 +339,23 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
+            config_client = await exit_stack.enter_async_context(
+                ConfigClient(config.platform_config.url, config.platform_config.token)
+            )
+
             kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
-            instance_type = await get_node_instance_type(kube_client, config.node_name)
+            node = await kube_client.get_node(config.node_name)
+            instance_type = (
+                node.metadata.labels.get("node.kubernetes.io/instance-type")
+                or node.metadata.labels.get("beta.kubernetes.io/instance-type")
+                or ""
+            )
             app["instance_type"] = instance_type
+            logger.info("Node instance type is %s", instance_type)
+
+            node_pool_name = node.metadata.labels.get(config.node_pool_label, "")
+            app["node_pool_name"] = node_pool_name
+            logger.info("Node pool name is %s", node_pool_name)
 
             if config.cloud_provider == "aws":
                 assert instance_type
@@ -344,11 +371,29 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     )
                 )
             else:
-                node_price_collector = PriceCollector()
+                node_price_collector = Collector(Price())
             app["node_price_collector"] = node_price_collector
+
+            pod_price_collector = await exit_stack.enter_async_context(
+                PodPriceCollector(
+                    config_client=config_client,
+                    kube_client=kube_client,
+                    node_price_collector=node_price_collector,
+                    cluster_name=config.cluster_name,
+                    node_name=config.node_name,
+                    node_pool_name=node_pool_name,
+                    jobs_namespace=config.jobs_namespace,
+                    job_label=config.job_label,
+                )
+            )
+            app["pod_price_collector"] = pod_price_collector
 
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
+            )
+
+            await exit_stack.enter_async_context(
+                run_task(await pod_price_collector.start())
             )
 
             yield

@@ -1,36 +1,56 @@
 import asyncio
 import json
 from contextlib import suppress
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator, Callable, Iterator
 from unittest import mock
 
 import pytest
 from aiobotocore.client import AioBaseClient
+from platform_config_client import (
+    Cluster,
+    ConfigClient,
+    OrchestratorConfig,
+    ResourcePoolType,
+)
 
-from platform_reports.metrics import AWSNodePriceCollector, Price, PriceCollector
+from platform_reports.kube_client import (
+    Container,
+    KubeClient,
+    Metadata,
+    Pod,
+    PodPhase,
+    PodStatus,
+    Resources,
+)
+from platform_reports.metrics import (
+    AWSNodePriceCollector,
+    Collector,
+    PodPriceCollector,
+    Price,
+)
 
 
-class TestPriceCollector:
+class TestCollector:
     @pytest.fixture
-    def price_collector(self) -> PriceCollector:
-        return PriceCollector(interval_s=0.1)
+    def collector(self) -> Collector[Price]:
+        return Collector(Price(), interval_s=0.1)
 
     @pytest.fixture
-    def price_factory(self, price_collector: PriceCollector) -> Iterator[mock.Mock]:
+    def price_factory(self, collector: Collector[Price]) -> Iterator[mock.Mock]:
         price = Price(currency="USD", value=1)
         with mock.patch.object(
-            price_collector, "get_latest_price_per_hour", return_value=price,
+            collector, "get_latest_value", return_value=price,
         ) as mock_method:
             yield mock_method
 
     async def test_update(
-        self, price_collector: PriceCollector, price_factory: mock.Mock
+        self, collector: Collector[Price], price_factory: mock.Mock
     ) -> None:
-        task = asyncio.create_task(await price_collector.start())
+        task = asyncio.create_task(await collector.start())
 
         await asyncio.sleep(0.3)
 
-        assert price_collector.current_price_per_hour == Price(currency="USD", value=1)
+        assert collector.current_value == Price(currency="USD", value=1)
         assert price_factory.call_count >= 3
 
         task.cancel()
@@ -46,13 +66,14 @@ class TestAWSNodePriceCollector:
     @pytest.fixture
     async def price_collector(
         self, pricing_client: AioBaseClient
-    ) -> AsyncIterator[PriceCollector]:
+    ) -> AsyncIterator[AWSNodePriceCollector]:
         async with AWSNodePriceCollector(
             pricing_client=pricing_client,
             region="us-east-1",
             instance_type="p2.xlarge",
             interval_s=0.1,
         ) as result:
+            assert isinstance(result, AWSNodePriceCollector)
             yield result
 
     async def test_get_latest_price_per_hour(
@@ -78,7 +99,7 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        result = await price_collector.get_latest_price_per_hour()
+        result = await price_collector.get_latest_value()
 
         pricing_client.get_products.assert_awaited_once_with(
             ServiceCode="AmazonEC2",
@@ -120,7 +141,7 @@ class TestAWSNodePriceCollector:
             "PriceList": [json.dumps(price_item), json.dumps(price_item)]
         }
 
-        result = await price_collector.get_latest_price_per_hour()
+        result = await price_collector.get_latest_value()
 
         assert result == Price()
 
@@ -147,6 +168,148 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        result = await price_collector.get_latest_price_per_hour()
+        result = await price_collector.get_latest_value()
 
         assert result == Price()
+
+
+class TestPodPriceCollector:
+    @pytest.fixture
+    def config_client_factory(self) -> Callable[..., mock.AsyncMock]:
+        def _create(node_resources: Resources) -> mock.AsyncMock:
+            result = mock.AsyncMock(spec=ConfigClient)
+            result.get_cluster.return_value = Cluster(
+                name="minikube",
+                orchestrator=OrchestratorConfig(
+                    job_hostname_template="",
+                    job_fallback_hostname="",
+                    resource_pool_types=[
+                        ResourcePoolType(
+                            name="minikube-node-pool",
+                            cpu=node_resources.cpu_m / 1000,
+                            memory_mb=node_resources.memory_mb,
+                            gpu=node_resources.gpu or None,
+                        )
+                    ],
+                ),
+            )
+            return result
+
+        return _create
+
+    @pytest.fixture
+    def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
+        def _create(**pod_resources: Resources) -> mock.AsyncMock:
+            result = mock.AsyncMock(spec=KubeClient)
+            result.get_pods.return_value = [
+                Pod(
+                    metadata=Metadata(name=name),
+                    status=PodStatus(phase=PodPhase.RUNNING),
+                    containers=[Container(name=name, resource_requests=resources)],
+                )
+                for name, resources in pod_resources.items()
+            ]
+            return result
+
+        return _create
+
+    @pytest.fixture
+    def node_price_collector(self) -> mock.AsyncMock:
+        result = mock.Mock(spec=Collector[Price])
+        type(result).current_value = mock.PropertyMock(
+            return_value=Price(value=1.0, currency="USD")
+        )
+        return result
+
+    @pytest.fixture
+    def collector_factory(
+        self,
+        config_client_factory: Callable[..., ConfigClient],
+        kube_client_factory: Callable[..., KubeClient],
+        node_price_collector: Collector[Price],
+    ) -> Callable[..., PodPriceCollector]:
+        def _create(node: Resources, **pod_resources: Resources) -> PodPriceCollector:
+            config_client = config_client_factory(node)
+            kube_client = kube_client_factory(**pod_resources)
+            return PodPriceCollector(
+                config_client=config_client,
+                kube_client=kube_client,
+                node_price_collector=node_price_collector,
+                cluster_name="default",
+                node_name="minikube",
+                node_pool_name="minikube-node-pool",
+                jobs_namespace="platform-jobs",
+                job_label="job",
+            )
+
+        return _create
+
+    async def test_get_latest_price_per_hour(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096),
+            job=Resources(cpu_m=100, memory_mb=100),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Price(value=0.1, currency="USD")}
+
+    async def test_get_latest_price_per_hour_high_cpu(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096),
+            job=Resources(cpu_m=1000, memory_mb=100),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Price(value=1.0, currency="USD")}
+
+    async def test_get_latest_price_per_hour_high_memory(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096),
+            job=Resources(cpu_m=100, memory_mb=4096),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Price(value=1.0, currency="USD")}
+
+    async def test_get_latest_price_per_hour_gpu(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096, gpu=4),
+            job=Resources(cpu_m=100, memory_mb=100, gpu=3),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Price(value=0.75, currency="USD")}
+
+    async def test_get_latest_price_per_memory_overused(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096),
+            job=Resources(cpu_m=100, memory_mb=5000),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Price(value=1.0, currency="USD")}
+
+    async def test_get_latest_price_per_hour_multiple_pods(
+        self, collector_factory: Callable[..., PodPriceCollector],
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(cpu_m=1000, memory_mb=4096),
+            job1=Resources(cpu_m=100, memory_mb=100),
+            job2=Resources(cpu_m=200, memory_mb=100),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {
+            "job1": Price(value=0.1, currency="USD"),
+            "job2": Price(value=0.2, currency="USD"),
+        }

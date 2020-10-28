@@ -2,6 +2,7 @@ import enum
 import logging
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, Optional
 
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
@@ -54,8 +55,10 @@ class MetricsConfig:
     node_name: str
     cloud_provider: str = ""
     region: str = ""
+    gcp_service_account_key_path: Optional[Path] = None
     jobs_namespace: str = ""
     node_pool_label: str = "platform.neuromation.io/nodepool"
+    node_preemptible_label: str = "platform.neuromation.io/preemptible"
     job_label: str = "platform.neuromation.io/job"
 
 
@@ -86,6 +89,11 @@ class EnvironConfigFactory:
         self._environ = environ or os.environ
 
     def create_metrics(self) -> MetricsConfig:
+        gcp_service_account_key_path = MetricsConfig.gcp_service_account_key_path
+        if self._environ.get("NP_GCP_SERVICE_ACCOUNT_KEY_PATH"):
+            gcp_service_account_key_path = Path(
+                self._environ["NP_GCP_SERVICE_ACCOUNT_KEY_PATH"]
+            )
         return MetricsConfig(
             server=ServerConfig(
                 scheme=self._environ.get("NP_METRICS_API_SCHEME", ServerConfig.scheme),
@@ -100,11 +108,15 @@ class EnvironConfigFactory:
                 "NP_CLOUD_PROVIDER", MetricsConfig.cloud_provider
             ),
             region=self._environ.get("NP_REGION", MetricsConfig.region),
+            gcp_service_account_key_path=gcp_service_account_key_path,
             jobs_namespace=self._environ.get(
                 "NP_JOBS_NAMESPACE", MetricsConfig.jobs_namespace
             ),
             node_pool_label=self._environ.get(
                 "NP_NODE_POOL_LABEL", MetricsConfig.node_pool_label
+            ),
+            node_preemptible_label=self._environ.get(
+                "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
             ),
             job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
         )

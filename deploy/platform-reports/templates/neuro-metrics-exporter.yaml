@@ -58,11 +58,17 @@ spec:
               value: {{ .Values.cloudProvider.type | quote }}
             - name: NP_REGION
               value: {{ .Values.cloudProvider.region | quote }}
+            {{- if eq .Values.cloudProvider "gcp" }}
+            - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
+              value: /root/service_account_key.json
+            {{- end }}
             {{- end }}
             - name: NP_JOBS_NAMESPACE
               value: {{ .Values.platformJobs.namespace }}
             - name: NP_NODE_POOL_LABEL
-              value: {{ .Values.platform.clusterName }}
+              value: {{ .Values.nodePoolLabels.nodePool }}
+            - name: NP_NODE_PREEMPTIBLE_LABEL
+              value: {{ .Values.nodePoolLabels.preemptible }}
             - name: NP_JOB_LABEL
               value: {{ .Values.nodePoolLabels.nodePool }}
           ports:
@@ -83,6 +89,21 @@ spec:
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
+          {{- if eq .Values.cloudProvider "gcp" }}
+          volumeMounts:
+            - name: service-account-key
+              mountPath: /root
+              readOnly: true
+          {{- end }}
+      {{- if eq .Values.cloudProvider "gcp" }}
+      volumes:
+        - name: service-account-key
+          secret:
+            secretName: {{ .Values.cloudProvider.serviceAccountSecret.name | quote }}
+            items:
+              - key: {{ .Values.cloudProvider.serviceAccountSecret.key | quote }}
+                path: service_account_key.json
+      {{- end }}
 ---
 kind: Service
 apiVersion: v1

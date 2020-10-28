@@ -169,7 +169,9 @@ class AWSNodePriceCollector(Collector[Price]):
 
 
 class AzureNodePriceCollector(Collector[Price]):
-    def __init__(self, instance_type: str) -> None:
+    def __init__(self, instance_type: str, interval_s: float = 3600) -> None:
+        super().__init__(Price(), interval_s)
+
         self._instance_type = instance_type
         self._instance_prices = {
             k.lower(): v for k, v in self.get_instance_prices().items()

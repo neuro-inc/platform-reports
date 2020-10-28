@@ -5,6 +5,7 @@ import os
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from pathlib import Path
 from tempfile import mktemp
+from textwrap import dedent
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping
 
 import aiobotocore
@@ -81,31 +82,29 @@ class MetricsHandler:
         return Response(text="\n\n".join(text))
 
     def _get_node_price_per_hour_text(self) -> str:
-        node_price_per_hour = self._node_price_collector.current_value
-        return f"""\
-# HELP kube_node_price_per_hour The price of the node per hour.
-# TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour{{\
-node="{self._config.node_name}",\
-currency="{node_price_per_hour.currency}"\
-}} {node_price_per_hour.value}"""
+        node = self._config.node_name
+        price = self._node_price_collector.current_value
+        return dedent(
+            f"""\
+            # HELP kube_node_price_per_hour The price of the node per hour.
+            # TYPE kube_node_price_per_hour gauge
+            kube_node_price_per_hour{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
+        )
 
     def _get_pod_prices_per_hour_text(self) -> str:
         pod_prices_per_hour = self._pod_price_collector.current_value
         if not pod_prices_per_hour:
             return ""
         metrics: List[str] = [
-            """\
-# HELP kube_pod_price_per_hour The price of the pod per hour.
-# TYPE kube_pod_price_per_hour gauge"""
+            dedent(
+                """\
+                # HELP kube_pod_price_per_hour The price of the pod per hour.
+                # TYPE kube_pod_price_per_hour gauge"""
+            )
         ]
-        for pod_name, pod_price in pod_prices_per_hour.items():
+        for name, price in pod_prices_per_hour.items():
             metrics.append(
-                f"""\
-kube_pod_price_per_hour{{\
-pod="{pod_name}",\
-currency="{pod_price.currency}"\
-}} {pod_price.value}"""
+                f'kube_pod_price_per_hour{{pod="{name}",currency="{price.currency}"}} {price.value}'  # noqa: E501
             )
         return "\n".join(metrics)
 

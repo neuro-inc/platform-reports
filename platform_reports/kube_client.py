@@ -182,13 +182,12 @@ class KubeClient:
         trace_config = aiohttp.TraceConfig()
         trace_config.on_request_start.append(self._on_request_start)  # type: ignore
         trace_config.on_request_end.append(self._on_request_end)  # type: ignore
-        client = aiohttp.ClientSession(
+        return aiohttp.ClientSession(
             connector=connector,
             timeout=timeout,
             headers=headers,
             trace_configs=[trace_config],
         )
-        return await client.__aenter__()
 
     async def aclose(self) -> None:
         assert self._client

@@ -46,7 +46,6 @@ spec:
                 secretKeyRef:
                   name: platformservices-secret
                   key: cluster_token
-              value: {{ .Values.platform.clusterName }}
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName }}
             - name: NP_NODE_NAME

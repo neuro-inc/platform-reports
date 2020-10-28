@@ -3,7 +3,6 @@ import json
 import logging
 from dataclasses import dataclass
 from importlib.resources import path
-from os.path import join
 from pathlib import Path
 from types import TracebackType
 from typing import (

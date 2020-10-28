@@ -69,7 +69,7 @@ spec:
             - name: NP_NODE_PREEMPTIBLE_LABEL
               value: {{ .Values.nodePoolLabels.preemptible }}
             - name: NP_JOB_LABEL
-              value: {{ .Values.nodePoolLabels.nodePool }}
+              value: {{ .Values.platformJobs.label }}
           ports:
             - name: metrics
               containerPort: {{ .Values.metricsServer.port }}

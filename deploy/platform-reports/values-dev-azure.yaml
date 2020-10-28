@@ -1,6 +1,6 @@
 cloudProvider:
   type: azure
-  region: us-east-1
+  region: eastus
 
 platform:
   authUrl: https://dev.neu.ro

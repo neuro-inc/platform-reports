@@ -40,13 +40,7 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
-class PlatformAuthConfig:
-    url: URL
-    token: str = field(repr=False)
-
-
-@dataclass(frozen=True)
-class PlatformApiConfig:
+class PlatformServiceConfig:
     url: URL
     token: str = field(repr=False)
 
@@ -55,17 +49,22 @@ class PlatformApiConfig:
 class MetricsConfig:
     server: ServerConfig
     kube: KubeConfig
+    platform_config: PlatformServiceConfig
+    cluster_name: str
     node_name: str
     cloud_provider: str = ""
     region: str = ""
+    jobs_namespace: str = ""
+    node_pool_label: str = "platform.neuromation.io/nodepool"
+    job_label: str = "platform.neuromation.io/job"
 
 
 @dataclass(frozen=True)
 class PrometheusProxyConfig:
     server: ServerConfig
     prometheus_server: ServerConfig
-    platform_auth: PlatformAuthConfig
-    platform_api: PlatformApiConfig
+    platform_auth: PlatformServiceConfig
+    platform_api: PlatformServiceConfig
     cluster_name: str
     access_token_cookie_name: str
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -74,10 +73,9 @@ class PrometheusProxyConfig:
 @dataclass(frozen=True)
 class GrafanaProxyConfig:
     server: ServerConfig
-    public_server: ServerConfig
     grafana_server: ServerConfig
-    platform_auth: PlatformAuthConfig
-    platform_api: PlatformApiConfig
+    platform_auth: PlatformServiceConfig
+    platform_api: PlatformServiceConfig
     cluster_name: str
     access_token_cookie_name: str
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -95,11 +93,20 @@ class EnvironConfigFactory:
                 port=int(self._environ.get("NP_METRICS_API_PORT", ServerConfig.port)),
             ),
             kube=self._create_kube(),
+            platform_config=self._create_platform_config(),
+            cluster_name=self._environ["NP_CLUSTER_NAME"],
             node_name=self._environ["NP_NODE_NAME"],
             cloud_provider=self._environ.get(
                 "NP_CLOUD_PROVIDER", MetricsConfig.cloud_provider
             ),
             region=self._environ.get("NP_REGION", MetricsConfig.region),
+            jobs_namespace=self._environ.get(
+                "NP_JOBS_NAMESPACE", MetricsConfig.jobs_namespace
+            ),
+            node_pool_label=self._environ.get(
+                "NP_NODE_POOL_LABEL", MetricsConfig.node_pool_label
+            ),
+            job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
         )
 
     def create_prometheus_proxy(self) -> PrometheusProxyConfig:
@@ -115,7 +122,6 @@ class EnvironConfigFactory:
     def create_grafana_proxy(self) -> GrafanaProxyConfig:
         return GrafanaProxyConfig(
             server=self._create_server(),
-            public_server=self._create_grafana_public_server(),
             grafana_server=self._create_grafana_server(),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
@@ -144,21 +150,20 @@ class EnvironConfigFactory:
             port=int(self._environ["NP_GRAFANA_PORT"]),
         )
 
-    def _create_grafana_public_server(self) -> ServerConfig:
-        return ServerConfig(
-            scheme=self._environ.get("NP_GRAFANA_PUBLIC_SCHEME", ServerConfig.scheme),
-            host=self._environ["NP_GRAFANA_PUBLIC_HOST"],
-            port=int(self._environ["NP_GRAFANA_PUBLIC_PORT"]),
-        )
-
-    def _create_platform_auth(self) -> PlatformAuthConfig:
-        return PlatformAuthConfig(
+    def _create_platform_auth(self) -> PlatformServiceConfig:
+        return PlatformServiceConfig(
             url=URL(self._environ["NP_AUTH_URL"]), token=self._environ["NP_AUTH_TOKEN"]
         )
 
-    def _create_platform_api(self) -> PlatformApiConfig:
-        return PlatformApiConfig(
+    def _create_platform_api(self) -> PlatformServiceConfig:
+        return PlatformServiceConfig(
             url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_AUTH_TOKEN"]
+        )
+
+    def _create_platform_config(self) -> PlatformServiceConfig:
+        return PlatformServiceConfig(
+            url=URL(self._environ["NP_CONFIG_URL"]),
+            token=self._environ["NP_CONFIG_TOKEN"],
         )
 
     def _create_kube(self) -> KubeConfig:

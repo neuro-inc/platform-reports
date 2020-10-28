@@ -4,9 +4,12 @@ import logging
 from dataclasses import dataclass
 from importlib.resources import path
 from types import TracebackType
-from typing import Awaitable, Dict, Optional, Type
+from typing import Awaitable, Dict, Generic, Mapping, Optional, Type, TypeVar
 
 from aiobotocore.client import AioBaseClient
+from platform_config_client import Cluster, ConfigClient
+
+from .kube_client import KubeClient, Pod, Resources
 
 
 logger = logging.getLogger(__name__)
@@ -24,40 +27,41 @@ class Price:
         return self.__str__()
 
 
-class PriceCollector:
-    def __init__(self, interval_s: float = 3600) -> None:
+_TValue = TypeVar("_TValue")
+
+
+class Collector(Generic[_TValue]):
+    def __init__(self, initial_value: _TValue, interval_s: float = 3600) -> None:
         self._interval_s = interval_s
-        self._price_per_hour = Price()
+        self._value = initial_value
 
     @property
-    def current_price_per_hour(self) -> Price:
-        return self._price_per_hour
+    def current_value(self) -> _TValue:
+        return self._value
 
-    async def get_latest_price_per_hour(self) -> Price:
-        return Price()
+    async def get_latest_value(self) -> _TValue:
+        return self._value
 
     async def start(self) -> Awaitable[None]:
-        self._price_per_hour = await self.get_latest_price_per_hour()
-        logger.info("Updated node price to %s per hour", self._price_per_hour)
+        self._value = await self.get_latest_value()
+        logger.info("Updated value to %s", self._value)
         return self._update()
 
     async def _update(self) -> None:
         while True:
             try:
-                logger.info(
-                    "Next node price update will be in %s seconds", self._interval_s
-                )
+                logger.info("Next update will be in %s seconds", self._interval_s)
                 await asyncio.sleep(self._interval_s)
-                self._price_per_hour = await self.get_latest_price_per_hour()
-                logger.info("Updated price to %s per hour", self._price_per_hour)
+                self._value = await self.get_latest_value()
+                logger.info("Updated value to %s", self._value)
             except asyncio.CancelledError:
                 raise
             except Exception as ex:
                 logger.warning(
-                    "Unexpected error ocurred during price update", exc_info=ex
+                    "Unexpected error ocurred during value update", exc_info=ex
                 )
 
-    async def __aenter__(self) -> "PriceCollector":
+    async def __aenter__(self) -> "Collector[_TValue]":
         return self
 
     async def __aexit__(
@@ -69,7 +73,7 @@ class PriceCollector:
         pass
 
 
-class AWSNodePriceCollector(PriceCollector):
+class AWSNodePriceCollector(Collector[Price]):
     def __init__(
         self,
         pricing_client: AioBaseClient,
@@ -77,13 +81,13 @@ class AWSNodePriceCollector(PriceCollector):
         instance_type: str,
         interval_s: float = 3600,
     ) -> None:
-        super().__init__(interval_s)
+        super().__init__(Price(), interval_s)
         self._pricing_client = pricing_client
         self._region = region
         self._region_long_name = ""
         self._instance_type = instance_type
 
-    async def __aenter__(self) -> PriceCollector:
+    async def __aenter__(self) -> Collector[Price]:
         await super().__aenter__()
         region_long_names = self._get_region_long_names()
         self._region_long_name = region_long_names[self._region]
@@ -110,7 +114,7 @@ class AWSNodePriceCollector(PriceCollector):
         result["ap-northeast-3"] = "Asia Pacific (Osaka-Local)"
         return result
 
-    async def get_latest_price_per_hour(self) -> Price:
+    async def get_latest_value(self) -> Price:
         response = await self._pricing_client.get_products(
             ServiceCode="AmazonEC2",
             FormatVersion="aws_v1",
@@ -148,9 +152,97 @@ class AWSNodePriceCollector(PriceCollector):
         return {"Type": "TERM_MATCH", "Field": field, "Value": value}
 
 
-class AzureNodePriceCollector(PriceCollector):
+class AzureNodePriceCollector(Collector[Price]):
     pass
 
 
-class GCPNodePriceCollector(PriceCollector):
+class GCPNodePriceCollector(Collector[Price]):
     pass
+
+
+class PodPriceCollector(Collector[Mapping[str, Price]]):
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        kube_client: KubeClient,
+        node_price_collector: Collector[Price],
+        cluster_name: str,
+        node_name: str,
+        node_pool_name: str,
+        jobs_namespace: str,
+        job_label: str,
+        interval_s: float = 60,
+    ) -> None:
+        super().__init__({}, interval_s)
+
+        self._kube_client = kube_client
+        self._config_client = config_client
+        self._node_price_collector = node_price_collector
+        self._jobs_namespace = jobs_namespace
+        self._job_label = job_label
+        self._cluster_name = cluster_name
+        self._node_pool_name = node_pool_name
+        self._node_name = node_name
+
+    async def get_latest_value(self) -> Mapping[str, Price]:
+        pods = await self._kube_client.get_pods(
+            namespace=self._jobs_namespace,
+            label_selector=self._job_label,
+            field_selector=",".join(
+                (
+                    f"spec.nodeName={self._node_name}",
+                    "status.phase!=Failed",
+                    "status.phase!=Succeeded",
+                ),
+            ),
+        )
+        if not pods:
+            return {}
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+        node_resources = self._get_node_resources(cluster)
+        result: Dict[str, Price] = {}
+        for pod in pods:
+            pod_resources = self._get_pod_resources(pod)
+            fraction = self._get_pod_resources_fraction(
+                node_resources=node_resources, pod_resources=pod_resources
+            )
+            node_price_per_hour = self._node_price_collector.current_value
+            result[pod.metadata.name] = Price(
+                currency=node_price_per_hour.currency,
+                value=node_price_per_hour.value * fraction,
+            )
+        return result
+
+    def _get_node_resources(self, cluster: Cluster) -> Resources:
+        resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
+        if self._node_pool_name not in resource_pools:
+            return Resources()
+        resource_pool = resource_pools[self._node_pool_name]
+        return Resources(
+            cpu_m=int(resource_pool.cpu * 1000),
+            memory_mb=resource_pool.memory_mb,
+            gpu=resource_pool.gpu,
+        )
+
+    def _get_pod_resources(self, pod: Pod) -> Resources:
+        cpu_m = 0
+        memory_mb = 0
+        gpu = 0
+        for container in pod.containers:
+            cpu_m += container.resource_requests.cpu_m
+            memory_mb += container.resource_requests.memory_mb
+            gpu += container.resource_requests.gpu
+        return Resources(cpu_m=cpu_m, memory_mb=memory_mb, gpu=gpu)
+
+    def _get_pod_resources_fraction(
+        self, node_resources: Resources, pod_resources: Resources
+    ) -> float:
+        gpu_fraction = 0.0
+        if node_resources.gpu and pod_resources.gpu:
+            gpu_fraction = pod_resources.gpu / node_resources.gpu
+        max_fraction = max(
+            pod_resources.cpu_m / node_resources.cpu_m,
+            pod_resources.memory_mb / node_resources.memory_mb,
+            gpu_fraction,
+        )
+        return min(1.0, max_fraction)

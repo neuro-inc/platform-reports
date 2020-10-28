@@ -19,6 +19,13 @@ spec:
         component: neuro-metrics-exporter
       annotations: {{ toYaml .Values.metricsServer.podMetadata.annotations | nindent 8 }}
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: {{ .Values.nodePoolLabels.job }}
+                    operator: Exists
       tolerations:
         - effect: NoSchedule
           operator: Exists
@@ -32,6 +39,16 @@ spec:
               value: {{ .Values.logLevel }}
             - name: NP_METRICS_API_PORT
               value: {{ .Values.metricsServer.port | quote }}
+            - name: NP_CONFIG_URL
+              value: {{ .Values.platform.configUrl }}
+            - name: NP_CONFIG_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: platformservices-secret
+                  key: cluster_token
+              value: {{ .Values.platform.clusterName }}
+            - name: NP_CLUSTER_NAME
+              value: {{ .Values.platform.clusterName }}
             - name: NP_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -42,6 +59,12 @@ spec:
             - name: NP_REGION
               value: {{ .Values.cloudProvider.region | quote }}
             {{- end }}
+            - name: NP_JOBS_NAMESPACE
+              value: {{ .Values.platformJobs.namespace }}
+            - name: NP_NODE_POOL_LABEL
+              value: {{ .Values.platform.clusterName }}
+            - name: NP_JOB_LABEL
+              value: {{ .Values.nodePoolLabels.nodePool }}
           ports:
             - name: metrics
               containerPort: {{ .Values.metricsServer.port }}

@@ -3,9 +3,10 @@ from setuptools import find_packages, setup
 
 install_requires = (
     "neuro_auth_client==19.11.25",
+    "platform_config_client==20.10.23",
     "neuromation==20.9.3",
     "platform-logging==0.3",
-    "aiohttp==3.6.2",
+    "aiohttp==3.6.3",
     "multidict==4.7.6",
     "python-jose==3.1.0",
     "lark-parser==0.9.0",

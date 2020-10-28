@@ -1,12 +1,10 @@
-nodePoolLabels:
-  gpu: cloud.google.com/gke-accelerator
-
 cloudProvider:
   type: azure
   region: us-east-1
 
 platform:
   authUrl: https://dev.neu.ro
+  configUrl: https://dev.neu.ro
   apiUrl: https://dev.neu.ro/api/v1
   accessTokenCookieName: dat
   clusterName: default

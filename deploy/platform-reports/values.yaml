@@ -1,7 +1,9 @@
 logLevel: INFO
 
 nodePoolLabels:
+  job: platform.neuromation.io/job
   gpu: platform.neuromation.io/accelerator
+  nodePool: platform.neuromation.io/nodepool
 
 objectStore:
   supported: true
@@ -9,6 +11,10 @@ objectStore:
 
 platform:
   accessTokenCookieName: sat
+
+platformJobs:
+  namespace: platform-jobs
+  label: platform.neuromation.io/job
 
 image:
   repository: "$IMAGE_REPO"

@@ -42,7 +42,7 @@ class TestCollector:
     def price_factory(self, collector: Collector[Price]) -> Iterator[mock.Mock]:
         price = Price(currency="USD", value=1)
         with mock.patch.object(
-            collector, "get_latest_value", return_value=price,
+            collector, "get_latest_value", return_value=price
         ) as mock_method:
             yield mock_method
 
@@ -186,7 +186,7 @@ class TestGCPNodePriceCollector:
                 job_hostname_template="",
                 job_fallback_hostname="",
                 resource_pool_types=[
-                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory_mb=52 * 1024,),
+                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory_mb=52 * 1024),
                     ResourcePoolType(
                         name="n1-highmem-8-4xk80",
                         cpu=8,
@@ -452,7 +452,7 @@ class TestGCPNodePriceCollector:
 
 class TestAzureNodePriceCollector:
     @pytest.fixture
-    def collector_factory(self,) -> Callable[..., AzureNodePriceCollector]:
+    def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
         def _create(instance_type: str) -> AzureNodePriceCollector:
             return AzureNodePriceCollector(instance_type)
 
@@ -555,7 +555,7 @@ class TestPodPriceCollector:
         return _create
 
     async def test_get_latest_price_per_hour(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self, collector_factory: Callable[..., PodPriceCollector]
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096),
@@ -566,7 +566,7 @@ class TestPodPriceCollector:
         assert result == {"job": Price(value=0.1, currency="USD")}
 
     async def test_get_latest_price_per_hour_high_cpu(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self, collector_factory: Callable[..., PodPriceCollector]
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096),
@@ -577,7 +577,7 @@ class TestPodPriceCollector:
         assert result == {"job": Price(value=1.0, currency="USD")}
 
     async def test_get_latest_price_per_hour_high_memory(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self, collector_factory: Callable[..., PodPriceCollector]
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096),
@@ -588,7 +588,8 @@ class TestPodPriceCollector:
         assert result == {"job": Price(value=1.0, currency="USD")}
 
     async def test_get_latest_price_per_hour_gpu(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self,
+        collector_factory: Callable[..., PodPriceCollector],
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096, gpu=4),
@@ -599,7 +600,7 @@ class TestPodPriceCollector:
         assert result == {"job": Price(value=0.75, currency="USD")}
 
     async def test_get_latest_price_per_memory_overused(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self, collector_factory: Callable[..., PodPriceCollector]
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096),
@@ -610,7 +611,7 @@ class TestPodPriceCollector:
         assert result == {"job": Price(value=1.0, currency="USD")}
 
     async def test_get_latest_price_per_hour_multiple_pods(
-        self, collector_factory: Callable[..., PodPriceCollector],
+        self, collector_factory: Callable[..., PodPriceCollector]
     ) -> None:
         collector = collector_factory(
             node=Resources(cpu_m=1000, memory_mb=4096),

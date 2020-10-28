@@ -161,9 +161,7 @@ class PrometheusProxyHandler:
                         ),
                         action="read",
                     ),
-                    Permission(
-                        uri=f"job://{self._config.cluster_name}", action="read",
-                    ),
+                    Permission(uri=f"job://{self._config.cluster_name}", action="read"),
                 ],
             ):
                 return Response(status=HTTPForbidden.status_code)
@@ -241,7 +239,7 @@ def _get_user_name(request: Request, access_token_cookie_name: str) -> str:
 
 
 async def _proxy_request(
-    client: aiohttp.ClientSession, upstream_server: ServerConfig, request: Request,
+    client: aiohttp.ClientSession, upstream_server: ServerConfig, request: Request
 ) -> StreamResponse:
     upstream_url = (
         request.url.with_scheme(upstream_server.scheme)
@@ -528,7 +526,7 @@ def run_metrics_server() -> None:  # pragma: no coverage
     config = EnvironConfigFactory().create_metrics()
     logging.info("Loaded config: %r", config)
     aiohttp.web.run_app(
-        create_metrics_app(config), host=config.server.host, port=config.server.port,
+        create_metrics_app(config), host=config.server.host, port=config.server.port
     )
 
 

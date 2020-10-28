@@ -68,9 +68,7 @@ UserFactory = Callable[
 async def service_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
-    await user_factory(
-        "cluster", [], [Permission(uri="user://", action="read")],
-    )
+    await user_factory("cluster", [], [Permission(uri="user://", action="read")])
     return token_factory("cluster")
 
 
@@ -178,7 +176,8 @@ async def metrics_server_factory() -> Callable[
     async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
         app = create_metrics_app(metrics_config)
         async with create_local_app_server(
-            app=app, port=metrics_config.server.port,
+            app=app,
+            port=metrics_config.server.port,
         ) as address:
             assert app["instance_type"] == "minikube"
             assert app["node_pool_name"] == "minikube-node-pool"

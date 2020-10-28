@@ -40,6 +40,7 @@ from .config import (
 from .kube_client import KubeClient
 from .metrics import (
     AWSNodePriceCollector,
+    AzureNodePriceCollector,
     Collector,
     GCPNodePriceCollector,
     PodPriceCollector,
@@ -397,6 +398,11 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         instance_type=instance_type,
                         is_preemptible=is_preemptible,
                     )
+                )
+            elif config.cloud_provider == "azure":
+                assert instance_type
+                node_price_collector = await exit_stack.enter_async_context(
+                    AzureNodePriceCollector(instance_type)
                 )
             else:
                 node_price_collector = Collector(Price())

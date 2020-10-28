@@ -387,14 +387,16 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 assert config.region
                 assert config.gcp_service_account_key_path
                 assert instance_type
-                node_price_collector = GCPNodePriceCollector(
-                    config_client=config_client,
-                    service_account_path=config.gcp_service_account_key_path,
-                    cluster_name=config.cluster_name,
-                    node_pool_name=node_pool_name,
-                    region=config.region,
-                    instance_type=instance_type,
-                    is_preemptible=is_preemptible,
+                node_price_collector = await exit_stack.enter_async_context(
+                    GCPNodePriceCollector(
+                        config_client=config_client,
+                        service_account_path=config.gcp_service_account_key_path,
+                        cluster_name=config.cluster_name,
+                        node_pool_name=node_pool_name,
+                        region=config.region,
+                        instance_type=instance_type,
+                        is_preemptible=is_preemptible,
+                    )
                 )
             else:
                 node_price_collector = Collector(Price())

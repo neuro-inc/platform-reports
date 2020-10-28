@@ -422,6 +422,13 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=0.639624, currency="USD")
 
+    async def test_get_latest_price_per_hour_unknown_instance_type(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8-4xk80", "unknown", True) as collector:
+            with pytest.raises(AssertionError):
+                await collector.get_latest_value()
+
 
 class TestPodPriceCollector:
     @pytest.fixture

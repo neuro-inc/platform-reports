@@ -27,11 +27,11 @@ setup:
 	pip install -r requirements/dev.txt
 
 format:
-	isort -rc $(LINT_PATHS)
+	isort $(LINT_PATHS)
 	black .
 
 lint:
-	isort -c -rc $(LINT_PATHS)
+	isort -c $(LINT_PATHS)
 	black --check $(LINT_PATHS)
 	flake8 $(LINT_PATHS)
 	mypy $(LINT_PATHS)

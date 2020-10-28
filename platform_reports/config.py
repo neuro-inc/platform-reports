@@ -155,15 +155,15 @@ class EnvironConfigFactory:
             url=URL(self._environ["NP_AUTH_URL"]), token=self._environ["NP_AUTH_TOKEN"]
         )
 
+    def _create_platform_api(self) -> PlatformServiceConfig:
+        return PlatformServiceConfig(
+            url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_AUTH_TOKEN"]
+        )
+
     def _create_platform_config(self) -> PlatformServiceConfig:
         return PlatformServiceConfig(
             url=URL(self._environ["NP_CONFIG_URL"]),
             token=self._environ["NP_CONFIG_TOKEN"],
-        )
-
-    def _create_platform_api(self) -> PlatformServiceConfig:
-        return PlatformServiceConfig(
-            url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_AUTH_TOKEN"]
         )
 
     def _create_kube(self) -> KubeConfig:

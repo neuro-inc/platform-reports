@@ -300,7 +300,7 @@ class GCPNodePriceCollector(Collector[Price]):
         # in Google API query we will receive only latest value.
         tiered_rates = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"]
         # TieredRates can contain multiple values with it's own startUsageAmount.
-        # Usage is priced at this rate only after the startUsageAmount.
+        # Usage is priced at this rate only after the startUsageAmount is reached.
         # OnDemand and Preemptible instance prices don't depend on usage amount,
         # so there will be only one rate.
         tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))

@@ -1,7 +1,8 @@
 import asyncio
 import json
-from contextlib import suppress
-from typing import AsyncIterator, Callable, Iterator
+from contextlib import contextmanager, suppress
+from pathlib import Path
+from typing import Any, AsyncIterator, Callable, ContextManager, Dict, Iterator
 from unittest import mock
 
 import pytest
@@ -25,6 +26,7 @@ from platform_reports.kube_client import (
 from platform_reports.metrics import (
     AWSNodePriceCollector,
     Collector,
+    GCPNodePriceCollector,
     PodPriceCollector,
     Price,
 )
@@ -173,13 +175,287 @@ class TestAWSNodePriceCollector:
         assert result == Price()
 
 
+class TestGCPNodePriceCollector:
+    @pytest.fixture
+    def config_client(self) -> mock.AsyncMock:
+        result = mock.AsyncMock(spec=ConfigClient)
+        result.get_cluster.return_value = Cluster(
+            name="default",
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="",
+                job_fallback_hostname="",
+                resource_pool_types=[
+                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory_mb=52 * 1024,),
+                    ResourcePoolType(
+                        name="n1-highmem-8-4xk80",
+                        cpu=8,
+                        memory_mb=52 * 1024,
+                        gpu=4,
+                        gpu_model="nvidia-tesla-k80",
+                    ),
+                    ResourcePoolType(
+                        name="n1-highmem-8-1xv100",
+                        cpu=8,
+                        memory_mb=52 * 1024,
+                        gpu=1,
+                        # not registered in google service skus fixture
+                        gpu_model="nvidia-tesla-v100",
+                    ),
+                ],
+            ),
+        )
+        return result
+
+    @pytest.fixture
+    def google_service_skus(self) -> Dict[str, Any]:
+        return {
+            "skus": [
+                {
+                    "description": "N1 Predefined Instance Core running in Americas",
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "OnDemand",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 31611000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": (
+                        "Preemptible N1 Predefined Instance Core running in Americas"
+                    ),
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "Preemptible",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 6655000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": "N1 Predefined Instance Ram running in Americas",
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "OnDemand",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 4237000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": (
+                        "Preemptible N1 Predefined Instance Ram running in Americas"
+                    ),
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "Preemptible",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 892000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": "Nvidia Tesla K80 GPU running in Americas",
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "GPU",
+                        "usageType": "OnDemand",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 450000000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": (
+                        "Nvidia Tesla K80 GPU attached to preemptible "
+                        "VMs running in Americas"
+                    ),
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "GPU",
+                        "usageType": "Preemptible",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 135000000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+            ]
+        }
+
+    @pytest.fixture
+    def collector_factory(
+        self, config_client: ConfigClient, google_service_skus: Dict[str, Any]
+    ) -> Callable[..., ContextManager[GCPNodePriceCollector]]:
+        @contextmanager
+        def _create(
+            node_pool_name: str, instance_type: str, is_preemptible: bool = False
+        ) -> Iterator[GCPNodePriceCollector]:
+            result = GCPNodePriceCollector(
+                config_client,
+                Path("sa.json"),
+                cluster_name="default",
+                node_pool_name=node_pool_name,
+                region="us-central1",
+                instance_type=instance_type,
+                is_preemptible=is_preemptible,
+            )
+            with mock.patch.object(result, "_client") as client:
+                request = (
+                    client.services.return_value.skus.return_value.list.return_value
+                )
+                request.execute.return_value = google_service_skus
+                yield result
+
+        return _create
+
+    async def test_get_latest_price_per_hour_cpu_instance(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8", "n1-highmem-8") as collector:
+            result = await collector.get_latest_value()
+            assert result == Price(value=0.473212, currency="USD")
+
+    async def test_get_latest_price_per_hour_cpu_instance_preemptible(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8", "n1-highmem-8", True) as collector:
+            result = await collector.get_latest_value()
+            assert result == Price(value=0.099624, currency="USD")
+
+    async def test_get_latest_price_per_hour_gpu_instance(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8") as collector:
+            result = await collector.get_latest_value()
+            assert result == Price(value=2.273212, currency="USD")
+
+    async def test_get_latest_price_per_hour_gpu_instance_preemptible(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8", True) as collector:
+            result = await collector.get_latest_value()
+            assert result == Price(value=0.639624, currency="USD")
+
+    async def test_get_latest_price_per_hour_unknown_instance_type(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory("n1-highmem-8", "unknown", True) as collector:
+            with pytest.raises(AssertionError, match=r"Found prices only for: \[\]"):
+                await collector.get_latest_value()
+
+    async def test_get_latest_price_per_hour_unknown_gpu(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory(
+            "n1-highmem-8-1xv100", "n1-highmem-8", True
+        ) as collector:
+            with pytest.raises(
+                AssertionError, match=r"Found prices only for: \[CPU, RAM\]"
+            ):
+                await collector.get_latest_value()
+
+
 class TestPodPriceCollector:
     @pytest.fixture
     def config_client_factory(self) -> Callable[..., mock.AsyncMock]:
         def _create(node_resources: Resources) -> mock.AsyncMock:
             result = mock.AsyncMock(spec=ConfigClient)
             result.get_cluster.return_value = Cluster(
-                name="minikube",
+                name="default",
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
                     job_fallback_hostname="",

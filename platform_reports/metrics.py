@@ -3,16 +3,32 @@ import json
 import logging
 from dataclasses import dataclass
 from importlib.resources import path
+from pathlib import Path
 from types import TracebackType
-from typing import Awaitable, Dict, Generic, Mapping, Optional, Type, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Dict,
+    Generic,
+    Iterator,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from aiobotocore.client import AioBaseClient
+from google.oauth2.service_account import Credentials
+from googleapiclient import discovery
 from platform_config_client import Cluster, ConfigClient
 
 from .kube_client import KubeClient, Pod, Resources
 
 
 logger = logging.getLogger(__name__)
+
+
+GOOGLE_COMPUTE_ENGINE_ID = "services/6F81-5844-456A"
 
 
 @dataclass(frozen=True)
@@ -157,7 +173,140 @@ class AzureNodePriceCollector(Collector[Price]):
 
 
 class GCPNodePriceCollector(Collector[Price]):
-    pass
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        service_account_path: Path,
+        cluster_name: str,
+        node_pool_name: str,
+        region: str,
+        instance_type: str,
+        is_preemptible: bool,
+        interval_s: float = 3600,
+    ) -> None:
+        super().__init__(Price(), interval_s)
+
+        self._config_client = config_client
+        self._service_account_path = service_account_path
+        self._cluster_name = cluster_name
+        self._node_pool_name = node_pool_name
+        self._region = region
+        self._instance_family = self._get_instance_family(instance_type)
+        self._usage_type = self._get_usage_type(is_preemptible)
+        self._loop = asyncio.get_event_loop()
+        self._client: Any = None
+
+    async def __aenter__(self) -> "Collector[Price]":
+        self._client = await self._loop.run_in_executor(None, self._create_client)
+        return self
+
+    def _create_client(self) -> Any:
+        sa_credentials = Credentials.from_service_account_file(
+            str(self._service_account_path)
+        )
+        return discovery.build("cloudbilling", "v1", credentials=sa_credentials)
+
+    def _get_instance_family(self, instance_type: str) -> str:
+        # Can be n1, n2, n2d, e2
+        return instance_type.split("-")[0].lower()
+
+    def _get_usage_type(self, is_preemptible: bool) -> str:
+        return "preemptible" if is_preemptible else "ondemand"
+
+    async def get_latest_value(self) -> Price:
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+        resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
+        if self._node_pool_name not in resource_pools:
+            return Price(currency="USD")
+        resource_pool = resource_pools[self._node_pool_name]
+        return await self._loop.run_in_executor(
+            None,
+            self._get_instance_price_per_hour,
+            resource_pool.cpu,
+            resource_pool.memory_mb / 1024,
+            resource_pool.gpu or 0,
+            resource_pool.gpu_model or "",
+        )
+
+    def _get_instance_price_per_hour(
+        self, cpu: float, memory_gb: float, gpu: int, gpu_model: str
+    ) -> Price:
+        prices_in_nanos: Dict[str, float] = {}
+        expected_prices_count = bool(cpu) + bool(memory_gb) + bool(gpu)
+        gpu_model = gpu_model.replace("-", " ").lower()
+        for sku in self._get_service_skus():
+            # The only reliable way to match instance type with sku is through
+            # sku description field. Other sku fields don't contain instance type
+            # specific fields.
+            sku_description = sku["description"].lower()
+            sku_description_words = set(sku_description.split())
+            sku_usage_type = sku["category"]["usageType"].lower()
+
+            # Calculate price for CPU and RAM
+            if (
+                self._instance_family in sku_description_words
+                and self._usage_type == sku_usage_type
+            ):
+                price_in_nanos = self._get_price_in_nanos(sku)
+                if sku_description_words.intersection(("core", "cpu", "vcpu")):
+                    assert "cpu" not in prices_in_nanos
+                    prices_in_nanos["cpu"] = cpu * price_in_nanos
+                if "ram" in sku_description_words:
+                    assert "ram" not in prices_in_nanos
+                    prices_in_nanos["ram"] = memory_gb * price_in_nanos
+
+            # Calculate price for the attached GPU
+            if (
+                gpu
+                and gpu_model in sku_description
+                and self._usage_type == sku_usage_type
+            ):
+                price_in_nanos = self._get_price_in_nanos(sku)
+                assert "gpu" not in prices_in_nanos
+                prices_in_nanos["gpu"] = gpu * price_in_nanos
+
+            if len(prices_in_nanos) == expected_prices_count:
+                break
+        assert (
+            len(prices_in_nanos) == expected_prices_count
+        ), f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
+        return Price(value=sum(prices_in_nanos.values(), 0.0) / 10 ** 9, currency="USD")
+
+    def _get_service_skus(self) -> Iterator[Dict[str, Any]]:
+        next_page_token: Optional[str] = ""
+        while next_page_token is not None:
+            request = (
+                self._client.services()
+                .skus()
+                .list(
+                    parent=GOOGLE_COMPUTE_ENGINE_ID,
+                    currencyCode="USD",
+                    pageToken=next_page_token,
+                )
+            )
+            response = request.execute()
+            for sku in response["skus"]:
+                if (
+                    sku["category"]["resourceFamily"] == "Compute"
+                    and sku["category"]["usageType"] in ("OnDemand", "Preemptible")
+                    and self._region in sku["serviceRegions"]
+                ):
+                    yield sku
+            next_page_token = response.get("nextPageToken") or None
+
+    def _get_price_in_nanos(self, sku: Dict[str, Any]) -> int:
+        # PricingInfo can contain multiple objects. Each corresponds to separate
+        # time interval. But as long as we don't provide time constraints
+        # in Google API query we will receive only latest value.
+        tiered_rates = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"]
+        # TieredRates can contain multiple values with it's own startUsageAmount.
+        # Usage is priced at this rate only after the startUsageAmount is reached.
+        # OnDemand and Preemptible instance prices don't depend on usage amount,
+        # so there will be only one rate.
+        tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))
+        unit_price = tiered_rate["unitPrice"]
+        # UnitPrice contains price in nanos which is 1 USD * 10^-9
+        return int(unit_price["units"]) * 10 ** 9 + unit_price["nanos"]
 
 
 class PodPriceCollector(Collector[Mapping[str, Price]]):

@@ -4,6 +4,7 @@ nodePoolLabels:
   job: platform.neuromation.io/job
   gpu: platform.neuromation.io/accelerator
   nodePool: platform.neuromation.io/nodepool
+  preemptible: platform.neuromation.io/preemptible
 
 objectStore:
   supported: true

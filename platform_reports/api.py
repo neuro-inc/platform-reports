@@ -38,7 +38,13 @@ from .config import (
     ServerConfig,
 )
 from .kube_client import KubeClient
-from .metrics import AWSNodePriceCollector, Collector, PodPriceCollector, Price
+from .metrics import (
+    AWSNodePriceCollector,
+    Collector,
+    GCPNodePriceCollector,
+    PodPriceCollector,
+    Price,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -352,11 +358,19 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             app["instance_type"] = instance_type
             logger.info("Node instance type is %s", instance_type)
 
+            preemptible = node.metadata.labels.get(config.node_preemptible_label, "")
+            is_preemptible = preemptible.lower() == "true"
+            if is_preemptible:
+                logger.info("Node is preemptible")
+            else:
+                logger.info("Node is not preemptible")
+
             node_pool_name = node.metadata.labels.get(config.node_pool_label, "")
             app["node_pool_name"] = node_pool_name
             logger.info("Node pool name is %s", node_pool_name)
 
             if config.cloud_provider == "aws":
+                assert config.region
                 assert instance_type
                 session = aiobotocore.get_session()
                 pricing_client = await exit_stack.enter_async_context(
@@ -367,6 +381,21 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         pricing_client=pricing_client,
                         region=config.region,
                         instance_type=instance_type,
+                    )
+                )
+            elif config.cloud_provider == "gcp":
+                assert config.region
+                assert config.gcp_service_account_key_path
+                assert instance_type
+                node_price_collector = await exit_stack.enter_async_context(
+                    GCPNodePriceCollector(
+                        config_client=config_client,
+                        service_account_path=config.gcp_service_account_key_path,
+                        cluster_name=config.cluster_name,
+                        node_pool_name=node_pool_name,
+                        region=config.region,
+                        instance_type=instance_type,
+                        is_preemptible=is_preemptible,
                     )
                 )
             else:

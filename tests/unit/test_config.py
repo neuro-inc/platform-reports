@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from yarl import URL
 
 from platform_reports.config import (
@@ -51,8 +53,10 @@ class TestEnvironConfigFactory:
             "NP_NODE_NAME": "node",
             "NP_CLOUD_PROVIDER": "aws",
             "NP_REGION": "us-east-1",
+            "NP_GCP_SERVICE_ACCOUNT_KEY_PATH": "sa.json",
             "NP_JOBS_NAMESPACE": "platform-jobs",
             "NP_NODE_POOL_LABEL": "node-pool",
+            "NP_NODE_PREEMPTIBLE_LABEL": "preemptible",
             "NP_JOB_LABEL": "job",
         }
 
@@ -75,8 +79,10 @@ class TestEnvironConfigFactory:
             node_name="node",
             cloud_provider="aws",
             region="us-east-1",
+            gcp_service_account_key_path=Path("sa.json"),
             jobs_namespace="platform-jobs",
             node_pool_label="node-pool",
+            node_preemptible_label="preemptible",
             job_label="job",
         )
 

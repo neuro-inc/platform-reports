@@ -58,7 +58,7 @@ spec:
               value: {{ .Values.cloudProvider.type | quote }}
             - name: NP_REGION
               value: {{ .Values.cloudProvider.region | quote }}
-            {{- if eq .Values.cloudProvider "gcp" }}
+            {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
               value: /root/service_account_key.json
             {{- end }}
@@ -89,13 +89,16 @@ spec:
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
-          {{- if eq .Values.cloudProvider "gcp" }}
+          {{- if .Values.cloudProvider }}
+          {{- if eq .Values.cloudProvider.type "gcp" }}
           volumeMounts:
             - name: service-account-key
               mountPath: /root
               readOnly: true
           {{- end }}
-      {{- if eq .Values.cloudProvider "gcp" }}
+          {{- end }}
+      {{- if .Values.cloudProvider }}
+      {{- if eq .Values.cloudProvider.type "gcp" }}
       volumes:
         - name: service-account-key
           secret:
@@ -103,6 +106,7 @@ spec:
             items:
               - key: {{ .Values.cloudProvider.serviceAccountSecret.key | quote }}
                 path: service_account_key.json
+      {{- end }}
       {{- end }}
 ---
 kind: Service

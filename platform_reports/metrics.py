@@ -3,6 +3,7 @@ import json
 import logging
 from dataclasses import dataclass
 from importlib.resources import path
+from os.path import join
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -207,7 +208,8 @@ class GCPNodePriceCollector(Collector[Price]):
         return discovery.build("cloudbilling", "v1", credentials=sa_credentials)
 
     def _get_instance_family(self, instance_type: str) -> str:
-        return instance_type.split("-")[0]
+        # Can be n1, n2, n2d, e2
+        return instance_type.split("-")[0].lower()
 
     def _get_usage_type(self, is_preemptible: bool) -> str:
         return "preemptible" if is_preemptible else "ondemand"
@@ -234,9 +236,14 @@ class GCPNodePriceCollector(Collector[Price]):
         expected_prices_count = bool(cpu) + bool(memory_gb) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
         for sku in self._get_service_skus():
+            # The only reliable way to match instance type with sku is through
+            # sku description field. Other sku fields don't contain instance type
+            # specific fields.
             sku_description = sku["description"].lower()
             sku_description_words = set(sku_description.split())
             sku_usage_type = sku["category"]["usageType"].lower()
+
+            # Calculate price for CPU and RAM
             if (
                 self._instance_family in sku_description_words
                 and self._usage_type == sku_usage_type
@@ -248,6 +255,8 @@ class GCPNodePriceCollector(Collector[Price]):
                 if "ram" in sku_description_words:
                     assert "ram" not in prices_in_nanos
                     prices_in_nanos["ram"] = memory_gb * price_in_nanos
+
+            # Calculate price for the attached GPU
             if (
                 gpu
                 and gpu_model in sku_description
@@ -256,11 +265,12 @@ class GCPNodePriceCollector(Collector[Price]):
                 price_in_nanos = self._get_price_in_nanos(sku)
                 assert "gpu" not in prices_in_nanos
                 prices_in_nanos["gpu"] = gpu * price_in_nanos
+
             if len(prices_in_nanos) == expected_prices_count:
                 break
         assert (
             len(prices_in_nanos) == expected_prices_count
-        ), f"Found only {len(prices_in_nanos)} prices out of {expected_prices_count}"
+        ), f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
         return Price(value=sum(prices_in_nanos.values(), 0.0) / 10 ** 9, currency="USD")
 
     def _get_service_skus(self) -> Iterator[Dict[str, Any]]:
@@ -286,9 +296,17 @@ class GCPNodePriceCollector(Collector[Price]):
             next_page_token = response.get("nextPageToken") or None
 
     def _get_price_in_nanos(self, sku: Dict[str, Any]) -> int:
+        # PricingInfo can contain multiple objects. Each corresponds to separate
+        # time interval. But as long as we don't provide time constraints
+        # in Google API query we will receive only latest value.
         tiered_rates = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"]
+        # TieredRates can contain multiple values with it's own startUsageAmount.
+        # Usage is priced at this rate only after the startUsageAmount.
+        # OnDemand and Preemptible instance prices don't depend on usage amount,
+        # so there will be only one rate.
         tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))
         unit_price = tiered_rate["unitPrice"]
+        # UnitPrice contains price in nanos which is 1 USD * 10^-9
         return int(unit_price["units"]) * 10 ** 9 + unit_price["nanos"]
 
 

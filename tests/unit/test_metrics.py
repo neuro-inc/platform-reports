@@ -193,6 +193,14 @@ class TestGCPNodePriceCollector:
                         gpu=4,
                         gpu_model="nvidia-tesla-k80",
                     ),
+                    ResourcePoolType(
+                        name="n1-highmem-8-1xv100",
+                        cpu=8,
+                        memory_mb=52 * 1024,
+                        gpu=1,
+                        # not registered in google service skus fixture
+                        gpu_model="nvidia-tesla-v100",
+                    ),
                 ],
             ),
         )
@@ -425,8 +433,19 @@ class TestGCPNodePriceCollector:
     async def test_get_latest_price_per_hour_unknown_instance_type(
         self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
     ) -> None:
-        with collector_factory("n1-highmem-8-4xk80", "unknown", True) as collector:
-            with pytest.raises(AssertionError):
+        with collector_factory("n1-highmem-8", "unknown", True) as collector:
+            with pytest.raises(AssertionError, match=r"Found prices only for: \[\]"):
+                await collector.get_latest_value()
+
+    async def test_get_latest_price_per_hour_unknown_gpu(
+        self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
+    ) -> None:
+        with collector_factory(
+            "n1-highmem-8-1xv100", "n1-highmem-8", True
+        ) as collector:
+            with pytest.raises(
+                AssertionError, match=r"Found prices only for: \[CPU, RAM\]"
+            ):
                 await collector.get_latest_value()
 
 

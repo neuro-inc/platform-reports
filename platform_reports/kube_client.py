@@ -209,7 +209,7 @@ class KubeClient:
             return Node.from_payload(payload)
 
     async def get_pods(
-        self, namespace: str = "", field_selector: str = "", label_selector: str = "",
+        self, namespace: str = "", field_selector: str = "", label_selector: str = ""
     ) -> Sequence[Pod]:
         assert self._client
         params: Dict[str, str] = {}

@@ -25,6 +25,7 @@ from platform_reports.kube_client import (
 )
 from platform_reports.metrics import (
     AWSNodePriceCollector,
+    AzureNodePriceCollector,
     Collector,
     GCPNodePriceCollector,
     PodPriceCollector,
@@ -447,6 +448,39 @@ class TestGCPNodePriceCollector:
                 AssertionError, match=r"Found prices only for: \[CPU, RAM\]"
             ):
                 await collector.get_latest_value()
+
+
+class TestAzureNodePriceCollector:
+    @pytest.fixture
+    def collector_factory(self,) -> Callable[..., AzureNodePriceCollector]:
+        def _create(instance_type: str) -> AzureNodePriceCollector:
+            return AzureNodePriceCollector(instance_type)
+
+        return _create
+
+    async def test_get_latest_value(
+        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    ) -> None:
+        collector = collector_factory("Standard_NC6")
+        result = await collector.get_latest_value()
+
+        assert result == Price(value=0.9, currency="USD")
+
+    async def test_get_latest_value_ignore_case(
+        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    ) -> None:
+        collector = collector_factory("standard_nc6")
+        result = await collector.get_latest_value()
+
+        assert result == Price(value=0.9, currency="USD")
+
+    async def test_get_latest_value_unknown_instance_type(
+        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    ) -> None:
+        collector = collector_factory("unknown")
+
+        with pytest.raises(AssertionError):
+            await collector.get_latest_value()
 
 
 class TestPodPriceCollector:

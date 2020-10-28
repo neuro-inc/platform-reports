@@ -169,7 +169,59 @@ class AWSNodePriceCollector(Collector[Price]):
 
 
 class AzureNodePriceCollector(Collector[Price]):
-    pass
+    def __init__(self, instance_type: str) -> None:
+        self._instance_type = instance_type
+        self._instance_prices = {
+            k.lower(): v for k, v in self.get_instance_prices().items()
+        }
+
+    @classmethod
+    def get_instance_prices(cls) -> Dict[str, Price]:
+        # TODO: Load instance prices from Azure API.
+        # Currently Azure does not expose instance prices in their API.
+        return {
+            # General Purpose
+            "Standard_D2s_v3": Price(value=0.096, currency="USD"),
+            "Standard_D4s_v3": Price(value=0.192, currency="USD"),
+            "Standard_D8s_v3": Price(value=0.384, currency="USD"),
+            "Standard_D16s_v3": Price(value=0.768, currency="USD"),
+            "Standard_D32s_v3": Price(value=1.536, currency="USD"),
+            "Standard_D48s_v3": Price(value=2.304, currency="USD"),
+            "Standard_D64s_v3": Price(value=3.072, currency="USD"),
+            # Nvidia Tesla K80
+            "Standard_NC6": Price(value=0.9, currency="USD"),
+            "Standard_NC12": Price(value=1.8, currency="USD"),
+            "Standard_NC24": Price(value=3.6, currency="USD"),
+            "Standard_NC24r": Price(value=3.96, currency="USD"),
+            # Nvidia Tesla P100
+            "Standard_NC6s_v2": Price(value=2.07, currency="USD"),
+            "Standard_NC12s_v2": Price(value=4.14, currency="USD"),
+            "Standard_NC24s_v2": Price(value=8.28, currency="USD"),
+            "Standard_NC24rs_v2": Price(value=9.108, currency="USD"),
+            # Nvidia Tesla V100
+            "Standard_NC6s_v3": Price(value=3.06, currency="USD"),
+            "Standard_NC12s_v3": Price(value=6.12, currency="USD"),
+            "Standard_NC24s_v3": Price(value=12.24, currency="USD"),
+            "Standard_NC24rs_v3": Price(value=13.464, currency="USD"),
+            # Nvidia Tesla M60
+            "Standard_NV12s_v3": Price(value=1.14, currency="USD"),
+            "Standard_NV24s_v3": Price(value=2.28, currency="USD"),
+            "Standard_NV48s_v3": Price(value=4.56, currency="USD"),
+            # Nvidia Tesla P40
+            "Standard_ND6s": Price(value=2.07, currency="USD"),
+            "Standard_ND12s": Price(value=4.14, currency="USD"),
+            "Standard_ND24s": Price(value=8.28, currency="USD"),
+            "Standard_ND24rs": Price(value=9.108, currency="USD"),
+            # 8 x Nvidia Tesla V100
+            "Standard_ND40rs_v2": Price(value=22.032, currency="USD"),
+        }
+
+    async def get_latest_value(self) -> Price:
+        instance_type = self._instance_type.lower()
+        assert (
+            instance_type in self._instance_prices
+        ), f"Instance type {self._instance_type} has no registered price"
+        return self._instance_prices[instance_type]
 
 
 class GCPNodePriceCollector(Collector[Price]):

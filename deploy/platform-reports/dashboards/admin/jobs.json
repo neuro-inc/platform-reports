@@ -224,7 +224,7 @@
                 "sortBy": [
                     {
                         "desc": false,
-                        "displayName": "label_platform_neuromation_io_gpu_model"
+                        "displayName": "User"
                     }
                 ]
             },

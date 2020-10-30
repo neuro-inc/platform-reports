@@ -23,19 +23,19 @@ start: vector_expression
 
 ?sum_join\
     : product_join
-    | sum_join /\+|-/ grouping? product_join
+    | sum_join /\\+|-/ grouping? product_join
 
 ?product_join\
     : unary
-    | product_join /\*|\/|%/ grouping? unary
+    | product_join /\\*|\\/|%/ grouping? unary
 
 ?unary\
     : power_join
-    | /\+|-/ power_join
+    | /\\+|-/ power_join
 
 ?power_join\
     : atom
-    | atom /\^/ grouping? power_join
+    | atom /\\^/ grouping? power_join
 
 ?atom\
     : vector
@@ -255,7 +255,7 @@ OFFSET: "offset"
 
 BOOL: "bool"
 
-NUMBER: /[0-9]+(\.[0-9]+)?/
+NUMBER: /[0-9]+(\\.[0-9]+)?/
 
 STRING\
     : "'" /([^'\\\\]|\\\\.)*/ "'"
@@ -272,4 +272,4 @@ LABEL_NAME: (LETTER | "_") (DIGIT | LETTER | "_")*
 %import common.WS
 
 %ignore WS
-"""  # noqa: W605
+"""

@@ -388,6 +388,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
         self._node_name = node_name
 
     async def get_latest_value(self) -> Mapping[str, Price]:
+        # Calculate prices only for pods in Pending and Running phases
         pods = await self._kube_client.get_pods(
             namespace=self._jobs_namespace,
             label_selector=self._job_label,
@@ -396,23 +397,32 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
                     f"spec.nodeName={self._node_name}",
                     "status.phase!=Failed",
                     "status.phase!=Succeeded",
+                    "status.phase!=Unknown",
                 ),
             ),
         )
         if not pods:
+            logger.info("Node doesn't have any pods in Running phase")
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
         node_resources = self._get_node_resources(cluster)
+        logger.debug("Node resources: %s", node_resources)
         result: Dict[str, Price] = {}
         for pod in pods:
             pod_resources = self._get_pod_resources(pod)
+            logger.debug("Pod %s resources: %s", pod.metadata.name, pod_resources)
             fraction = self._get_pod_resources_fraction(
                 node_resources=node_resources, pod_resources=pod_resources
             )
+            logger.debug("Pod %s fraction: %s", pod.metadata.name, fraction)
             node_price_per_hour = self._node_price_collector.current_value
+            pod_price_per_hour = node_price_per_hour.value * fraction
+            logger.debug(
+                "Pod %s price per hour: %s", pod.metadata.name, pod_price_per_hour
+            )
             result[pod.metadata.name] = Price(
                 currency=node_price_per_hour.currency,
-                value=node_price_per_hour.value * fraction,
+                value=pod_price_per_hour,
             )
         return result
 

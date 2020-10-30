@@ -2,7 +2,15 @@ import asyncio
 import json
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, ContextManager, Dict, Iterator
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    ContextManager,
+    Dict,
+    Iterator,
+    Sequence,
+)
 from unittest import mock
 
 import pytest
@@ -510,15 +518,30 @@ class TestPodPriceCollector:
     @pytest.fixture
     def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
         def _create(**pod_resources: Resources) -> mock.AsyncMock:
-            result = mock.AsyncMock(spec=KubeClient)
-            result.get_pods.return_value = [
-                Pod(
-                    metadata=Metadata(name=name),
-                    status=PodStatus(phase=PodPhase.RUNNING),
-                    containers=[Container(name=name, resource_requests=resources)],
+            async def get_pods(
+                namespace: str = "", field_selector: str = "", label_selector: str = ""
+            ) -> Sequence[Pod]:
+                assert namespace == "platform-jobs"
+                assert label_selector == "job"
+                assert field_selector == ",".join(
+                    (
+                        "spec.nodeName=minikube",
+                        "status.phase!=Failed",
+                        "status.phase!=Succeeded",
+                        "status.phase!=Unknown",
+                    ),
                 )
-                for name, resources in pod_resources.items()
-            ]
+                return [
+                    Pod(
+                        metadata=Metadata(name=name),
+                        status=PodStatus(phase=PodPhase.RUNNING),
+                        containers=[Container(name=name, resource_requests=resources)],
+                    )
+                    for name, resources in pod_resources.items()
+                ]
+
+            result = mock.AsyncMock(spec=KubeClient)
+            result.get_pods.side_effect = get_pods
             return result
 
         return _create

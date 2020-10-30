@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 2,
-    "iteration": 1603986124187,
+    "iteration": 1604073579288,
     "links": [],
     "panels": [
         {
@@ -422,7 +422,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
+                    "expr": "1000 * max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -2007,8 +2007,8 @@
                 "allValue": ".+",
                 "current": {
                     "selected": false,
-                    "text": "All",
-                    "value": "$__all"
+                    "text": "dmoskovskykh",
+                    "value": "dmoskovskykh"
                 },
                 "datasource": "Prometheus",
                 "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",

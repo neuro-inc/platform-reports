@@ -224,6 +224,18 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "User"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 381
+                            }
+                        ]
                     }
                 ]
             },
@@ -239,8 +251,8 @@
                 "showHeader": true,
                 "sortBy": [
                     {
-                        "desc": true,
-                        "displayName": "Start Time"
+                        "desc": false,
+                        "displayName": "User"
                     }
                 ]
             },
@@ -319,6 +331,22 @@
                                 "value": "currencyUSD"
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Nodes Up Time"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "dtdhms"
+                            },
+                            {
+                                "id": "noValue",
+                                "value": "00:00:00"
+                            }
+                        ]
                     }
                 ]
             },
@@ -328,7 +356,7 @@
                 "x": 12,
                 "y": 12
             },
-            "id": 18,
+            "id": 21,
             "options": {
                 "frameIndex": 0,
                 "showHeader": true,
@@ -342,7 +370,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left() sum by(node) (sum_over_time(kube_node_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]))) * (15 / 3600)",
+                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by (node) (max_over_time(timestamp(kube_node_created{job=\"kube-state-metrics\"})[$__range:15s])) - on(node) group_left(label_platform_neuromation_io_nodepool) clamp_min(max by(node) (max_over_time(kube_node_created{job=\"kube-state-metrics\"}[$__range])),$__from / 1000) * on(node) group_left(label_platform_neuromation_io_nodepool) max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) > 0)",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -351,9 +379,9 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
+                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left() sum by(node) (sum_over_time(kube_node_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]))) * (15 / 3600)",
                     "format": "table",
-                    "hide": true,
+                    "hide": false,
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -365,6 +393,12 @@
             "title": "Node Pools",
             "transformations": [
                 {
+                    "id": "seriesToColumns",
+                    "options": {
+                        "byField": "label_platform_neuromation_io_nodepool"
+                    }
+                },
+                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -372,7 +406,9 @@
                         },
                         "indexByName": {},
                         "renameByName": {
-                            "Value": "Price",
+                            "Time": "",
+                            "Value #A": "Nodes Up Time",
+                            "Value #B": "Price",
                             "label_platform_neuromation_io_nodepool": "Node Pool"
                         }
                     }

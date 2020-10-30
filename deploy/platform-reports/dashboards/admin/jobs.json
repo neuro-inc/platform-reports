@@ -431,7 +431,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
+                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:15s])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -640,7 +640,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "count by (label_platform_neuromation_io_user) (max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(label_platform_neuromation_io_user,pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])))",
+                    "expr": "count by (label_platform_neuromation_io_user) (max by(pod) (max_over_time(kube_pod_status_phase{job=\"kube-state-metrics\",pod=~\"^job-.+\",phase=\"Running\"}[$__range]) == 1) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])))",
                     "format": "table",
                     "hide": false,
                     "instant": true,

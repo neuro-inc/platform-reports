@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1602510303690,
+    "iteration": 1603985646597,
     "links": [],
     "panels": [
         {
@@ -579,7 +579,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
+                    "expr": "max by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
                     "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",

@@ -19,6 +19,7 @@ def dashboards_expressions() -> Dict[str, Sequence[str]]:
                 .replace("$__range", "15m")
                 .replace("$__interval", "15s")
                 .replace("$__rate_interval", "1m")
+                .replace("$__from", "1604070620")
             )
         if not exprs:
             continue

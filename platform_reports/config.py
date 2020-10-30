@@ -3,7 +3,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
 from yarl import URL
@@ -69,7 +69,7 @@ class PrometheusProxyConfig:
     platform_auth: PlatformServiceConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
-    access_token_cookie_name: str
+    access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
 
 
@@ -80,7 +80,7 @@ class GrafanaProxyConfig:
     platform_auth: PlatformServiceConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
-    access_token_cookie_name: str
+    access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
 
 
@@ -128,7 +128,9 @@ class EnvironConfigFactory:
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
-            access_token_cookie_name=self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAME"],
+            access_token_cookie_names=(
+                self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"].split(",")
+            ),
         )
 
     def create_grafana_proxy(self) -> GrafanaProxyConfig:
@@ -138,7 +140,9 @@ class EnvironConfigFactory:
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
-            access_token_cookie_name=self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAME"],
+            access_token_cookie_names=(
+                self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"].split(",")
+            ),
         )
 
     def _create_server(self) -> ServerConfig:

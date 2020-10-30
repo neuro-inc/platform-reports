@@ -6,7 +6,16 @@ from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Sequence,
+)
 
 import aiobotocore
 import aiohttp
@@ -136,7 +145,7 @@ class PrometheusProxyHandler:
         return self._app["auth_service"]
 
     async def handle(self, request: Request) -> StreamResponse:
-        user_name = _get_user_name(request, self._config.access_token_cookie_name)
+        user_name = _get_user_name(request, self._config.access_token_cookie_names)
 
         # /query or /query_range
         if request.match_info["sub_path"].startswith("query"):
@@ -196,7 +205,7 @@ class GrafanaProxyHandler:
         return self._app["auth_service"]
 
     async def handle(self, request: Request) -> StreamResponse:
-        user_name = _get_user_name(request, self._config.access_token_cookie_name)
+        user_name = _get_user_name(request, self._config.access_token_cookie_names)
 
         # Check that user has access to his own jobs in cluster.
         if not await self._auth_service.check_permissions(
@@ -217,7 +226,7 @@ class GrafanaProxyHandler:
         )
 
     async def handle_get_dashboard(self, request: Request) -> StreamResponse:
-        user_name = _get_user_name(request, self._config.access_token_cookie_name)
+        user_name = _get_user_name(request, self._config.access_token_cookie_names)
         dashboard_id = request.match_info["dashboard_id"]
 
         if not await self._auth_service.check_dashboard_permissions(
@@ -232,8 +241,14 @@ class GrafanaProxyHandler:
         )
 
 
-def _get_user_name(request: Request, access_token_cookie_name: str) -> str:
-    access_token = request.cookies[access_token_cookie_name]
+def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -> str:
+    access_token: str = ""
+    for cookie_name in access_token_cookie_names:
+        access_token = request.cookies.get(cookie_name)
+        if access_token:
+            break
+    if not access_token:
+        raise ValueError("Request doesn't have access token cookie")
     claims = jwt.get_unverified_claims(access_token)
     return claims["https://platform.neuromation.io/user"]
 

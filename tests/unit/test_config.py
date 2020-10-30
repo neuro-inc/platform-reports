@@ -89,7 +89,7 @@ class TestEnvironConfigFactory:
     def test_create_prometheus_proxy_defaults(self) -> None:
         env = {
             "NP_CLUSTER_NAME": "default",
-            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAME": "dat",
+            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_PROMETHEUS_HOST": "prometheus",
             "NP_PROMETHEUS_PORT": "9090",
             "NP_AUTH_URL": "https://dev.neu.ro",
@@ -101,7 +101,7 @@ class TestEnvironConfigFactory:
 
         assert result == PrometheusProxyConfig(
             cluster_name="default",
-            access_token_cookie_name="dat",
+            access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(),
             prometheus_server=ServerConfig(host="prometheus", port=9090),
             platform_auth=PlatformServiceConfig(
@@ -115,7 +115,7 @@ class TestEnvironConfigFactory:
     def test_create_prometheus_proxy_custom(self) -> None:
         env = {
             "NP_CLUSTER_NAME": "default",
-            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAME": "dat",
+            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_REPORTS_API_SCHEME": "https",
             "NP_REPORTS_API_HOST": "platform-reports",
             "NP_REPORTS_API_PORT": "80",
@@ -131,7 +131,7 @@ class TestEnvironConfigFactory:
 
         assert result == PrometheusProxyConfig(
             cluster_name="default",
-            access_token_cookie_name="dat",
+            access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(scheme="https", host="platform-reports", port=80),
             prometheus_server=ServerConfig(
                 scheme="https", host="prometheus", port=9090
@@ -147,7 +147,7 @@ class TestEnvironConfigFactory:
     def test_create_grafana_proxy_defaults(self) -> None:
         env = {
             "NP_CLUSTER_NAME": "default",
-            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAME": "dat",
+            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
             "NP_AUTH_URL": "https://dev.neu.ro",
@@ -159,7 +159,7 @@ class TestEnvironConfigFactory:
 
         assert result == GrafanaProxyConfig(
             cluster_name="default",
-            access_token_cookie_name="dat",
+            access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(),
             grafana_server=ServerConfig(host="grafana", port=3000),
             platform_auth=PlatformServiceConfig(
@@ -173,7 +173,7 @@ class TestEnvironConfigFactory:
     def test_create_grafana_proxy_custom(self) -> None:
         env = {
             "NP_CLUSTER_NAME": "default",
-            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAME": "dat",
+            "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_REPORTS_API_SCHEME": "https",
             "NP_REPORTS_API_HOST": "platform-reports",
             "NP_REPORTS_API_PORT": "80",
@@ -189,7 +189,7 @@ class TestEnvironConfigFactory:
 
         assert result == GrafanaProxyConfig(
             cluster_name="default",
-            access_token_cookie_name="dat",
+            access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(scheme="https", host="platform-reports", port=80),
             grafana_server=ServerConfig(scheme="https", host="grafana", port=3000),
             platform_auth=PlatformServiceConfig(

@@ -206,7 +206,7 @@ def prometheus_proxy_config(
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
         cluster_name="default",
-        access_token_cookie_name="dat",
+        access_token_cookie_names=["dat"],
     )
 
 
@@ -232,7 +232,7 @@ def grafana_proxy_config(
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
         cluster_name="default",
-        access_token_cookie_name="dat",
+        access_token_cookie_names=["dat"],
     )
 
 

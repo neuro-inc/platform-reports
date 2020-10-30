@@ -11,7 +11,7 @@ objectStore:
   configMapName: thanos-object-storage-config
 
 platform:
-  accessTokenCookieName: sat
+  accessTokenCookieNames: sat,dat
 
 platformJobs:
   namespace: platform-jobs

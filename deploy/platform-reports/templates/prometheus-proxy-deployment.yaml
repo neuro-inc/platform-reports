@@ -42,8 +42,8 @@ spec:
                 secretKeyRef:
                   name: platformservices-secret
                   key: cluster_token
-            - name: NP_AUTH_ACCESS_TOKEN_COOKIE_NAME
-              value: {{ .Values.platform.accessTokenCookieName }}
+            - name: NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES
+              value: {{ .Values.platform.accessTokenCookieNames }}
             - name: NP_API_URL
               value: {{ .Values.platform.apiUrl }}
           {{- if .Values.prometheusProxy.resources }}

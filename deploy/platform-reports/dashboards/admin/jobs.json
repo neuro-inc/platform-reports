@@ -431,7 +431,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:15s])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
+                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:10s])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
                     "format": "table",
                     "hide": false,
                     "instant": true,

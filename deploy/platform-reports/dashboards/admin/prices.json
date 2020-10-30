@@ -370,7 +370,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by (node) (max_over_time(timestamp(kube_node_created{job=\"kube-state-metrics\"})[$__range:15s])) - on(node) group_left(label_platform_neuromation_io_nodepool) clamp_min(max by(node) (max_over_time(kube_node_created{job=\"kube-state-metrics\"}[$__range])),$__from / 1000) * on(node) group_left(label_platform_neuromation_io_nodepool) max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) > 0)",
+                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by (node) (max_over_time(timestamp(kube_node_created{job=\"kube-state-metrics\"})[$__range:10s])) - on(node) group_left(label_platform_neuromation_io_nodepool) clamp_min(max by(node) (max_over_time(kube_node_created{job=\"kube-state-metrics\"}[$__range])),$__from / 1000) * on(node) group_left(label_platform_neuromation_io_nodepool) max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) > 0)",
                     "format": "table",
                     "hide": false,
                     "instant": true,

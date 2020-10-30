@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 3,
-    "iteration": 1602517046586,
+    "iteration": 1603984708535,
     "links": [],
     "panels": [
         {
@@ -52,18 +52,176 @@
                             {
                                 "id": "decimals",
                                 "value": 3
+                            },
+                            {
+                                "id": "unit",
+                                "value": "currencyUSD"
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "$0.000",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "GPU"
+                            "options": "Start Time"
                         },
                         "properties": [
                             {
-                                "id": "custom.align",
-                                "value": "right"
+                                "id": "unit",
+                                "value": "dateTimeAsIso"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 12,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 19,
+            "options": {
+                "frameIndex": 0,
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "Start Time"
+                    }
+                ]
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "max by(pod,label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left() sum by(pod) (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range])) * (15 / 3600)",
+                    "format": "table",
+                    "hide": false,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                },
+                {
+                    "expr": "max by(pod) (max_over_time(kube_pod_start_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * 1000 + on(pod) group_left(currency) 0 * sum by(pod) (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]))",
+                    "format": "table",
+                    "hide": false,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "B"
+                },
+                {
+                    "expr": "max by(pod) (max_over_time(DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.*\"}[$__range]))",
+                    "format": "table",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "C"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Jobs",
+            "transformations": [
+                {
+                    "id": "seriesToColumns",
+                    "options": {
+                        "byField": "pod"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time": true,
+                            "currency": true
+                        },
+                        "indexByName": {
+                            "Time": 6,
+                            "Value #A": 5,
+                            "Value #B": 4,
+                            "Value #C": 2,
+                            "label_platform_neuromation_io_gpu_model": 3,
+                            "label_platform_neuromation_io_user": 0,
+                            "pod": 1
+                        },
+                        "renameByName": {
+                            "Value #A": "Price",
+                            "Value #B": "Start Time",
+                            "Value #C": "GPU",
+                            "currency": "Currency",
+                            "label_platform_neuromation_io_gpu_model": "GPU Model",
+                            "label_platform_neuromation_io_user": "User",
+                            "pod": "Job"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": null,
+                        "filterable": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Price"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 3
+                            },
+                            {
+                                "id": "unit",
+                                "value": "currencyUSD"
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "$0.000",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -71,25 +229,25 @@
             },
             "gridPos": {
                 "h": 10,
-                "w": 24,
+                "w": 12,
                 "x": 0,
-                "y": 0
+                "y": 12
             },
-            "id": 18,
+            "id": 20,
             "options": {
                 "frameIndex": 0,
                 "showHeader": true,
                 "sortBy": [
                     {
-                        "desc": false,
-                        "displayName": "Node Type"
+                        "desc": true,
+                        "displayName": "Start Time"
                     }
                 ]
             },
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by(label_beta_kubernetes_io_instance_type,currency,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max by(node,label_beta_kubernetes_io_instance_type,label_platform_neuromation_io_accelerator,label_platform_neuromation_io_accelerator_count) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left(currency) max by(node,currency) (sum_over_time(node_price_per_hour{job=\"neuro-metrics-exporter\",currency!=\"\"}[$__range]))) * (15 / 3600)",
+                    "expr": "sum by(label_platform_neuromation_io_user) (max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left() sum by(pod) (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]))) * (15 / 3600)",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -100,7 +258,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Job Nodes",
+            "title": "Users",
             "transformations": [
                 {
                     "id": "organize",
@@ -109,19 +267,113 @@
                             "Time": true
                         },
                         "indexByName": {
-                            "Time": 3,
-                            "Value": 4,
-                            "currency": 5,
-                            "label_beta_kubernetes_io_instance_type": 0,
-                            "label_platform_neuromation_io_accelerator": 2,
-                            "label_platform_neuromation_io_accelerator_count": 1
+                            "Time": 2,
+                            "Value": 1,
+                            "label_platform_neuromation_io_user": 0
                         },
                         "renameByName": {
                             "Value": "Price",
-                            "currency": "Currency",
-                            "label_beta_kubernetes_io_instance_type": "Node Type",
-                            "label_platform_neuromation_io_accelerator": "GPU Model",
-                            "label_platform_neuromation_io_accelerator_count": "GPU"
+                            "label_platform_neuromation_io_user": "User"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": null,
+                        "filterable": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Price"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 3
+                            },
+                            {
+                                "id": "unit",
+                                "value": "currencyUSD"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 12
+            },
+            "id": 18,
+            "options": {
+                "frameIndex": 0,
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "Node Pool"
+                    }
+                ]
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "sum by(label_platform_neuromation_io_nodepool) (max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_nodepool!=\"platform\"}[$__range])) * on(node) group_left() sum by(node) (sum_over_time(kube_node_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]))) * (15 / 3600)",
+                    "format": "table",
+                    "hide": false,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                },
+                {
+                    "expr": "max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
+                    "format": "table",
+                    "hide": true,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "B"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Node Pools",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time": true
+                        },
+                        "indexByName": {},
+                        "renameByName": {
+                            "Value": "Price",
+                            "label_platform_neuromation_io_nodepool": "Node Pool"
                         }
                     }
                 }
@@ -137,7 +389,7 @@
         "list": []
     },
     "time": {
-        "from": "now-15m",
+        "from": "now-1h",
         "to": "now"
     },
     "timepicker": {

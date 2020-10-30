@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 2,
-    "iteration": 1602510303690,
+    "iteration": 1603986124187,
     "links": [],
     "panels": [
         {
@@ -379,11 +379,7 @@
                         "properties": [
                             {
                                 "id": "unit",
-                                "value": "dateTimeAsIso"
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": null
+                                "value": "dateTimeAsIsoNoDateIfToday"
                             }
                         ]
                     },
@@ -396,6 +392,10 @@
                             {
                                 "id": "unit",
                                 "value": "dtdhms"
+                            },
+                            {
+                                "id": "noValue",
+                                "value": "00:00:00"
                             }
                         ]
                     }
@@ -431,10 +431,10 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "timestamp(max by (pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__rate_interval])))",
+                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
                     "format": "table",
                     "hide": false,
-                    "instant": false,
+                    "instant": true,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "B"
@@ -460,75 +460,15 @@
                     }
                 },
                 {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "Start Time",
-                        "binary": {
-                            "left": "Value #A",
-                            "operator": "*",
-                            "reducer": "sum",
-                            "right": "1000"
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        },
-                        "replaceFields": false
-                    }
-                },
-                {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "Duration",
-                        "binary": {
-                            "left": "Value #B",
-                            "operator": "-",
-                            "reducer": "sum",
-                            "right": "Value #A"
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        }
-                    }
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "Time": true,
-                            "Value #A": true,
-                            "Value #B": true,
-                            "container": true,
-                            "container_name": true,
-                            "endpoint": true,
-                            "id": true,
-                            "image": true,
-                            "instance": true,
-                            "job": true,
-                            "metrics_path": true,
-                            "name": true,
-                            "namespace": true,
-                            "node": true,
-                            "pod_name": true,
-                            "prometheus": true,
-                            "prometheus_replica": true,
-                            "service": true
+                            "Time": true
                         },
-                        "indexByName": {
-                            "Duration": 8,
-                            "Start Time": 7,
-                            "Time": 4,
-                            "Value #A": 5,
-                            "Value #B": 6,
-                            "Value #C": 2,
-                            "label_platform_neuromation_io_gpu_model": 3,
-                            "label_platform_neuromation_io_user": 0,
-                            "pod": 1
-                        },
+                        "indexByName": {},
                         "renameByName": {
-                            "Value #C": "GPU",
-                            "label_platform_neuromation_io_gpu_model": "GPU Model",
+                            "Value #A": "Start Time",
+                            "Value #B": "Duration",
                             "label_platform_neuromation_io_user": "User",
                             "pod": "Job"
                         }
@@ -587,7 +527,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "count by(label_platform_neuromation_io_user) (max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) max by(label_platform_neuromation_io_user, pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__rate_interval])))",
+                    "expr": "count by(label_platform_neuromation_io_user) (max by(pod) (max_over_time(kube_pod_status_phase{job=\"kube-state-metrics\",pod=~\"^job-.+\",phase=\"Running\"}[$__rate_interval]) == 1) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__rate_interval])))",
                     "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_user}}",

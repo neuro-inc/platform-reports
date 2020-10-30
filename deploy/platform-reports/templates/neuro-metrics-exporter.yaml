@@ -76,18 +76,23 @@ spec:
           {{- if .Values.metricsServer.resources }}
           resources: {{ toYaml .Values.metricsServer.resources | nindent 12 }}
           {{- end }}
+          # Service initialization can take some time before probe handler start responding
           readinessProbe:
             httpGet:
               path: /ping
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 10
           livenessProbe:
             httpGet:
               path: /ping
               port: {{ .Values.metricsServer.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
+            successThreshold: 1
+            failureThreshold: 10
           {{- if .Values.cloudProvider }}
           {{- if eq .Values.cloudProvider.type "gcp" }}
           volumeMounts:

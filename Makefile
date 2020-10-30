@@ -25,15 +25,12 @@ export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
 
 setup:
 	pip install -r requirements/dev.txt
+	pre-commit install
 
 format:
-	isort $(LINT_PATHS)
-	black .
+	pre-commit run --all-files --show-diff-on-failure
 
-lint:
-	isort -c $(LINT_PATHS)
-	black --check $(LINT_PATHS)
-	flake8 $(LINT_PATHS)
+lint: format
 	mypy $(LINT_PATHS)
 
 test_unit:

@@ -8,7 +8,7 @@ install_requires = (
     "platform-logging==0.3",
     "aiohttp==3.6.3",
     "multidict==4.7.6",
-    "yarl==1.5.1",
+    "yarl==1.6.2",
     "python-jose==3.2.0",
     "lark-parser==0.9.0",
     "aiobotocore==1.1.2",

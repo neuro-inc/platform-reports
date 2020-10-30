@@ -9,7 +9,7 @@ install_requires = (
     "aiohttp==3.6.3",
     "multidict==4.7.6",
     "yarl==1.5.1",
-    "python-jose==3.1.0",
+    "python-jose==3.2.0",
     "lark-parser==0.9.0",
     "aiobotocore==1.1.2",
     "google-api-python-client==1.12.5",

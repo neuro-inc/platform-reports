@@ -7,7 +7,7 @@ install_requires = (
     "neuromation==20.10.30",
     "platform-logging==0.3",
     "aiohttp==3.6.3",
-    "multidict==4.7.6",
+    "multidict==5.0.0",
     "yarl==1.5.1",
     "python-jose==3.2.0",
     "lark-parser==0.9.0",

@@ -16,7 +16,7 @@
     "gnetId": 1860,
     "graphTooltip": 0,
     "id": 3,
-    "iteration": 1603982745839,
+    "iteration": 1604222721940,
     "links": [],
     "panels": [
         {
@@ -286,7 +286,7 @@
                     "refId": "E"
                 },
                 {
-                    "expr": "(1 - sum by (instance) (irate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])) / count by (instance) (count by (instance,cpu) (node_cpu_seconds_total{job=\"node-exporter\"}))) * 100",
+                    "expr": "(1 - sum by (instance) (irate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[$__rate_interval])) / count by (instance) (count by (instance,cpu) (node_cpu_seconds_total{job=\"node-exporter\"}))) * 100",
                     "format": "table",
                     "instant": true,
                     "interval": "",
@@ -461,7 +461,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "(1 - sum(irate(node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\",mode=\"idle\"}[5m])) / count(count by (cpu) (node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\"}))) * 100",
+                    "expr": "(1 - sum(irate(node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\",mode=\"idle\"}[$__rate_interval])) / count(count by (cpu) (node_cpu_seconds_total{job=\"node-exporter\",instance=\"$instance\"}))) * 100",
                     "hide": false,
                     "instant": true,
                     "interval": "",
@@ -1168,7 +1168,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"system\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"system\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1177,7 +1177,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"user\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"user\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1186,7 +1186,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"iowait\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=\"iowait\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1195,7 +1195,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=~\".*irq\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (instance)(irate(node_cpu_seconds_total{mode=~\".*irq\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1204,7 +1204,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum (irate(node_cpu_seconds_total{mode!=\"idle\",mode!=\"user\",mode!=\"system\",mode!=\"iowait\",mode!=\"irq\",mode!=\"softirq\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum (irate(node_cpu_seconds_total{mode!=\"idle\",mode!=\"user\",mode!=\"system\",mode!=\"iowait\",mode!=\"irq\",mode!=\"softirq\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1213,7 +1213,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"idle\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"idle\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -1534,7 +1534,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -1543,7 +1543,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -1785,7 +1785,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"system\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"system\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "interval": "10s",
                             "intervalFactor": 2,
@@ -1794,7 +1794,7 @@
                             "step": 20
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"user\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"user\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "User - Normal processes executing in user mode",
@@ -1802,7 +1802,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"nice\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"nice\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Nice - Niced processes executing in user mode",
@@ -1810,7 +1810,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"idle\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"idle\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Idle - Waiting for something to happen",
@@ -1818,7 +1818,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"iowait\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"iowait\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Iowait - Waiting for I/O to complete",
@@ -1826,7 +1826,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"irq\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"irq\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Irq - Servicing interrupts",
@@ -1834,7 +1834,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"softirq\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"softirq\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Softirq - Servicing softirqs",
@@ -1842,7 +1842,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"steal\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"steal\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Steal - Time spent in other operating systems when running in a virtualized environment",
@@ -1850,7 +1850,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"guest\",instance=\"$instance\",job=\"node-exporter\"}[5m])) * 100",
+                            "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"guest\",instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval])) * 100",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Guest - Time spent running a virtual CPU for a guest operating system",
@@ -2170,7 +2170,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_receive_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -2179,7 +2179,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]) * 8)",
+                            "expr": "sum by(device) (irate(node_network_transmit_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]) * 8)",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -2477,7 +2477,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Reads completed",
@@ -2485,7 +2485,7 @@
                             "step": 480
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Writes completed",
@@ -2616,7 +2616,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -2626,7 +2626,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -2734,7 +2734,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"} [5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"} [$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -2850,7 +2850,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
@@ -2947,13 +2947,13 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
                         },
                         {
-                            "expr": "max by(gpu) ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "max by(gpu) ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "Total",
@@ -3051,7 +3051,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_GPU_TEMP{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_GPU_TEMP{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -3148,7 +3148,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -3244,7 +3244,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_SM_CLOCK{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_SM_CLOCK{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -3341,7 +3341,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (DCGM_FI_DEV_MEM_CLOCK{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (DCGM_FI_DEV_MEM_CLOCK{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -3437,7 +3437,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (irate(DCGM_FI_DEV_PCIE_TX_THROUGHPUT{job=\"nvidia-dcgm-exporter\"}[5m]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (irate(DCGM_FI_DEV_PCIE_TX_THROUGHPUT{job=\"nvidia-dcgm-exporter\"}[$__rate_interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -3533,7 +3533,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(gpu) (irate(DCGM_FI_DEV_PCIE_RX_THROUGHPUT{job=\"nvidia-dcgm-exporter\"}[5m]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=\"$node_name\"})",
+                            "expr": "sum by(gpu) (irate(DCGM_FI_DEV_PCIE_RX_THROUGHPUT{job=\"nvidia-dcgm-exporter\"}[$__rate_interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "interval": "",
                             "legendFormat": "GPU {{gpu}}",
                             "refId": "A"
@@ -5708,7 +5708,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_vmstat_pgpgin{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pgpgin{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pagesin - Page in operations",
@@ -5716,7 +5716,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_vmstat_pgpgout{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pgpgout{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pagesout - Page out operations",
@@ -5815,7 +5815,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_vmstat_pswpin{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pswpin{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pswpin - Pages swapped in",
@@ -5823,7 +5823,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_vmstat_pswpout{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pswpout{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pswpout - Pages swapped out",
@@ -5943,7 +5943,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_vmstat_pgfault{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pgfault{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pgfault - Page major and minor fault operations",
@@ -5951,7 +5951,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_vmstat_pgmajfault{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pgmajfault{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pgmajfault - Major page fault operations",
@@ -5959,7 +5959,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_vmstat_pgfault{instance=\"$instance\",job=\"node-exporter\"}[5m])  - irate(node_vmstat_pgmajfault{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_pgfault{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]) - irate(node_vmstat_pgmajfault{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Pgminfault - Minor page fault operations",
@@ -6075,7 +6075,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_vmstat_oom_kill{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_vmstat_oom_kill{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -6838,7 +6838,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_forks_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_forks_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -6942,7 +6942,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(process_virtual_memory_bytes{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(process_virtual_memory_bytes{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 2,
@@ -6960,7 +6960,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(process_virtual_memory_bytes{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(process_virtual_memory_bytes{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 2,
@@ -6969,7 +6969,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(process_virtual_memory_max_bytes{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(process_virtual_memory_max_bytes{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 2,
@@ -7189,7 +7189,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(cpu) (irate(node_schedstat_running_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_running_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7198,7 +7198,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum by(cpu) (irate(node_schedstat_waiting_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_waiting_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7423,7 +7423,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_context_switches_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_context_switches_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "Context switches",
@@ -7431,7 +7431,7 @@
                             "step": 240
                         },
                         {
-                            "expr": "sum(irate(node_intr_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_intr_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -7645,7 +7645,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(type,info) (irate(node_interrupts_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(type,info) (irate(node_interrupts_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7739,7 +7739,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(cpu) (irate(node_schedstat_timeslices_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_schedstat_timeslices_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -7926,7 +7926,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(process_cpu_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(process_cpu_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8478,7 +8478,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(name) (irate(node_systemd_socket_accepted_connections_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(name) (irate(node_systemd_socket_accepted_connections_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -8838,14 +8838,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_completed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Reads completed",
                             "refId": "A",
                             "step": 8
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_completed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Writes completed",
                             "refId": "B",
@@ -9031,7 +9031,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Read bytes",
@@ -9039,7 +9039,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_written_bytes_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Written bytes",
@@ -9228,7 +9228,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_read_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_read_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "hide": false,
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Read time",
@@ -9236,7 +9236,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_write_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_write_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "hide": false,
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Write time",
@@ -9421,7 +9421,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_io_time_weighted_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_weighted_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - IO time weighted",
                             "refId": "A",
@@ -9609,14 +9609,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_reads_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_reads_merged_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Read merged",
                             "refId": "A",
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_writes_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_writes_merged_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Write merged",
                             "refId": "B",
@@ -9800,14 +9800,14 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_io_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - IO time",
                             "refId": "A",
                             "step": 8
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_discard_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discard_time_seconds_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - discard time",
@@ -10175,7 +10175,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_disk_discards_completed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discards_completed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 4,
                             "legendFormat": "{{device}} - Discards completed",
@@ -10183,7 +10183,7 @@
                             "step": 8
                         },
                         {
-                            "expr": "sum by(device) (irate(node_disk_discards_merged_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_disk_discards_merged_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Discards merged",
@@ -10856,7 +10856,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_packets_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -10865,7 +10865,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_packets_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_packets_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -10975,7 +10975,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_errs_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive errors",
@@ -10983,7 +10983,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_errs_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_errs_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Rransmit errors",
@@ -11092,7 +11092,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_drop_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive drop",
@@ -11100,7 +11100,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_drop_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_drop_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit drop",
@@ -11209,7 +11209,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive compressed",
@@ -11217,7 +11217,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_compressed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit compressed",
@@ -11326,7 +11326,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_multicast_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_multicast_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive multicast",
@@ -11435,7 +11435,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Receive fifo",
@@ -11443,7 +11443,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_fifo_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit fifo",
@@ -11552,7 +11552,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_receive_frame_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_receive_frame_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "intervalFactor": 2,
@@ -11657,7 +11657,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_carrier_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_carrier_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Statistic transmit_carrier",
@@ -11766,7 +11766,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(device) (irate(node_network_transmit_colls_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(device) (irate(node_network_transmit_colls_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "{{device}} - Transmit colls",
@@ -12387,7 +12387,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(cpu) (irate(node_softnet_processed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_processed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -12396,7 +12396,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum by(cpu) (irate(node_softnet_dropped_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_dropped_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -12501,7 +12501,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by(cpu) (irate(node_softnet_times_squeezed_total{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum by(cpu) (irate(node_softnet_times_squeezed_total{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13343,7 +13343,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_IpExt_InOctets{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_IpExt_InOctets{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13352,7 +13352,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_IpExt_OutOctets{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_IpExt_OutOctets{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "intervalFactor": 2,
                             "legendFormat": "OutOctets - Sent octets",
@@ -13457,7 +13457,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Ip_Forwarding{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Ip_Forwarding{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13568,7 +13568,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Icmp_InMsgs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Icmp_InMsgs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13577,7 +13577,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Icmp_OutMsgs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Icmp_OutMsgs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13688,7 +13688,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Icmp_InErrors{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Icmp_InErrors{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13803,7 +13803,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Udp_InDatagrams{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_InDatagrams{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13812,7 +13812,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Udp_OutDatagrams{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_OutDatagrams{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13917,7 +13917,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Udp_InErrors{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_InErrors{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13926,7 +13926,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Udp_NoPorts{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_NoPorts{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13935,13 +13935,13 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_UdpLite_InErrors{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_UdpLite_InErrors{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "legendFormat": "InErrors Lite - UDPLite Datagrams that could not be delivered to an application",
                             "refId": "C"
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Udp_RcvbufErrors{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_RcvbufErrors{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -13950,7 +13950,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Udp_SndbufErrors{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Udp_SndbufErrors{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -14065,7 +14065,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_InSegs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_InSegs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "instant": false,
                             "interval": "",
@@ -14075,7 +14075,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_OutSegs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_OutSegs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -14182,7 +14182,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_ListenOverflows{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_ListenOverflows{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -14192,7 +14192,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_ListenDrops{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_ListenDrops{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -14202,7 +14202,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_TCPSynRetrans{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_TCPSynRetrans{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -14211,13 +14211,13 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_RetransSegs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_RetransSegs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "legendFormat": "RetransSegs - Segments retransmitted - that is, the number of TCP segments transmitted containing one or more previously transmitted octets",
                             "refId": "D"
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_InErrs{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_InErrs{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "interval": "",
                             "legendFormat": "InErrs - Segments received in error (e.g., bad TCP checksums)",
                             "refId": "E"
@@ -14447,7 +14447,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesFailed{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesFailed{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -14457,7 +14457,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesRecv{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesRecv{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -14467,7 +14467,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesSent{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_TcpExt_SyncookiesSent{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -14572,7 +14572,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_ActiveOpens{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_ActiveOpens{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,
@@ -14581,7 +14581,7 @@
                             "step": 4
                         },
                         {
-                            "expr": "sum(irate(node_netstat_Tcp_PassiveOpens{instance=\"$instance\",job=\"node-exporter\"}[5m]))",
+                            "expr": "sum(irate(node_netstat_Tcp_PassiveOpens{instance=\"$instance\",job=\"node-exporter\"}[$__rate_interval]))",
                             "format": "time_series",
                             "interval": "",
                             "intervalFactor": 2,

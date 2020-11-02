@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 2,
-    "iteration": 1604073579288,
+    "iteration": 1604222721940,
     "links": [],
     "panels": [
         {
@@ -200,12 +200,12 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Duration"
+                            "options": "Start Time"
                         },
                         "properties": [
                             {
                                 "id": "unit",
-                                "value": "dtdhms"
+                                "value": "dateTimeAsIsoNoDateIfToday"
                             }
                         ]
                     }
@@ -223,15 +223,15 @@
                 "showHeader": true,
                 "sortBy": [
                     {
-                        "desc": false,
-                        "displayName": "User"
+                        "desc": true,
+                        "displayName": "Start Time"
                     }
                 ]
             },
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}",
+                    "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -249,7 +249,7 @@
                     "refId": "B"
                 },
                 {
-                    "expr": "sum by (pod) (time() - container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"})",
+                    "expr": "1000 * kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -258,7 +258,7 @@
                     "refId": "C"
                 },
                 {
-                    "expr": "sum by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"}) * on(pod) group_left(label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"}",
+                    "expr": "DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\"} * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"}",
                     "format": "table",
                     "instant": true,
                     "interval": "",
@@ -319,7 +319,7 @@
                         "renameByName": {
                             "Value #A": "CPU Usage",
                             "Value #B": "Memory Usage",
-                            "Value #C": "Duration",
+                            "Value #C": "Start Time",
                             "Value #D": "GPU",
                             "label_platform_neuromation_io_gpu_model": "GPU Model",
                             "label_platform_neuromation_io_user": "User",
@@ -422,7 +422,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "1000 * max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
+                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) max by(pod,label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -431,7 +431,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max by (pod) (max_over_time(timestamp(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"})[$__range:10s])) - on(pod) max by(pod) (max_over_time(container_start_time_seconds{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])) > 0",
+                    "expr": "max by (pod) (max_over_time(kube_pod_running_scheduled_duration{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -440,7 +440,7 @@
                     "refId": "B"
                 },
                 {
-                    "expr": "sum by (pod) (max_over_time(DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_gpu_model) max by(pod,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"}[$__range]))",
+                    "expr": "max_over_time(DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -463,12 +463,28 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "Time": true
+                            "Time": true,
+                            "job": true,
+                            "prometheus": true,
+                            "prometheus_replica": true
                         },
-                        "indexByName": {},
+                        "indexByName": {
+                            "Time": 6,
+                            "Value #A": 4,
+                            "Value #B": 5,
+                            "Value #C": 2,
+                            "job": 7,
+                            "label_platform_neuromation_io_gpu_model": 3,
+                            "label_platform_neuromation_io_user": 0,
+                            "pod": 1,
+                            "prometheus": 8,
+                            "prometheus_replica": 9
+                        },
                         "renameByName": {
                             "Value #A": "Start Time",
                             "Value #B": "Duration",
+                            "Value #C": "GPU",
+                            "label_platform_neuromation_io_gpu_model": "GPU Model",
                             "label_platform_neuromation_io_user": "User",
                             "pod": "Job"
                         }
@@ -527,7 +543,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "count by(label_platform_neuromation_io_user) (max by(pod) (max_over_time(kube_pod_status_phase{job=\"kube-state-metrics\",pod=~\"^job-.+\",phase=\"Running\"}[$__rate_interval]) == 1) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__rate_interval])))",
+                    "expr": "count by(label_platform_neuromation_io_user) (kube_pod_running{job=\"kube-state-metrics\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"})",
                     "instant": false,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_user}}",
@@ -640,7 +656,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "count by (label_platform_neuromation_io_user) (max by(pod) (max_over_time(kube_pod_status_phase{job=\"kube-state-metrics\",pod=~\"^job-.+\",phase=\"Running\"}[$__range]) == 1) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])))",
+                    "expr": "count by (label_platform_neuromation_io_user) (max by(pod) (max_over_time(kube_pod_running{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user) max by(pod,label_platform_neuromation_io_user) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}[$__range])))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -947,7 +963,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (label_platform_neuromation_io_gpu_model) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"})",
+                            "expr": "sum by (label_platform_neuromation_io_gpu_model) (DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"})",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -1055,7 +1071,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (label_platform_neuromation_io_gpu_model,label_platform_neuromation_io_user) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"} * on(pod) group_left(label_platform_neuromation_io_gpu_model,label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"})",
+                            "expr": "sum by (label_platform_neuromation_io_gpu_model,label_platform_neuromation_io_user) (DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_gpu_model,label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"})",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -1591,7 +1607,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 4
+                        "y": 33
                     },
                     "hiddenSeries": false,
                     "id": 5,
@@ -1611,8 +1627,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1694,7 +1713,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 4
+                        "y": 33
                     },
                     "hiddenSeries": false,
                     "id": 6,
@@ -1714,8 +1733,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1813,7 +1835,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 5
+                        "y": 34
                     },
                     "hiddenSeries": false,
                     "id": 7,
@@ -1831,8 +1853,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1913,7 +1938,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 5
+                        "y": 34
                     },
                     "hiddenSeries": false,
                     "id": 8,
@@ -1931,8 +1956,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1942,7 +1970,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) topk by(pod) (1, kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"})",
+                            "expr": "sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=~\"^$user_name$\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -2007,8 +2035,8 @@
                 "allValue": ".+",
                 "current": {
                     "selected": false,
-                    "text": "dmoskovskykh",
-                    "value": "dmoskovskykh"
+                    "text": "All",
+                    "value": "$__all"
                 },
                 "datasource": "Prometheus",
                 "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",

@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1603985646597,
+    "iteration": 1604234513479,
     "links": [],
     "panels": [
         {
@@ -451,7 +451,7 @@
             "targets": [
                 {
                     "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
-                    "instant": false,
+                    "instant": true,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
@@ -516,7 +516,7 @@
             "targets": [
                 {
                     "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
-                    "instant": false,
+                    "instant": true,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
@@ -579,8 +579,8 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "max by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
-                    "instant": false,
+                    "expr": "DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
+                    "instant": true,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
                     "refId": "A"
@@ -635,7 +635,7 @@
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
-                    "instant": false,
+                    "instant": true,
                     "interval": "",
                     "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
                     "refId": "A"
@@ -1370,7 +1370,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 16
+                        "y": 24
                     },
                     "hiddenSeries": false,
                     "id": 7,
@@ -1389,8 +1389,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1470,7 +1473,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 16
+                        "y": 24
                     },
                     "hiddenSeries": false,
                     "id": 8,
@@ -1489,8 +1492,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.2.1",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",

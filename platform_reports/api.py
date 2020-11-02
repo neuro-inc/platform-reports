@@ -244,7 +244,7 @@ class GrafanaProxyHandler:
 def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -> str:
     access_token: str = ""
     for cookie_name in access_token_cookie_names:
-        access_token = request.cookies.get(cookie_name)
+        access_token = request.cookies.get(cookie_name, "")
         if access_token:
             break
     if not access_token:

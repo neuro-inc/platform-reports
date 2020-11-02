@@ -3,6 +3,7 @@ CURRENT_TIME = $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 AWS_ACCOUNT_ID ?= 771188043543
 AWS_REGION ?= us-east-1
+AZURE_ACR_NAME ?= crc570d91c95c6aac0ea80afb1019a0c6f
 
 TAG ?= latest
 

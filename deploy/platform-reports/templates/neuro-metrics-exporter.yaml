@@ -29,6 +29,10 @@ spec:
       tolerations:
         - effect: NoSchedule
           operator: Exists
+      {{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName | quote }}
+      {{- end }}
       containers:
         # Use slim image version to reduce service startup time
         - image: {{ .Values.image.repository }}:{{ .Values.image.slimTag }}

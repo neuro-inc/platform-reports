@@ -16,9 +16,238 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 5,
-    "iteration": 1604240200347,
     "links": [],
     "panels": [
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {},
+                    "decimals": 3,
+                    "mappings": [],
+                    "noValue": "$0",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "rgb(70, 76, 84)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "currencyUSD"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 25,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "(15 / 3600) * sum (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "format": "table",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Jobs Price",
+            "type": "stat"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {},
+                    "mappings": [],
+                    "noValue": "00:00:00",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "rgb(70, 76, 84)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "dtdhms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 29,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "15 * sum (count_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "format": "table",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Jobs Duration",
+            "type": "stat"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {},
+                    "decimals": 3,
+                    "mappings": [],
+                    "noValue": "$0",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "rgb(70, 76, 84)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "currencyUSD"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 26,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "(15 / 3600) * sum (sum by(node) (sum_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range])) * on(node) group_left(label_platform_neuromation_io_nodepool) max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_nodepool!= \"platform\"}[$__range])))",
+                    "format": "table",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Nodes Price",
+            "type": "stat"
+        },
+        {
+            "datasource": null,
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {},
+                    "mappings": [],
+                    "noValue": "00:00:00",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "rgb(70, 76, 84)",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "dtdhms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 27,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "7.2.1",
+            "targets": [
+                {
+                    "expr": "15 * sum (count_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) max by(node,label_platform_neuromation_io_nodepool) (max_over_time(kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_nodepool!= \"platform\"}[$__range])))",
+                    "format": "table",
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Nodes Up Time",
+            "type": "stat"
+        },
         {
             "datasource": null,
             "fieldConfig": {
@@ -90,7 +319,7 @@
                 "h": 9,
                 "w": 24,
                 "x": 0,
-                "y": 0
+                "y": 5
             },
             "id": 19,
             "options": {
@@ -251,7 +480,7 @@
                 "h": 14,
                 "w": 14,
                 "x": 0,
-                "y": 9
+                "y": 14
             },
             "id": 20,
             "options": {
@@ -392,7 +621,7 @@
                 "h": 7,
                 "w": 10,
                 "x": 14,
-                "y": 9
+                "y": 14
             },
             "id": 23,
             "options": {
@@ -515,7 +744,7 @@
                 "h": 7,
                 "w": 10,
                 "x": 14,
-                "y": 16
+                "y": 21
             },
             "id": 22,
             "options": {
@@ -577,7 +806,7 @@
             "type": "table"
         }
     ],
-    "refresh": "1m",
+    "refresh": "5m",
     "schemaVersion": 26,
     "style": "light",
     "tags": [],

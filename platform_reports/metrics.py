@@ -406,6 +406,10 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
         node_resources = self._get_node_resources(cluster)
+        if node_resources == Resources():
+            logger.warning(
+                "Node resources are not detected, check service configuration"
+            )
         logger.debug("Node resources: %s", node_resources)
         result: Dict[str, Price] = {}
         for pod in pods:
@@ -450,12 +454,14 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
     def _get_pod_resources_fraction(
         self, node_resources: Resources, pod_resources: Resources
     ) -> float:
+        cpu_fraction = 0.0
+        if node_resources.cpu_m and pod_resources.cpu_m:
+            cpu_fraction = pod_resources.cpu_m / node_resources.cpu_m
+        memory_fraction = 0.0
+        if node_resources.memory_mb and pod_resources.memory_mb:
+            memory_fraction = pod_resources.memory_mb / node_resources.memory_mb
         gpu_fraction = 0.0
         if node_resources.gpu and pod_resources.gpu:
             gpu_fraction = pod_resources.gpu / node_resources.gpu
-        max_fraction = max(
-            pod_resources.cpu_m / node_resources.cpu_m,
-            pod_resources.memory_mb / node_resources.memory_mb,
-            gpu_fraction,
-        )
+        max_fraction = max(cpu_fraction, memory_fraction, gpu_fraction)
         return min(1.0, max_fraction)

@@ -175,6 +175,7 @@ prometheus-operator:
 
     securityContext:
       runAsUser: 0
+      runAsNonRoot: false
 
     extraHostVolumeMounts:
       - name: system-dbus-socket

@@ -350,7 +350,7 @@ async def create_api_client(config: PlatformServiceConfig) -> AsyncIterator[ApiC
 
 
 def get_aws_pricing_api_region(region: str) -> str:
-    # Only two endpoints are support by AWS
+    # Only two endpoints are supported by AWS
     # https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/Welcome.html
     if region.startswith("ap"):
         return "ap-south-1"

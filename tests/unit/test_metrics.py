@@ -647,3 +647,16 @@ class TestPodPriceCollector:
             "job1": Price(value=0.1, currency="USD"),
             "job2": Price(value=0.2, currency="USD"),
         }
+
+    async def test_get_latest_price_per_hour_zero_node_resources(
+        self, collector_factory: Callable[..., PodPriceCollector]
+    ) -> None:
+        collector = collector_factory(
+            node=Resources(),
+            job1=Resources(cpu_m=100, memory_mb=100),
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {
+            "job1": Price(value=0.0, currency="USD"),
+        }

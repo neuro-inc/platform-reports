@@ -406,6 +406,10 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
         node_resources = self._get_node_resources(cluster)
+        if node_resources == Resources():
+            logger.warning(
+                "Node resources are not detected, check service configuration"
+            )
         logger.debug("Node resources: %s", node_resources)
         result: Dict[str, Price] = {}
         for pod in pods:

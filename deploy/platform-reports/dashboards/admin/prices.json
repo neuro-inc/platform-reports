@@ -530,7 +530,14 @@
                             "Time": true,
                             "key": true
                         },
-                        "indexByName": {},
+                        "indexByName": {
+                            "Time": 1,
+                            "Value #A": 4,
+                            "Value #B": 5,
+                            "key": 0,
+                            "label_platform_neuromation_io_nodepool": 3,
+                            "label_platform_neuromation_io_user": 2
+                        },
                         "renameByName": {
                             "Value #A": "Jobs Duration",
                             "Value #B": "Jobs Price",

@@ -349,6 +349,14 @@ async def create_api_client(config: PlatformServiceConfig) -> AsyncIterator[ApiC
             await client.close()
 
 
+def get_aws_pricing_api_region(region: str) -> str:
+    # Only two endpoints are support by AWS
+    # https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/Welcome.html
+    if region.startswith("ap"):
+        return "ap-south-1"
+    return "us-east-1"
+
+
 def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     ProbesHandler(app).register()
@@ -388,7 +396,9 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 assert instance_type
                 session = aiobotocore.get_session()
                 pricing_client = await exit_stack.enter_async_context(
-                    session.create_client("pricing", config.region)
+                    session.create_client(
+                        "pricing", get_aws_pricing_api_region(config.region)
+                    )
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AWSNodePriceCollector(

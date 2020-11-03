@@ -63,7 +63,7 @@ spec:
               value: {{ .Values.cloudProvider.region | quote }}
             {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
-              value: /root/service_account_key.json
+              value: /root/service_account/key.json
             {{- end }}
             {{- end }}
             - name: NP_JOBS_NAMESPACE
@@ -101,7 +101,7 @@ spec:
           {{- if eq .Values.cloudProvider.type "gcp" }}
           volumeMounts:
             - name: service-account-key
-              mountPath: /root
+              mountPath: /root/service_account
               readOnly: true
           {{- end }}
           {{- end }}
@@ -113,7 +113,7 @@ spec:
             secretName: {{ .Values.cloudProvider.serviceAccountSecret.name | quote }}
             items:
               - key: {{ .Values.cloudProvider.serviceAccountSecret.key | quote }}
-                path: service_account_key.json
+                path: key.json
       {{- end }}
       {{- end }}
 ---

@@ -85,7 +85,7 @@ jobs:
     - name: Checkout commit
       uses: actions/checkout@v2
     - name: Set tag
-      run: echo ::set-env name=TAG::$GITHUB_SHA
+      run: echo "TAG=$GITHUB_SHA" >> $GITHUB_ENV
     - name: Configure AWS credentials
       if: env.CLOUD_PROVIDER == 'aws'
       uses: aws-actions/configure-aws-credentials@v1
@@ -133,7 +133,7 @@ jobs:
     - name: Checkout commit
       uses: actions/checkout@v2
     - name: Set tag
-      run: echo ::set-env name=TAG::${GITHUB_REF#refs/tags/}
+      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
     - name: Push image to Artifactory
       run: |
         make artifactory_docker_login

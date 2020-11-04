@@ -39,12 +39,6 @@
                 },
                 "overrides": []
             },
-            "gridPos": {
-                "h": 5,
-                "w": 6,
-                "x": 0,
-                "y": 0
-            },
             "id": 25,
             "options": {
                 "colorMode": "value",
@@ -97,7 +91,7 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 5,
+                "h": 3,
                 "w": 6,
                 "x": 6,
                 "y": 0
@@ -155,7 +149,7 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 5,
+                "h": 3,
                 "w": 6,
                 "x": 12,
                 "y": 0
@@ -212,7 +206,7 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 5,
+                "h": 3,
                 "w": 6,
                 "x": 18,
                 "y": 0
@@ -319,7 +313,7 @@
                 "h": 9,
                 "w": 24,
                 "x": 0,
-                "y": 5
+                "y": 3
             },
             "id": 19,
             "options": {
@@ -480,7 +474,7 @@
                 "h": 14,
                 "w": 14,
                 "x": 0,
-                "y": 14
+                "y": 12
             },
             "id": 20,
             "options": {
@@ -530,7 +524,14 @@
                             "Time": true,
                             "key": true
                         },
-                        "indexByName": {},
+                        "indexByName": {
+                            "Time": 1,
+                            "Value #A": 4,
+                            "Value #B": 5,
+                            "key": 0,
+                            "label_platform_neuromation_io_nodepool": 3,
+                            "label_platform_neuromation_io_user": 2
+                        },
                         "renameByName": {
                             "Value #A": "Jobs Duration",
                             "Value #B": "Jobs Price",
@@ -621,7 +622,7 @@
                 "h": 7,
                 "w": 10,
                 "x": 14,
-                "y": 14
+                "y": 12
             },
             "id": 23,
             "options": {
@@ -744,7 +745,7 @@
                 "h": 7,
                 "w": 10,
                 "x": 14,
-                "y": 21
+                "y": 19
             },
             "id": 22,
             "options": {

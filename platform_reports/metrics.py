@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from importlib.resources import path
 from pathlib import Path
 from types import TracebackType
@@ -93,15 +94,21 @@ class AWSNodePriceCollector(Collector[Price]):
     def __init__(
         self,
         pricing_client: AioBaseClient,
+        ec2_client: AioBaseClient,
         region: str,
         instance_type: str,
+        zone: str,
+        is_spot: bool,
         interval_s: float = 3600,
     ) -> None:
         super().__init__(Price(), interval_s)
         self._pricing_client = pricing_client
+        self._ec2_client = ec2_client
         self._region = region
         self._region_long_name = ""
+        self._zone = zone
         self._instance_type = instance_type
+        self._is_spot = is_spot
 
     async def __aenter__(self) -> Collector[Price]:
         await super().__aenter__()
@@ -131,6 +138,11 @@ class AWSNodePriceCollector(Collector[Price]):
         return result
 
     async def get_latest_value(self) -> Price:
+        if self._is_spot:
+            return await self._get_latest_spot_price()
+        return await self._get_latest_on_demand_price()
+
+    async def _get_latest_on_demand_price(self) -> Price:
         response = await self._pricing_client.get_products(
             ServiceCode="AmazonEC2",
             FormatVersion="aws_v1",
@@ -166,6 +178,23 @@ class AWSNodePriceCollector(Collector[Price]):
 
     def _create_filter(self, field: str, value: str) -> Dict[str, str]:
         return {"Type": "TERM_MATCH", "Field": field, "Value": value}
+
+    async def _get_latest_spot_price(self) -> Price:
+        response = await self._ec2_client.describe_spot_price_history(
+            AvailabilityZone=self._zone,
+            InstanceTypes=[self._instance_type],
+            ProductDescriptions=["Linux/UNIX"],
+            StartTime=datetime.utcnow(),
+        )
+        history = response["SpotPriceHistory"]
+        if len(history) == 0:
+            logger.warning(
+                "AWS didn't return spot price history for %s instance in %s zone",
+                self._instance_type,
+                self._zone,
+            )
+            return Price()
+        return Price(currency="USD", value=history[0]["SpotPrice"])
 
 
 class AzureNodePriceCollector(Collector[Price]):

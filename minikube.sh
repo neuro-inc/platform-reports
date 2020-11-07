@@ -13,6 +13,7 @@ function minikube::start {
     minikube start --kubernetes-version=v1.16.15 --wait=all --wait-timeout=5m
     kubectl config use-context minikube
     kubectl label node minikube \
+        topology.kubernetes.io/zone=minikube-zone \
         node.kubernetes.io/instance-type=minikube \
         platform.neuromation.io/nodepool=minikube-node-pool
 }

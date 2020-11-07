@@ -424,8 +424,17 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 )
             elif config.cloud_provider == "azure":
                 assert instance_type
+                prices_client = await exit_stack.enter_async_context(
+                    aiohttp.ClientSession()
+                )
                 node_price_collector = await exit_stack.enter_async_context(
-                    AzureNodePriceCollector(instance_type)
+                    AzureNodePriceCollector(
+                        prices_client=prices_client,
+                        prices_url=config.azure_prices_url,
+                        region=config.region,
+                        instance_type=instance_type,
+                        is_spot=is_preemptible,
+                    )
                 )
             else:
                 node_price_collector = Collector(Price())

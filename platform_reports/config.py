@@ -56,6 +56,7 @@ class MetricsConfig:
     cloud_provider: str = ""
     region: str = ""
     gcp_service_account_key_path: Optional[Path] = None
+    azure_prices_url: URL = URL("https://prices.azure.com")
     jobs_namespace: str = ""
     node_pool_label: str = "platform.neuromation.io/nodepool"
     node_preemptible_label: str = "platform.neuromation.io/preemptible"
@@ -109,6 +110,11 @@ class EnvironConfigFactory:
             ),
             region=self._environ.get("NP_REGION", MetricsConfig.region),
             gcp_service_account_key_path=gcp_service_account_key_path,
+            azure_prices_url=URL(
+                self._environ.get(
+                    "NP_AZURE_PRICES_URL", str(MetricsConfig.azure_prices_url)
+                )
+            ),
             jobs_namespace=self._environ.get(
                 "NP_JOBS_NAMESPACE", MetricsConfig.jobs_namespace
             ),

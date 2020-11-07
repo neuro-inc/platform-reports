@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
     Callable,
     ContextManager,
     Dict,
@@ -13,14 +14,17 @@ from typing import (
 )
 from unittest import mock
 
+import aiohttp
 import pytest
 from aiobotocore.client import AioBaseClient
+from aiohttp import web
 from platform_config_client import (
     Cluster,
     ConfigClient,
     OrchestratorConfig,
     ResourcePoolType,
 )
+from yarl import URL
 
 from platform_reports.kube_client import (
     Container,
@@ -460,35 +464,155 @@ class TestGCPNodePriceCollector:
 
 class TestAzureNodePriceCollector:
     @pytest.fixture
-    def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
-        def _create(instance_type: str) -> AzureNodePriceCollector:
-            return AzureNodePriceCollector(instance_type)
+    def prices_client_factory(
+        self,
+        aiohttp_client: Any,
+    ) -> Callable[..., Awaitable[aiohttp.ClientSession]]:
+        async def _create(
+            payload: Dict[str, Any], expected_filter: str = ""
+        ) -> aiohttp.ClientSession:
+            async def get_prices(request: web.Request) -> web.Response:
+                if expected_filter:
+                    assert request.query["$filter"] == expected_filter
+                return web.json_response(payload)
+
+            app = web.Application()
+            app.router.add_get("/api/retail/prices", get_prices)
+            return await aiohttp_client(app)
 
         return _create
 
-    async def test_get_latest_value(
-        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    @pytest.fixture
+    def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
+        def _create(
+            prices_client: aiohttp.ClientSession,
+            instance_type: str,
+            is_spot: bool = False,
+        ) -> AzureNodePriceCollector:
+            return AzureNodePriceCollector(
+                prices_client=prices_client,
+                prices_url=URL(""),
+                region="eastus",
+                instance_type=instance_type,
+                is_spot=is_spot,
+            )
+
+        return _create
+
+    async def test_get_latest_price_per_hour(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
     ) -> None:
-        collector = collector_factory("Standard_NC6")
+        prices_client = await prices_client_factory(
+            {"Items": [{"currencyCode": "USD", "retailPrice": 0.9, "productName": ""}]},
+            (
+                "serviceName eq 'Virtual Machines' "
+                "and priceType eq 'Consumption' "
+                "and armRegionName eq 'eastus' "
+                "and armSkuName eq 'Standard_NC6' "
+                "and skuName eq 'NC6'"
+            ),
+        )
+        collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
         assert result == Price(value=0.9, currency="USD")
 
-    async def test_get_latest_value_ignore_case(
-        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    async def test_get_latest_price_per_hour_general_purpose_instance(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
     ) -> None:
-        collector = collector_factory("standard_nc6")
+        prices_client = await prices_client_factory(
+            {
+                "Items": [
+                    {"currencyCode": "USD", "retailPrice": 0.096, "productName": ""}
+                ]
+            },
+            (
+                "serviceName eq 'Virtual Machines' "
+                "and priceType eq 'Consumption' "
+                "and armRegionName eq 'eastus' "
+                "and armSkuName eq 'Standard_D2_v3' "
+                "and skuName eq 'D2 v3'"
+            ),
+        )
+        collector = collector_factory(prices_client, "Standard_D2s_v3")
+        result = await collector.get_latest_value()
+
+        assert result == Price(value=0.096, currency="USD")
+
+    async def test_get_latest_price_per_hour_multiple_prices(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
+    ) -> None:
+        prices_client = await prices_client_factory(
+            {
+                "Items": [
+                    {"currencyCode": "USD", "retailPrice": 0.9, "productName": ""},
+                    {"currencyCode": "USD", "retailPrice": 0.9, "productName": ""},
+                ]
+            },
+        )
+        collector = collector_factory(prices_client, "Standard_NC6")
+        result = await collector.get_latest_value()
+
+        assert result == Price()
+
+    async def test_get_latest_price_per_hour_filters_windows_os(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
+    ) -> None:
+        prices_client = await prices_client_factory(
+            {
+                "Items": [
+                    {"currencyCode": "USD", "retailPrice": 0.9, "productName": ""},
+                    {
+                        "currencyCode": "USD",
+                        "retailPrice": 0.9,
+                        "productName": "Windows",
+                    },
+                ]
+            },
+        )
+        collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
         assert result == Price(value=0.9, currency="USD")
 
-    async def test_get_latest_value_unknown_instance_type(
-        self, collector_factory: Callable[..., AzureNodePriceCollector]
+    async def test_get_latest_price_per_hour_unknown_instance_type(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
     ) -> None:
-        collector = collector_factory("unknown")
+        prices_client = await prices_client_factory({"Items": []})
+        collector = collector_factory(prices_client, "Standard_NC6")
+        result = await collector.get_latest_value()
 
-        with pytest.raises(AssertionError):
-            await collector.get_latest_value()
+        assert result == Price()
+
+    async def test_get_latest_spot_price_per_hour(
+        self,
+        prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
+        collector_factory: Callable[..., AzureNodePriceCollector],
+    ) -> None:
+        prices_client = await prices_client_factory(
+            {"Items": [{"currencyCode": "USD", "retailPrice": 0.9, "productName": ""}]},
+            (
+                "serviceName eq 'Virtual Machines' "
+                "and priceType eq 'Consumption' "
+                "and armRegionName eq 'eastus' "
+                "and armSkuName eq 'Standard_NC6' "
+                "and skuName eq 'NC6 Spot'"
+            ),
+        )
+        collector = collector_factory(prices_client, "Standard_NC6", is_spot=True)
+        result = await collector.get_latest_value()
+
+        assert result == Price(value=0.9, currency="USD")
 
 
 class TestPodPriceCollector:

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from dataclasses import dataclass
 from importlib.resources import path
 from pathlib import Path
@@ -17,10 +18,12 @@ from typing import (
     TypeVar,
 )
 
+import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
 from platform_config_client import Cluster, ConfigClient
+from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources
 
@@ -169,61 +172,63 @@ class AWSNodePriceCollector(Collector[Price]):
 
 
 class AzureNodePriceCollector(Collector[Price]):
-    def __init__(self, instance_type: str, interval_s: float = 3600) -> None:
+    def __init__(
+        self,
+        prices_client: aiohttp.ClientSession,
+        prices_url: URL,
+        region: str,
+        instance_type: str,
+        is_spot: bool,
+        interval_s: float = 3600,
+    ) -> None:
         super().__init__(Price(), interval_s)
 
+        self._prices_client = prices_client
+        self._prices_url = prices_url
+        self._region = region
         self._instance_type = instance_type
-        self._instance_prices = {
-            k.lower(): v for k, v in self.get_instance_prices().items()
-        }
+        self._sku_name = " ".join(instance_type.split("_")[1:])
 
-    @classmethod
-    def get_instance_prices(cls) -> Dict[str, Price]:
-        # TODO: Load instance prices from Azure API.
-        # Currently Azure does not expose instance prices in their API.
-        return {
-            # General Purpose
-            "Standard_D2s_v3": Price(value=0.096, currency="USD"),
-            "Standard_D4s_v3": Price(value=0.192, currency="USD"),
-            "Standard_D8s_v3": Price(value=0.384, currency="USD"),
-            "Standard_D16s_v3": Price(value=0.768, currency="USD"),
-            "Standard_D32s_v3": Price(value=1.536, currency="USD"),
-            "Standard_D48s_v3": Price(value=2.304, currency="USD"),
-            "Standard_D64s_v3": Price(value=3.072, currency="USD"),
-            # Nvidia Tesla K80
-            "Standard_NC6": Price(value=0.9, currency="USD"),
-            "Standard_NC12": Price(value=1.8, currency="USD"),
-            "Standard_NC24": Price(value=3.6, currency="USD"),
-            "Standard_NC24r": Price(value=3.96, currency="USD"),
-            # Nvidia Tesla P100
-            "Standard_NC6s_v2": Price(value=2.07, currency="USD"),
-            "Standard_NC12s_v2": Price(value=4.14, currency="USD"),
-            "Standard_NC24s_v2": Price(value=8.28, currency="USD"),
-            "Standard_NC24rs_v2": Price(value=9.108, currency="USD"),
-            # Nvidia Tesla V100
-            "Standard_NC6s_v3": Price(value=3.06, currency="USD"),
-            "Standard_NC12s_v3": Price(value=6.12, currency="USD"),
-            "Standard_NC24s_v3": Price(value=12.24, currency="USD"),
-            "Standard_NC24rs_v3": Price(value=13.464, currency="USD"),
-            # Nvidia Tesla M60
-            "Standard_NV12s_v3": Price(value=1.14, currency="USD"),
-            "Standard_NV24s_v3": Price(value=2.28, currency="USD"),
-            "Standard_NV48s_v3": Price(value=4.56, currency="USD"),
-            # Nvidia Tesla P40
-            "Standard_ND6s": Price(value=2.07, currency="USD"),
-            "Standard_ND12s": Price(value=4.14, currency="USD"),
-            "Standard_ND24s": Price(value=8.28, currency="USD"),
-            "Standard_ND24rs": Price(value=9.108, currency="USD"),
-            # 8 x Nvidia Tesla V100
-            "Standard_ND40rs_v2": Price(value=22.032, currency="USD"),
-        }
+        if is_spot:
+            self._sku_name += " Spot"
+        else:
+            # For on-demand instances base instance price should be taken.
+            # e. g.: Standard_D2_v3 instead of Standard_D2s_v3
+            match = re.search(r"^(D\d\d?)a?s? (v\d)$", self._sku_name)
+            if match:
+                self._instance_type = f"Standard_{match.group(1)}_{match.group(2)}"
+                self._sku_name = f"{match.group(1)} {match.group(2)}"
 
     async def get_latest_value(self) -> Price:
-        instance_type = self._instance_type.lower()
-        assert (
-            instance_type in self._instance_prices
-        ), f"Instance type {self._instance_type} has no registered price"
-        return self._instance_prices[instance_type]
+        response = await self._prices_client.get(
+            (self._prices_url / "api/retail/prices").with_query(
+                {
+                    "$filter": " ".join(
+                        [
+                            "serviceName eq 'Virtual Machines'",
+                            "and priceType eq 'Consumption'",
+                            f"and armRegionName eq '{self._region}'",
+                            f"and armSkuName eq '{self._instance_type}'",
+                            f"and skuName eq '{self._sku_name}'",
+                        ]
+                    )
+                }
+            )
+        )
+        response.raise_for_status()
+        payload = await response.json()
+        # filter out Windows instances
+        items = [
+            i for i in payload["Items"] if "windows" not in i["productName"].lower()
+        ]
+        if len(items) != 1:
+            logger.warning(
+                "Azure returned %d products in %s region, cannot determine node price",
+                len(items),
+                self._region,
+            )
+            return Price()
+        return Price(currency=items[0]["currencyCode"], value=items[0]["retailPrice"])
 
 
 class GCPNodePriceCollector(Collector[Price]):

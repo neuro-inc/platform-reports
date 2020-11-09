@@ -16,7 +16,7 @@
     "gnetId": 1860,
     "graphTooltip": 0,
     "id": 3,
-    "iteration": 1604222721940,
+    "iteration": 1604609990159,
     "links": [],
     "panels": [
         {
@@ -302,7 +302,7 @@
                     "refId": "G"
                 },
                 {
-                    "expr": "sum by (instance) (100 * (node_filesystem_size_bytes{job=\"node-exporter\",fstype!=\"rootfs\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!=\"rootfs\"}) / (node_filesystem_avail_bytes {job=\"node-exporter\",fstype!=\"rootfs\"} + (node_filesystem_size_bytes{job=\"node-exporter\",fstype!=\"rootfs\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!=\"rootfs\"})))",
+                    "expr": "100 - 100 * sum by(instance) (node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!=\"rootfs\"}) / sum by(instance) (node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!=\"rootfs\"})",
                     "format": "table",
                     "instant": true,
                     "interval": "",
@@ -14728,5 +14728,5 @@
     "timezone": "browser",
     "title": "Nodes",
     "uid": "nodes",
-    "version": 1
+    "version": 2
 }

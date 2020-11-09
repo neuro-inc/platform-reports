@@ -179,6 +179,7 @@ async def metrics_server_factory() -> Callable[
             app=app,
             port=metrics_config.server.port,
         ) as address:
+            assert app["zone"] == "minikube-zone"
             assert app["instance_type"] == "minikube"
             assert app["node_pool_name"] == "minikube-node-pool"
             yield URL.build(scheme="http", host=address.host, port=address.port)

@@ -372,6 +372,14 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
             kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
             node = await kube_client.get_node(config.node_name)
+            zone = (
+                node.metadata.labels.get("failure-domain.beta.kubernetes.io/zone")
+                or node.metadata.labels.get("topology.kubernetes.io/zone")
+                or ""
+            )
+            app["zone"] = zone
+            logger.info("Node is in zone %s", zone)
+
             instance_type = (
                 node.metadata.labels.get("node.kubernetes.io/instance-type")
                 or node.metadata.labels.get("beta.kubernetes.io/instance-type")
@@ -380,8 +388,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             app["instance_type"] = instance_type
             logger.info("Node instance type is %s", instance_type)
 
-            preemptible = node.metadata.labels.get(config.node_preemptible_label, "")
-            is_preemptible = preemptible.lower() == "true"
+            is_preemptible = config.node_preemptible_label in node.metadata.labels
             if is_preemptible:
                 logger.info("Node is preemptible")
             else:
@@ -393,6 +400,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
             if config.cloud_provider == "aws":
                 assert config.region
+                assert zone
                 assert instance_type
                 session = aiobotocore.get_session()
                 pricing_client = await exit_stack.enter_async_context(
@@ -400,11 +408,17 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         "pricing", get_aws_pricing_api_region(config.region)
                     )
                 )
+                ec2_client = await exit_stack.enter_async_context(
+                    session.create_client("ec2", config.region)
+                )
                 node_price_collector = await exit_stack.enter_async_context(
                     AWSNodePriceCollector(
                         pricing_client=pricing_client,
+                        ec2_client=ec2_client,
                         region=config.region,
+                        zone=zone,
                         instance_type=instance_type,
+                        is_spot=is_preemptible,
                     )
                 )
             elif config.cloud_provider == "gcp":

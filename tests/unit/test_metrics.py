@@ -1,9 +1,10 @@
 import asyncio
 import json
-from contextlib import contextmanager, suppress
+from contextlib import asynccontextmanager, contextmanager, suppress
 from pathlib import Path
 from typing import (
     Any,
+    AsyncContextManager,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -79,20 +80,35 @@ class TestAWSNodePriceCollector:
         return mock.AsyncMock()
 
     @pytest.fixture
-    async def price_collector(
-        self, pricing_client: AioBaseClient
-    ) -> AsyncIterator[AWSNodePriceCollector]:
-        async with AWSNodePriceCollector(
-            pricing_client=pricing_client,
-            region="us-east-1",
-            instance_type="p2.xlarge",
-            interval_s=0.1,
-        ) as result:
-            assert isinstance(result, AWSNodePriceCollector)
-            yield result
+    def ec2_client(self) -> mock.AsyncMock:
+        return mock.AsyncMock()
+
+    @pytest.fixture
+    def collector_factory(
+        self, pricing_client: AioBaseClient, ec2_client: AioBaseClient
+    ) -> Callable[..., AsyncContextManager[AWSNodePriceCollector]]:
+        @asynccontextmanager
+        async def _create(
+            is_spot: bool = False,
+        ) -> AsyncIterator[AWSNodePriceCollector]:
+            async with AWSNodePriceCollector(
+                pricing_client=pricing_client,
+                ec2_client=ec2_client,
+                region="us-east-1",
+                zone="us-east-1a",
+                instance_type="p2.xlarge",
+                is_spot=is_spot,
+                interval_s=0.1,
+            ) as result:
+                assert isinstance(result, AWSNodePriceCollector)
+                yield result
+
+        return _create
 
     async def test_get_latest_price_per_hour(
-        self, price_collector: AWSNodePriceCollector, pricing_client: mock.AsyncMock
+        self,
+        collector_factory: Callable[..., AsyncContextManager[AWSNodePriceCollector]],
+        pricing_client: mock.AsyncMock,
     ) -> None:
         pricing_client.get_products.return_value = {
             "PriceList": [
@@ -114,7 +130,8 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        result = await price_collector.get_latest_value()
+        async with collector_factory() as collector:
+            result = await collector.get_latest_value()
 
         pricing_client.get_products.assert_awaited_once_with(
             ServiceCode="AmazonEC2",
@@ -137,7 +154,9 @@ class TestAWSNodePriceCollector:
         assert result == Price(currency="USD", value=0.1)
 
     async def test_get_latest_price_per_hour_with_multiple_prices(
-        self, price_collector: AWSNodePriceCollector, pricing_client: mock.AsyncMock
+        self,
+        collector_factory: Callable[..., AsyncContextManager[AWSNodePriceCollector]],
+        pricing_client: mock.AsyncMock,
     ) -> None:
         price_item = {
             "terms": {
@@ -156,12 +175,15 @@ class TestAWSNodePriceCollector:
             "PriceList": [json.dumps(price_item), json.dumps(price_item)]
         }
 
-        result = await price_collector.get_latest_value()
+        async with collector_factory() as collector:
+            result = await collector.get_latest_value()
 
         assert result == Price()
 
     async def test_get_latest_price_per_hour_with_unsupported_currency(
-        self, price_collector: AWSNodePriceCollector, pricing_client: mock.AsyncMock
+        self,
+        collector_factory: Callable[..., AsyncContextManager[AWSNodePriceCollector]],
+        pricing_client: mock.AsyncMock,
     ) -> None:
         pricing_client.get_products.return_value = {
             "PriceList": [
@@ -183,7 +205,41 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        result = await price_collector.get_latest_value()
+        async with collector_factory() as collector:
+            result = await collector.get_latest_value()
+
+        assert result == Price()
+
+    async def test_get_latest_spot_price_per_hour(
+        self,
+        collector_factory: Callable[..., AsyncContextManager[AWSNodePriceCollector]],
+        ec2_client: mock.AsyncMock,
+    ) -> None:
+        ec2_client.describe_spot_price_history.return_value = {
+            "SpotPriceHistory": [{"SpotPrice": 0.27}]
+        }
+
+        async with collector_factory(is_spot=True) as collector:
+            result = await collector.get_latest_value()
+
+        assert result == Price(currency="USD", value=0.27)
+
+        ec2_client.describe_spot_price_history.assert_awaited_once_with(
+            AvailabilityZone="us-east-1a",
+            InstanceTypes=["p2.xlarge"],
+            ProductDescriptions=["Linux/UNIX"],
+            StartTime=mock.ANY,
+        )
+
+    async def test_get_latest_spot_price_per_hour_no_history(
+        self,
+        collector_factory: Callable[..., AsyncContextManager[AWSNodePriceCollector]],
+        ec2_client: mock.AsyncMock,
+    ) -> None:
+        ec2_client.describe_spot_price_history.return_value = {"SpotPriceHistory": []}
+
+        async with collector_factory(is_spot=True) as collector:
+            result = await collector.get_latest_value()
 
         assert result == Price()
 

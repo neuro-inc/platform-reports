@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 install_requires = (
     "neuro_auth_client==19.11.25",
     "platform_config_client==20.10.23",
-    "neuromation==20.10.30",
+    "neuromation==20.11.10",
     "platform-logging==0.3",
     "aiohttp==3.7.2",
     "python-jose==3.2.0",

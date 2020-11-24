@@ -6,7 +6,7 @@ install_requires = (
     "platform_config_client==20.10.23",
     "neuromation==20.11.10",
     "platform-logging==0.3",
-    "aiohttp==3.7.2",
+    "aiohttp==3.7.3",
     "python-jose==3.2.0",
     "lark-parser==0.10.1",
     "aiobotocore==1.1.2",

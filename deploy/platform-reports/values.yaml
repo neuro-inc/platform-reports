@@ -219,6 +219,9 @@ prometheus-operator:
             resources:
               requests:
                 storage: 10Gi
+      # thanos sidecar
+      thanos:
+        tag: v0.14.0
 
   grafana:
     enabled: true

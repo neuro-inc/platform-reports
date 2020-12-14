@@ -128,7 +128,7 @@ async def platform_api_server(
 async def platform_config_server(
     platform_config_app: aiohttp.web.Application,
 ) -> AsyncIterator[URL]:
-    async with create_local_app_server(app=platform_config_app, port=8480) as address:
+    async with create_local_app_server(app=platform_config_app, port=8481) as address:
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 

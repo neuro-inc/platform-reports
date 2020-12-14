@@ -1,30 +1,29 @@
 ARG PYTHON_VERSION=3.8.5
 ARG PYTHON_BASE=buster
 
-FROM python:${PYTHON_VERSION} AS requirements
+FROM python:${PYTHON_VERSION} AS installer
 
 ARG PIP_EXTRA_INDEX_URL
-ENV PATH=/root/.local/bin:$PATH
 
-WORKDIR /app
+# Separate step for requirements to speed up docker builds
+COPY platform_reports.egg-info/requires.txt requires.txt
+RUN python -c 'from pkg_resources import Distribution, PathMetadata;\
+dist = Distribution(metadata=PathMetadata(".", "."));\
+print("\n".join(str(r) for r in dist.requires()));\
+' > requirements.txt
+RUN pip install --user -r requirements.txt
 
-COPY setup.py setup.py
+ARG DIST_FILENAME
 
-RUN pip install --user -e . &&\
-    pip uninstall -y platform-reports
+# Install service itself
+COPY dist/${DIST_FILENAME} ${DIST_FILENAME}
+RUN pip install --user $DIST_FILENAME
 
-
-# make service image
 FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service
 
 WORKDIR /app
 
 ENV PATH=/root/.local/bin:$PATH
-
-COPY --from=requirements /root/.local /root/.local
-COPY setup.py setup.py
-COPY platform_reports platform_reports
-
-RUN pip install --user -e .
-
 ENV NP_REPORTS_API_PORT=8080
+
+COPY --from=installer /root/.local/ /root/.local/

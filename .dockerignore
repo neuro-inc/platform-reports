@@ -1,15 +1,5 @@
-.git/
+*
+!dist
+!platform_reports.egg-info
 
-build
-dist
-*.egg-info
-*.egg/
-*.pyc
-*.swp
-.mypy_cache/
-.pytest_cache/
-**/__pycache__
-
-.tox
-.coverage
-html/*
+**/*.pyc

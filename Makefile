@@ -55,13 +55,16 @@ test_integration:
 	exit $$exit_code
 
 docker_build:
+	python setup.py sdist
 	docker build \
 		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=buster \
+		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
 		-t $(IMAGE) .
 	docker build \
 		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=slim-buster \
+		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
 		-t $(IMAGE_SLIM) .
 
 docker_push: docker_build

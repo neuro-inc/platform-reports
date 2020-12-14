@@ -25,7 +25,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7.7
+        python-version: 3.8.5
     - name: Cache packages
       uses: actions/cache@v1
       with:
@@ -91,7 +91,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7.7
+        python-version: 3.8.5
     - name: Set tag
       run: echo "TAG=$GITHUB_SHA" >> $GITHUB_ENV
     - name: Configure AWS credentials
@@ -145,7 +145,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7.7
+        python-version: 3.8.5
     - name: Set tag
       run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
     - name: Push image to Artifactory

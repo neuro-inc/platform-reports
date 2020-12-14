@@ -29,6 +29,7 @@ def job_factory() -> Callable[[str], Job]:
             container=None,  # type: ignore
             is_preemptible=None,  # type: ignore
             uri=URL(f"job://default/user/{id}"),
+            pass_config=None,  # type: ignore
         )
 
     return _factory

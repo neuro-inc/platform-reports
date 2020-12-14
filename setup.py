@@ -1,6 +1,7 @@
 from setuptools import find_packages, setup
 
 
+setup_requires = ("setuptools_scm",)
 install_requires = (
     "neuro_auth_client==19.11.25",
     "platform_config_client==20.10.23",
@@ -15,10 +16,16 @@ install_requires = (
 
 setup(
     name="platform_reports",
-    version="1.0.0",
     url="https://github.com/neuromation/platform-reports",
+    use_scm_version={
+        "tag_regex": r"(artifactory/)?(?P<version>.*)",
+        "git_describe_command": (
+            "git describe --dirty --tags --long --match artifactory/*.*.*"
+        ),
+    },
     packages=find_packages(),
     python_requires=">=3.7",
+    setup_requires=setup_requires,
     install_requires=install_requires,
     entry_points={
         "console_scripts": [

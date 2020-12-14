@@ -20,6 +20,14 @@ class TestMetrics:
             assert response.status == HTTPOk.status_code
 
     @pytest.mark.asyncio
+    async def test_ping_includes_version(
+        self, client: aiohttp.ClientSession, metrics_server: URL
+    ) -> None:
+        async with client.get(metrics_server / "ping") as response:
+            assert response.status == HTTPOk.status_code
+            assert "platform-reports" in response.headers["X-Service-Version"]
+
+    @pytest.mark.asyncio
     async def test_node_metrics(
         self, client: aiohttp.ClientSession, metrics_server: URL
     ) -> None:

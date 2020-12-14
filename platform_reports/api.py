@@ -20,6 +20,7 @@ from typing import (
 import aiobotocore
 import aiohttp
 import aiohttp.web
+import pkg_resources
 from aiohttp.web import (
     HTTPBadRequest,
     HTTPForbidden,
@@ -357,6 +358,13 @@ def get_aws_pricing_api_region(region: str) -> str:
     return "us-east-1"
 
 
+package_version = pkg_resources.get_distribution("platform-reports").version
+
+
+async def add_version_to_header(request: Request, response: StreamResponse) -> None:
+    response.headers["X-Service-Version"] = f"platform-reports/{package_version}"
+
+
 def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     ProbesHandler(app).register()
@@ -479,6 +487,8 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             yield
 
     app.cleanup_ctx.append(_init_app)
+
+    app.on_response_prepare.append(add_version_to_header)
 
     return app
 

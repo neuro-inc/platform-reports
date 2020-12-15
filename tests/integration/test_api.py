@@ -201,9 +201,9 @@ class TestGrafanaProxy:
 
     @pytest.mark.asyncio
     async def test_ping_includes_version(
-        self, client: aiohttp.ClientSession, metrics_server: URL
+        self, client: aiohttp.ClientSession, grafana_proxy_server: URL
     ) -> None:
-        async with client.get(metrics_server / "ping") as response:
+        async with client.get(grafana_proxy_server / "ping") as response:
             assert response.status == HTTPOk.status_code
             assert "platform-reports" in response.headers["X-Service-Version"]
 

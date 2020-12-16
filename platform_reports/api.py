@@ -488,8 +488,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     app.cleanup_ctx.append(_init_app)
 
-    app.on_response_prepare.append(add_version_to_header)
-
     return app
 
 
@@ -568,6 +566,8 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
             yield
 
     app.cleanup_ctx.append(_init_app)
+
+    app.on_response_prepare.append(add_version_to_header)
 
     return app
 

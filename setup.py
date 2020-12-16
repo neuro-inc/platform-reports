@@ -18,10 +18,7 @@ setup(
     name="platform_reports",
     url="https://github.com/neuromation/platform-reports",
     use_scm_version={
-        "tag_regex": r"(artifactory/)?(?P<version>.*)",
-        "git_describe_command": (
-            "git describe --dirty --tags --long --match artifactory/*.*.*"
-        ),
+        "git_describe_command": "git describe --dirty --tags --long --match v*.*.*",
     },
     packages=find_packages(),
     python_requires=">=3.7",

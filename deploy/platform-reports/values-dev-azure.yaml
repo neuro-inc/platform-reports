@@ -31,8 +31,6 @@ prometheus-operator:
             storageClassName: standard
 
   prometheusOperator:
-    createCustomResource: true
-
     kubeletService:
       namespace: platform
 

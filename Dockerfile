@@ -5,12 +5,14 @@ FROM python:${PYTHON_VERSION} AS installer
 
 ARG PIP_EXTRA_INDEX_URL
 
+ENV PATH=/root/.local/bin:$PATH
+
 # Separate step for requirements to speed up docker builds
 COPY platform_reports.egg-info/requires.txt requires.txt
 RUN python -c 'from pkg_resources import Distribution, PathMetadata;\
-dist = Distribution(metadata=PathMetadata(".", "."));\
-print("\n".join(str(r) for r in dist.requires()));\
-' > requirements.txt
+    dist = Distribution(metadata=PathMetadata(".", "."));\
+    print("\n".join(str(r) for r in dist.requires()));\
+    ' > requirements.txt
 RUN pip install --user -r requirements.txt
 
 ARG DIST_FILENAME

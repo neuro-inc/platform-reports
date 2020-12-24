@@ -24,6 +24,8 @@ LINT_PATHS = platform_reports tests setup.py
 WAIT_FOR_IT_URL = https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
 WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
+YQ = docker run --rm -it -v $(shell pwd):/workdir mikefarah/yq
+
 PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.38/example/prometheus-operator-crd
 
 export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
@@ -122,7 +124,8 @@ _helm_fetch:
 	curl -sLSo crd-prometheus.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheuses.yaml; \
 	curl -sLSo crd-prometheusrules.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheusrules.yaml; \
 	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
-	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
+	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml; \
+	find . -name '*.yaml' | xargs -I {} yq w -d'*' -i {} 'metadata.annotations[helm.sh/hook]' 'crd-install'
 
 _helm_expand_vars:
 ifeq (,$(findstring Darwin,$(MACHINE)))

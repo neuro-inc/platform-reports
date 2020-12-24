@@ -126,7 +126,7 @@ _helm_fetch:
 	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
 	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
 	find tmpdeploy/platform-reports/prometheus-crds -name '*.yaml' \
-		| xargs $(YQ) e -i '.metadata.annotations."helm.sh/hook" = "crd-install"'
+		| xargs -L 1 $(YQ) e -i '.metadata.annotations."helm.sh/hook" = "crd-install"'
 
 _helm_expand_vars:
 ifeq (,$(findstring Darwin,$(MACHINE)))

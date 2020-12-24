@@ -24,7 +24,7 @@ LINT_PATHS = platform_reports tests setup.py
 WAIT_FOR_IT_URL = https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
 WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
-YQ = docker run --rm -v $(shell pwd):/workdir mikefarah/yq yq
+YQ = docker run --rm -v $(shell pwd):/workdir mikefarah/yq:4
 
 PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.38/example/prometheus-operator-crd
 
@@ -126,7 +126,7 @@ _helm_fetch:
 	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
 	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
 	find tmpdeploy/platform-reports/prometheus-crds -name '*.yaml' \
-		| xargs -I {} $(YQ) w -d'*' -i {} 'metadata.annotations[helm.sh/hook]' 'crd-install'
+		| xargs $(YQ) e -i '.metadata.annotations."helm.sh/hook" = "crd-install"'
 
 _helm_expand_vars:
 ifeq (,$(findstring Darwin,$(MACHINE)))

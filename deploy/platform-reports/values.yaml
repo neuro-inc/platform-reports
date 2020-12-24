@@ -194,9 +194,13 @@ prometheus-operator:
       - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
 
   prometheusOperator:
-    # Should be defined before chart is installed into cluster and not changed after
-    createCustomResource: false
+    image:
+      tag: v0.38.2
 
+    prometheusConfigReloaderImage:
+      tag: v0.38.2
+
+    createCustomResource: false
     cleanupCustomResource: true
 
     kubeletService:

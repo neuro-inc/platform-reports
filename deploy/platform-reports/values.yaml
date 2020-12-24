@@ -194,6 +194,9 @@ prometheus-operator:
       - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
 
   prometheusOperator:
+    createCustomResource: false
+    cleanupCustomResource: true
+
     kubeletService:
       enabled: true
 
@@ -214,6 +217,8 @@ prometheus-operator:
           memory: "1Gi"
       storageSpec:
         volumeClaimTemplate:
+          metadata:
+            name: prometheus
           spec:
             accessModes: ["ReadWriteOnce"]
             resources:

@@ -24,6 +24,8 @@ LINT_PATHS = platform_reports tests setup.py
 WAIT_FOR_IT_URL = https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
 WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
+PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.38/example/prometheus-operator-crd
+
 export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
 
 setup:
@@ -90,6 +92,7 @@ azure_k8s_login:
 helm_install:
 	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)
 	helm init --client-only
+	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 
 artifactory_helm_plugin_install:
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin
@@ -106,13 +109,22 @@ endif
 		--username ${ARTIFACTORY_USERNAME} \
 		--password ${ARTIFACTORY_PASSWORD}
 
-_helm_expand_vars:
-ifeq ($(TAG),latest)
-	$(error Helm package tag is not specified)
-endif
+_helm_fetch:
 	rm -rf tmpdeploy/platform-reports
 	mkdir -p tmpdeploy/platform-reports
 	cp -Rf deploy/platform-reports/. tmpdeploy/platform-reports/
+	helm dependency update tmpdeploy/platform-reports
+	mkdir -p tmpdeploy/platform-reports/prometheus-crds
+	# CRD's in prometheus-operator helm chart are stale, fetch the latest version
+	cd tmpdeploy/platform-reports/prometheus-crds; \
+	curl -sLSo crd-alertmanager.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_alertmanagers.yaml; \
+	curl -sLSo crd-podmonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_podmonitors.yaml; \
+	curl -sLSo crd-prometheus.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheuses.yaml; \
+	curl -sLSo crd-prometheusrules.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheusrules.yaml; \
+	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
+	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
+
+_helm_expand_vars:
 ifeq (,$(findstring Darwin,$(MACHINE)))
 	# Linux
 	sed -i "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
@@ -127,17 +139,19 @@ else
 	sed -i "" -e "s/\$$CURRENT_TIME/$(CURRENT_TIME)/g" tmpdeploy/platform-reports/values.yaml
 endif
 
-artifactory_helm_push: _helm_expand_vars
+artifactory_helm_push: _helm_fetch _helm_expand_vars
+ifeq ($(TAG),latest)
+	$(error Helm package tag is not specified)
+endif
 	find tmpdeploy/platform-reports -type f -name 'values-*' -delete
-	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
-	helm dependency update tmpdeploy/platform-reports
 	helm package --version=$(TAG) tmpdeploy/platform-reports/
 	helm push-artifactory platform-reports-$(TAG).tgz neuro-local-public
 	rm platform-reports-$(TAG).tgz
 
-helm_deploy: _helm_expand_vars
-	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
-	helm dependency update tmpdeploy/platform-reports
+helm_deploy: _helm_fetch _helm_expand_vars
+ifeq ($(TAG),latest)
+	$(error Helm package tag is not specified)
+endif
 	helm upgrade platform-reports tmpdeploy/platform-reports \
 		--install \
 		--wait \

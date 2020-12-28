@@ -10,8 +10,8 @@ metadata:
     ingress.kubernetes.io/auth-url: {{ .Values.platform.authUrl }}/oauth/authorize
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefix
-{{- if .Values.ingress.extraAnnotations }}
-{{ toYaml .Values.ingress.extraAnnotations | indent 4 }}
+{{- if .Values.grafanaProxy.ingress.extraAnnotations }}
+{{ toYaml .Values.grafanaProxy.ingress.extraAnnotations | indent 4 }}
 {{- end }}
 spec:
   rules:

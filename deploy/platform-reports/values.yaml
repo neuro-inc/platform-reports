@@ -50,6 +50,7 @@ grafanaProxy:
     requests:
       cpu: 100m
       memory: 128Mi
+  ingress: {}
 
 prometheus-operator:
   nameOverride: prometheus

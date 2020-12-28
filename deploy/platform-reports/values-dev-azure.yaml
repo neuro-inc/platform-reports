@@ -1,5 +1,3 @@
-env: dev
-
 cloudProvider:
   type: azure
   region: eastus
@@ -22,7 +20,9 @@ prometheusProxy:
 grafanaProxy:
   replicas: 2
   ingress:
-    host: metrics-dev.neu.ro
+    extraAnnotations:
+      external-dns.platform.neuromation.io: "true"
+    hosts: [metrics-dev.neu.ro]
 
 prometheus-operator:
   prometheus:

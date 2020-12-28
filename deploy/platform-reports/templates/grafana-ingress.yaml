@@ -9,6 +9,9 @@ metadata:
     ingress.kubernetes.io/auth-url: {{ .Values.platform.authUrl }}/oauth/authorize
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefix
+    {{- if eq .Values.env "dev" }}
+    external-dns.platform.neuromation.io: "true"
+    {{- end }}
 spec:
   rules:
     - host: {{ .Values.grafanaProxy.ingress.host }}

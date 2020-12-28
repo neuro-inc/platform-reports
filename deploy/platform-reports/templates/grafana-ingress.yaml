@@ -16,14 +16,14 @@ spec:
         paths:
           - backend:
               serviceName: grafana-proxy
-              servicePort: 80
+              servicePort: http
             path: /api/dashboards
     - host: {{ .Values.grafanaProxy.ingress.host }}
       http:
         paths:
           - backend:
               serviceName: grafana-proxy
-              servicePort: 80
+              servicePort: http
             path: /ping
     - host: {{ .Values.grafanaProxy.ingress.host }}
       http:

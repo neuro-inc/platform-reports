@@ -6,10 +6,10 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: service
+    - name: http
       port: 9090
       protocol: TCP
-      targetPort: 8080
+      targetPort: http
   selector:
     app: {{ include "platform-reports.name" . }}
     release: {{ .Release.Name | quote }}

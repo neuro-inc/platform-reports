@@ -79,6 +79,7 @@ spec:
           ports:
             - name: metrics
               containerPort: {{ .Values.metricsServer.port }}
+              protocol: TCP
           {{- if .Values.metricsServer.resources }}
           resources: {{ toYaml .Values.metricsServer.resources | nindent 12 }}
           {{- end }}
@@ -86,7 +87,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /ping
-              port: {{ .Values.metricsServer.port }}
+              port: metrics
             initialDelaySeconds: 3
             periodSeconds: 5
             successThreshold: 1
@@ -94,7 +95,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /ping
-              port: {{ .Values.metricsServer.port }}
+              port: metrics
             initialDelaySeconds: 3
             periodSeconds: 3
             successThreshold: 1

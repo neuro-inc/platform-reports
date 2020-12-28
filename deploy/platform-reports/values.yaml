@@ -12,6 +12,7 @@ objectStore:
 
 platform:
   accessTokenCookieNames: sat,dat
+  token: {}
 
 platformJobs:
   namespace: platform-jobs
@@ -21,6 +22,8 @@ image:
   repository: "$IMAGE_REPO"
   tag: "$IMAGE_TAG"
   slimTag: "$IMAGE_SLIM_TAG"
+
+secrets: []
 
 metricsServer:
   port: 9500

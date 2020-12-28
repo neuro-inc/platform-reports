@@ -8,6 +8,11 @@ platform:
   apiUrl: https://dev.neu.ro/api/v1
   accessTokenCookieName: dat
   clusterName: default
+  token:
+    valueFrom:
+      secretKeyRef:
+        name: platformservices-secret
+        key: cluster_token
 
 metricsServer:
   podMetadata:

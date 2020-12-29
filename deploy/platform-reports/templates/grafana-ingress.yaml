@@ -1,3 +1,4 @@
+{{- if .Values.grafanaProxy.ingress }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -9,26 +10,32 @@ metadata:
     ingress.kubernetes.io/auth-url: {{ .Values.platform.authUrl }}/oauth/authorize
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefix
+{{- if .Values.grafanaProxy.ingress.extraAnnotations }}
+{{ toYaml .Values.grafanaProxy.ingress.extraAnnotations | indent 4 }}
+{{- end }}
 spec:
   rules:
-    - host: {{ .Values.grafanaProxy.ingress.host }}
+    {{- range .Values.grafanaProxy.ingress.hosts }}
+    - host: {{ . | quote }}
       http:
         paths:
           - backend:
               serviceName: grafana-proxy
-              servicePort: 80
+              servicePort: http
             path: /api/dashboards
-    - host: {{ .Values.grafanaProxy.ingress.host }}
+    - host: {{ . | quote }}
       http:
         paths:
           - backend:
               serviceName: grafana-proxy
-              servicePort: 80
+              servicePort: http
             path: /ping
-    - host: {{ .Values.grafanaProxy.ingress.host }}
+    - host: {{ . | quote }}
       http:
         paths:
           - backend:
               serviceName: grafana
               servicePort: 80
             path: /
+    {{- end }}
+{{- end }}

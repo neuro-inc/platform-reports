@@ -1,5 +1,4 @@
 MACHINE = $(shell uname -s)
-CURRENT_TIME = $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 AWS_ACCOUNT_ID ?= 771188043543
 AWS_REGION ?= us-east-1
@@ -95,6 +94,7 @@ helm_install:
 	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)
 	helm init --client-only
 	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
+	helm repo add grafana https://grafana.github.io/helm-charts
 
 artifactory_helm_plugin_install:
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin
@@ -134,13 +134,11 @@ ifeq (,$(findstring Darwin,$(MACHINE)))
 	sed -i "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "s/\$$CURRENT_TIME/$(CURRENT_TIME)/g" tmpdeploy/platform-reports/values.yaml
 else
 	# Mac OS
 	sed -i "" -e "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "" -e "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
 	sed -i "" -e "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "" -e "s/\$$CURRENT_TIME/$(CURRENT_TIME)/g" tmpdeploy/platform-reports/values.yaml
 endif
 
 artifactory_helm_push: _helm_fetch _helm_expand_vars

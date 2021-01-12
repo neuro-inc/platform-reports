@@ -6,3 +6,6 @@ dependencies:
     version: "0.3.23"
     repository: "@banzaicloud"
     condition: objectStore.supported
+  - name: grafana
+    version: "5.8.16"
+    repository: "@grafana"

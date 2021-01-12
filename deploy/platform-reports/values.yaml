@@ -239,97 +239,7 @@ prometheus-operator:
         tag: v0.14.0
 
   grafana:
-    enabled: true
-
-    defaultDashboardsEnabled: false
-
-    image:
-      tag: "7.2.1"
-
-    nameOverride: grafana
-    fullnameOverride: grafana
-
-    adminUser: admin
-
-    podAnnotations:
-      updatedAt: "$CURRENT_TIME"
-
-    ingress:
-      enabled: false
-
-    sidecar:
-      datasources:
-        enabled: false
-      dashboards:
-        enabled: false
-      notifiers:
-        enabled: false
-
-    datasources:
-      datasources.yaml:
-        apiVersion: 1
-        datasources:
-          - name: Prometheus
-            type: prometheus
-            url: http://prometheus-proxy:9090
-            access: proxy
-            isDefault: true
-            jsonData:
-              keepCookies:
-                - dat
-                - sat
-
-    dashboardProviders:
-      dashboardproviders.yaml:
-        apiVersion: 1
-        providers:
-          - name: 'admin'
-            orgId: 1
-            folder: 'Admin'
-            type: file
-            disableDeletion: false
-            editable: true
-            allowUiUpdates: true
-            options:
-              path: /var/lib/grafana/dashboards/admin
-          - name: 'user'
-            orgId: 1
-            folder: 'User'
-            type: file
-            disableDeletion: false
-            editable: true
-            allowUiUpdates: true
-            options:
-              path: /var/lib/grafana/dashboards/user
-
-    dashboardsConfigMaps:
-      admin: grafana-admin-dashboards
-      user: grafana-user-dashboards
-
-    extraConfigmapMounts:
-      - name: home-dashboard
-        mountPath: /var/lib/grafana/dashboards/home
-        configMap: grafana-home-dashboard
-        readOnly: true
-
-    persistence:
-      enabled: false
-
-    grafana.ini:
-      auth.anonymous:
-        enabled: true
-      analytics:
-        reporting_enabled: false
-        check_for_updates: false
-      users:
-        default_theme: light
-      snapshots:
-        external_enabled: false
-      dashboards:
-        default_home_dashboard_path: /var/lib/grafana/dashboards/home/home.json
-
-    serviceMonitor:
-      selfMonitor: false
+    enabled: false
 
 thanos:
   nameOverride: thanos
@@ -378,3 +288,74 @@ thanos:
     enabled: true
     selector:
       app: prometheus
+
+grafana:
+  nameOverride: grafana
+  fullnameOverride: grafana
+
+  adminUser: admin
+
+  ingress:
+    enabled: false
+
+  sidecar:
+    datasources:
+      enabled: false
+
+    notifiers:
+      enabled: false
+
+    dashboards:
+      enabled: true
+      SCProvider: false
+
+      watchMethod: SLEEP
+      label: grafana_dashboard
+      folderAnnotation: grafana_folder
+      folder: /etc/grafana/dashboards
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'sidecarProvider'
+          orgId: 1
+          type: file
+          disableDeletion: false
+          allowUiUpdates: true
+          options:
+            path: /etc/grafana/dashboards/platform
+            foldersFromFilesStructure: true
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-proxy:9090
+          access: proxy
+          isDefault: true
+          jsonData:
+            keepCookies:
+              - dat
+              - sat
+
+  persistence:
+    enabled: false
+
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+    users:
+      default_theme: light
+    snapshots:
+      external_enabled: false
+    dashboards:
+      default_home_dashboard_path: /etc/grafana/dashboards/home.json
+
+  serviceMonitor:
+    selfMonitor: false

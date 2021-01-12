@@ -44,9 +44,6 @@ prometheus-operator:
   kubelet:
     namespace: platform
 
-  grafana:
-    adminPassword: password
-
 thanos:
   store:
     persistentVolumeClaim:
@@ -64,3 +61,6 @@ thanos:
       container: neuro-metrics-dev
       storage_account: "st4006d4f97475ef17167b"
       storage_account_key: "RQVBHaqd4L+lWAPQXcuUC0sbonEARxN8PijYA4tRnWqAby0bFGmvBr8fzSnYJIBsEdwEiBPkvAg8HEEqfFU0zw=="
+
+grafana:
+  adminPassword: password

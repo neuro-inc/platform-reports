@@ -52,9 +52,6 @@ prometheus-operator:
   kubelet:
     namespace: platform
 
-  grafana:
-    adminPassword: password
-
 thanos:
   store:
     persistentVolumeClaim:
@@ -79,3 +76,6 @@ thanos:
     config:
       bucket: neuro-dev-metrics
       endpoint: s3.us-east-1.amazonaws.com
+
+grafana:
+  adminPassword: password

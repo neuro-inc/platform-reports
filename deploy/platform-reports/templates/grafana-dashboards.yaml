@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: grafana-home-dashboard
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+    grafana_dashboard: "true"
 data:
 {{ (.Files.Glob "dashboards/home.json").AsConfig | indent 2 }}
 ---
@@ -11,6 +12,9 @@ kind: ConfigMap
 metadata:
   name: grafana-admin-dashboards
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+    grafana_dashboard: "true"
+  annotations:
+    grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/Admin
 data:
 {{ (.Files.Glob "dashboards/admin/*.json").AsConfig | indent 2 }}
 ---
@@ -19,5 +23,8 @@ kind: ConfigMap
 metadata:
   name: grafana-user-dashboards
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+    grafana_dashboard: "true"
+  annotations:
+    grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/User
 data:
 {{ (.Files.Glob "dashboards/user/*.json").AsConfig | indent 2 }}

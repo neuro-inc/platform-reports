@@ -30,6 +30,10 @@ grafanaProxy:
     hosts: [metrics-dev.neu.ro]
 
 prometheus-operator:
+  global:
+    imagePullSecrets:
+      - name: artifactory
+
   prometheus:
     prometheusSpec:
       thanos:
@@ -51,6 +55,16 @@ prometheus-operator:
 
   kubelet:
     namespace: platform
+
+  kube-state-metrics:
+    serviceAccount:
+      imagePullSecrets:
+        - name: artifactory
+
+  prometheus-node-exporter:
+    serviceAccount:
+      imagePullSecrets:
+        - name: artifactory
 
 thanos:
   store:
@@ -78,4 +92,7 @@ thanos:
       endpoint: s3.us-east-1.amazonaws.com
 
 grafana:
+  image:
+    pullSecrets: [artifactory]
+
   adminPassword: password

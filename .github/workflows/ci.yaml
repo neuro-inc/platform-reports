@@ -74,6 +74,7 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/master'
     env:
+      ARTIFACTORY_DOCKER_REPO: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AZURE_ACR_NAME: ${{ secrets.AZURE_DEV_ACR_NAME }}
@@ -135,7 +136,6 @@ jobs:
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
       ARTIFACTORY_DOCKER_REPO: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
       ARTIFACTORY_HELM_REPO: ${{ secrets.ARTIFACTORY_HELM_REPO }}
-      IMAGE_BASE_REPO: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
       HELM_VERSION: ${{ secrets.HELM_VERSION }}
     steps:
     - name: Checkout commit
@@ -146,16 +146,17 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8.5
+    - name: Login to Artifactory docker registry
+      uses: docker/docker-login@v1
+      with:
+        registry: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
+        username: ${{ secrets.ARTIFACTORY_USERNAME }}
+        password: ${{ secrets.ARTIFACTORY_PASSWORD }}
     - name: Set tag
       run: echo "TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
     - name: Push image to Artifactory
-      run: |
-        make artifactory_docker_login
-        make docker_push
+      run: make artifactory_docker_push
     - name: Install helm
-      run: |
-        make helm_install
-        make artifactory_helm_plugin_install
-        make artifactory_helm_repo_add
+      run: make helm_install
     - name: Push helm package to Artifactory
       run: make artifactory_helm_push

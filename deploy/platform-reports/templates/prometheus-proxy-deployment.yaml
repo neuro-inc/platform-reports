@@ -22,9 +22,8 @@ spec:
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
       {{- end }}
     spec:
-      {{- if .Values.image.pullSecretName }}
-      imagePullSecrets:
-        - name: {{ .Values.image.pullSecretName | quote }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
       containers:
         - name: proxy

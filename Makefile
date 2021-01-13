@@ -1,22 +1,30 @@
-MACHINE = $(shell uname -s)
-
 AWS_ACCOUNT_ID ?= 771188043543
 AWS_REGION ?= us-east-1
 
 AZURE_RG_NAME ?= dev
 AZURE_ACR_NAME ?= crc570d91c95c6aac0ea80afb1019a0c6f
 
+ARTIFACTORY_DOCKER_REPO ?= neuro-docker-local-public.jfrog.io
+
 TAG ?= latest
+TAG_SLIM = $(TAG)-slim
+
+IMAGE_NAME = platform-reports
 
 IMAGE_BASE_REPO_gke   ?= $(GKE_DOCKER_REGISTRY)/$(GKE_PROJECT_ID)
 IMAGE_BASE_REPO_aws   ?= $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
 IMAGE_BASE_REPO_azure ?= $(AZURE_ACR_NAME).azurecr.io
-IMAGE_BASE_REPO  ?= ${IMAGE_BASE_REPO_${CLOUD_PROVIDER}}
-IMAGE_REPO = $(IMAGE_BASE_REPO)/platform-reports
+
+IMAGE_REPO = ${IMAGE_BASE_REPO_${CLOUD_PROVIDER}}/${IMAGE_NAME}
 IMAGE = $(IMAGE_REPO):$(TAG)
-IMAGE_SLIM = $(IMAGE_REPO):$(TAG)-slim
+IMAGE_SLIM = $(IMAGE_REPO):$(TAG_SLIM)
+
+ARTIFACTORY_IMAGE_REPO = $(ARTIFACTORY_DOCKER_REPO)/$(IMAGE_NAME)
+ARTIFACTORY_IMAGE = $(ARTIFACTORY_IMAGE_REPO):$(TAG)
+ARTIFACTORY_IMAGE_SLIM = $(ARTIFACTORY_IMAGE_REPO):$(TAG_SLIM)
 
 HELM_ENV ?= dev
+HELM_CHART = platform-reports
 
 LINT_PATHS = platform_reports tests setup.py
 
@@ -40,7 +48,6 @@ else
 	pre-commit run --all-files
 endif
 
-
 lint: format
 	mypy $(LINT_PATHS)
 
@@ -63,26 +70,26 @@ docker_build:
 		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=buster \
 		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
-		-t $(IMAGE) .
+		-t $(IMAGE_NAME):latest .
 	docker build \
 		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=slim-buster \
 		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
-		-t $(IMAGE_SLIM) .
+		-t $(IMAGE_NAME):latest-slim .
 
 docker_push: docker_build
-ifeq ($(TAG),latest)
-	$(error Docker image tag is not specified)
-endif
-	docker tag $(IMAGE) $(IMAGE_REPO):latest
+	docker tag $(IMAGE_NAME):latest $(IMAGE)
 	docker push $(IMAGE)
-	docker push $(IMAGE_SLIM)
-	docker push $(IMAGE_REPO):latest
 
-artifactory_docker_login:
-	@docker login $(ARTIFACTORY_DOCKER_REPO) \
-		--username=$(ARTIFACTORY_USERNAME) \
-		--password=$(ARTIFACTORY_PASSWORD)
+	docker tag $(IMAGE_NAME):latest-slim $(IMAGE_SLIM)
+	docker push $(IMAGE_SLIM)
+
+artifactory_docker_push: docker_build
+	docker tag $(IMAGE_NAME):latest $(ARTIFACTORY_IMAGE)
+	docker push $(ARTIFACTORY_IMAGE)
+
+	docker tag $(IMAGE_NAME):latest-slim $(ARTIFACTORY_IMAGE_SLIM)
+	docker push $(ARTIFACTORY_IMAGE_SLIM)
 
 aws_k8s_login:
 	aws eks --region $(AWS_REGION) update-kubeconfig --name $(CLUSTER_NAME)
@@ -95,69 +102,45 @@ helm_install:
 	helm init --client-only
 	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	helm repo add grafana https://grafana.github.io/helm-charts
-
-artifactory_helm_plugin_install:
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin
 
-artifactory_helm_repo_add:
-ifeq ($(ARTIFACTORY_USERNAME),)
-	$(error Artifactory username is not specified)
-endif
-ifeq ($(ARTIFACTORY_PASSWORD),)
-	$(error Artifactory password is not specified)
-endif
-	@helm repo add neuro-local-public \
-		$(ARTIFACTORY_HELM_REPO) \
-		--username ${ARTIFACTORY_USERNAME} \
-		--password ${ARTIFACTORY_PASSWORD}
-
 _helm_fetch:
-	rm -rf tmpdeploy/platform-reports
-	mkdir -p tmpdeploy/platform-reports
-	cp -Rf deploy/platform-reports/. tmpdeploy/platform-reports/
-	helm dependency update tmpdeploy/platform-reports
-	mkdir -p tmpdeploy/platform-reports/prometheus-crds
+	rm -rf temp_deploy/$(HELM_CHART)
+	mkdir -p temp_deploy/$(HELM_CHART)
+	cp -Rf deploy/$(HELM_CHART) temp_deploy/
+	find temp_deploy/$(HELM_CHART) -type f -name 'values*' -delete
+	helm dependency update temp_deploy/$(HELM_CHART)
+	mkdir -p temp_deploy/$(HELM_CHART)/prometheus-crds
 	# CRD's in prometheus-operator helm chart are stale, fetch the latest version
-	cd tmpdeploy/platform-reports/prometheus-crds; \
+	cd temp_deploy/$(HELM_CHART)/prometheus-crds; \
 	curl -sLSo crd-alertmanager.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_alertmanagers.yaml; \
 	curl -sLSo crd-podmonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_podmonitors.yaml; \
 	curl -sLSo crd-prometheus.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheuses.yaml; \
 	curl -sLSo crd-prometheusrules.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheusrules.yaml; \
 	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
 	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
-	find tmpdeploy/platform-reports/prometheus-crds -name '*.yaml' \
+	find temp_deploy/$(HELM_CHART)/prometheus-crds -name '*.yaml' \
 		| xargs -L 1 $(YQ) e -i '.metadata.annotations."helm.sh/hook" = "crd-install"'
 
 _helm_expand_vars:
-ifeq (,$(findstring Darwin,$(MACHINE)))
-	# Linux
-	sed -i "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
-else
-	# Mac OS
-	sed -i "" -e "s/\$$IMAGE_REPO/$(subst /,\/,$(IMAGE_REPO))/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "" -e "s/\$$IMAGE_TAG/$(TAG)/g" tmpdeploy/platform-reports/values.yaml
-	sed -i "" -e "s/\$$IMAGE_SLIM_TAG/$(TAG)-slim/g" tmpdeploy/platform-reports/values.yaml
-endif
+	export IMAGE_REPO=$(ARTIFACTORY_IMAGE); \
+	export IMAGE_TAG=$(TAG); \
+	export IMAGE_SLIM_TAG=$(TAG_SLIM); \
+	export DOCKER_SERVER=$(ARTIFACTORY_DOCKER_REPO); \
+	cat deploy/$(HELM_CHART)/values-template.yaml | envsubst > temp_deploy/$(HELM_CHART)/values.yaml
 
 artifactory_helm_push: _helm_fetch _helm_expand_vars
-ifeq ($(TAG),latest)
-	$(error Helm package tag is not specified)
-endif
-	find tmpdeploy/platform-reports -type f -name 'values-*' -delete
-	helm package --version=$(TAG) tmpdeploy/platform-reports/
-	helm push-artifactory platform-reports-$(TAG).tgz neuro-local-public
-	rm platform-reports-$(TAG).tgz
+	helm package --version=$(TAG) --app-version=$(TAG) temp_deploy/$(HELM_CHART)
+	helm push-artifactory $(HELM_CHART)-$(TAG).tgz $(ARTIFACTORY_HELM_REPO) \
+		--username ${ARTIFACTORY_USERNAME} \
+		--password ${ARTIFACTORY_PASSWORD}
+	rm $(HELM_CHART)-$(TAG).tgz
 
 helm_deploy: _helm_fetch _helm_expand_vars
-ifeq ($(TAG),latest)
-	$(error Helm package tag is not specified)
-endif
-	helm upgrade platform-reports tmpdeploy/platform-reports \
+	helm upgrade $(HELM_CHART) temp_deploy/$(HELM_CHART) \
 		--install \
 		--wait \
 		--timeout 600 \
 		--namespace platform \
-		-f tmpdeploy/platform-reports/values.yaml \
-		-f tmpdeploy/platform-reports/values-$(HELM_ENV)-$(CLOUD_PROVIDER).yaml
+		-f deploy/$(HELM_CHART)/values-$(HELM_ENV)-$(CLOUD_PROVIDER).yaml \
+		--set "image.repository=$(IMAGE_REPO)"

@@ -122,6 +122,9 @@ spec:
                 path: key.json
       {{- end }}
       {{- end }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
 ---
 kind: Service
 apiVersion: v1

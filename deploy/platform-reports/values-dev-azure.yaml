@@ -25,6 +25,10 @@ grafanaProxy:
     hosts: [metrics-dev.neu.ro]
 
 prometheus-operator:
+  global:
+    imagePullSecrets:
+      - name: artifactory
+
   prometheus:
     prometheusSpec:
       thanos:
@@ -43,6 +47,16 @@ prometheus-operator:
 
   kubelet:
     namespace: platform
+
+  kube-state-metrics:
+    serviceAccount:
+      imagePullSecrets:
+        - name: artifactory
+
+  prometheus-node-exporter:
+    serviceAccount:
+      imagePullSecrets:
+        - name: artifactory
 
 thanos:
   store:
@@ -63,4 +77,7 @@ thanos:
       storage_account_key: "RQVBHaqd4L+lWAPQXcuUC0sbonEARxN8PijYA4tRnWqAby0bFGmvBr8fzSnYJIBsEdwEiBPkvAg8HEEqfFU0zw=="
 
 grafana:
+  image:
+    pullSecrets: [artifactory]
+
   adminPassword: password

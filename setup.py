@@ -11,7 +11,7 @@ install_requires = (
     "python-jose==3.2.0",
     "lark-parser==0.11.1",
     "aiobotocore==1.1.2",
-    "google-api-python-client==1.12.5",
+    "google-api-python-client==1.12.8",
 )
 
 setup(

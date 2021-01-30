@@ -7,7 +7,7 @@ metadata:
   annotations:
     ingress.kubernetes.io/auth-trust-headers: "true"
     ingress.kubernetes.io/auth-type: forward
-    ingress.kubernetes.io/auth-url: {{ .Values.platform.authUrl }}/oauth/authorize
+    ingress.kubernetes.io/auth-url: {{ .Values.platform.ingressAuthUrl }}/oauth/authorize
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefix
 {{- if .Values.grafanaProxy.ingress.extraAnnotations }}

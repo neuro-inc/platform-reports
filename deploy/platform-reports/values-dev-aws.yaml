@@ -4,6 +4,7 @@ cloudProvider:
 
 platform:
   authUrl: https://dev.neu.ro
+  ingressAuthUrl: https://dev.neu.ro
   configUrl: https://dev.neu.ro
   apiUrl: https://dev.neu.ro/api/v1
   accessTokenCookieName: dat

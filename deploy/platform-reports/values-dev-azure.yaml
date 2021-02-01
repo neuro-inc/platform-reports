@@ -32,11 +32,7 @@ prometheus-operator:
 
   prometheus:
     prometheusSpec:
-      thanos:
-        version: v0.13.0
-        objectStorageConfig:
-          name: thanos-object-storage-config
-          key: thanos-object-storage.yaml
+      thanos: null
       storageSpec:
         volumeClaimTemplate:
           spec:

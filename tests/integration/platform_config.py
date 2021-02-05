@@ -15,6 +15,7 @@ def platform_config_app() -> aiohttp.web.Application:
                     "is_http_ingress_secure": False,
                     "job_schedule_timeout_s": 30,
                     "job_schedule_scale_up_timeout_s": 30,
+                    "allow_privileged_mode": False,
                     "resource_pool_types": [
                         {
                             "name": "minikube-node-pool",

@@ -253,6 +253,8 @@ class TestGCPNodePriceCollector:
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
                 job_fallback_hostname="",
+                job_schedule_timeout_s=30,
+                job_schedule_scale_up_timeout_s=30,
                 resource_pool_types=[
                     ResourcePoolType(name="n1-highmem-8", cpu=8, memory_mb=52 * 1024),
                     ResourcePoolType(
@@ -681,6 +683,8 @@ class TestPodPriceCollector:
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
                     job_fallback_hostname="",
+                    job_schedule_timeout_s=30,
+                    job_schedule_scale_up_timeout_s=30,
                     resource_pool_types=[
                         ResourcePoolType(
                             name="minikube-node-pool",

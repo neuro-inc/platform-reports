@@ -84,6 +84,9 @@ docker_push: docker_build
 	docker tag $(IMAGE_NAME):latest-slim $(IMAGE_SLIM)
 	docker push $(IMAGE_SLIM)
 
+	docker tag $(IMAGE_NAME):latest $(IMAGE_REPO):latest
+	docker push $(IMAGE_REPO):latest
+
 artifactory_docker_push: docker_build
 	docker tag $(IMAGE_NAME):latest $(ARTIFACTORY_IMAGE)
 	docker push $(ARTIFACTORY_IMAGE)

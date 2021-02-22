@@ -9,7 +9,7 @@ install_requires = (
     "platform-logging==0.3",
     "aiohttp==3.7.3",
     "python-jose==3.2.0",
-    "lark-parser==0.11.1",
+    "lark-parser==0.11.2",
     "aiobotocore==1.2.0",
     "google-api-python-client==1.12.8",
 )

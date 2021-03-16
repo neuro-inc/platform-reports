@@ -1,6 +1,7 @@
 import asyncio
 import json
 from contextlib import asynccontextmanager, contextmanager, suppress
+from decimal import Decimal
 from pathlib import Path
 from typing import (
     Any,
@@ -40,6 +41,7 @@ from platform_reports.metrics import (
     AWSNodePriceCollector,
     AzureNodePriceCollector,
     Collector,
+    ConfigPriceCollector,
     GCPNodePriceCollector,
     PodPriceCollector,
     Price,
@@ -53,7 +55,7 @@ class TestCollector:
 
     @pytest.fixture
     def price_factory(self, collector: Collector[Price]) -> Iterator[mock.Mock]:
-        price = Price(currency="USD", value=1)
+        price = Price(currency="USD", value=Decimal(1))
         with mock.patch.object(
             collector, "get_latest_value", return_value=price
         ) as mock_method:
@@ -66,12 +68,69 @@ class TestCollector:
 
         await asyncio.sleep(0.3)
 
-        assert collector.current_value == Price(currency="USD", value=1)
+        assert collector.current_value == Price(currency="USD", value=Decimal(1))
         assert price_factory.call_count >= 3
 
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
+
+
+class TestConfigPriceCollector:
+    @pytest.fixture
+    def config_client(self) -> mock.AsyncMock:
+        result = mock.AsyncMock(spec=ConfigClient)
+        result.get_cluster.return_value = Cluster(
+            name="default",
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="",
+                job_fallback_hostname="",
+                job_schedule_timeout_s=30,
+                job_schedule_scale_up_timeout_s=30,
+                resource_pool_types=[
+                    ResourcePoolType(
+                        name="node-pool",
+                        cpu=8,
+                        memory_mb=52 * 1024,
+                        price=Decimal("0.9"),
+                        currency="USD",
+                    ),
+                ],
+            ),
+        )
+        return result
+
+    @pytest.fixture
+    async def collector_factory(
+        self, config_client: ConfigClient
+    ) -> Callable[..., AsyncContextManager[ConfigPriceCollector]]:
+        @asynccontextmanager
+        async def create(node_pool_name: str) -> AsyncIterator[ConfigPriceCollector]:
+            async with ConfigPriceCollector(
+                config_client, "default", node_pool_name
+            ) as collector:
+                assert isinstance(collector, ConfigPriceCollector)
+                yield collector
+
+        return create
+
+    async def test_get_latest_value(
+        self,
+        collector_factory: Callable[..., AsyncContextManager[ConfigPriceCollector]],
+    ) -> None:
+        async with collector_factory("node-pool") as collector:
+            result = await collector.get_latest_value()
+
+        assert result == Price(value=Decimal("0.9"), currency="USD")
+
+    async def test_get_latest_value_unknown_node_pool(
+        self,
+        collector_factory: Callable[..., AsyncContextManager[ConfigPriceCollector]],
+    ) -> None:
+        async with collector_factory("unknown-node-pool") as collector:
+            result = await collector.get_latest_value()
+
+        assert result == Price()
 
 
 class TestAWSNodePriceCollector:
@@ -151,7 +210,7 @@ class TestAWSNodePriceCollector:
                 {"Type": "TERM_MATCH", "Field": "instanceType", "Value": "p2.xlarge"},
             ],
         )
-        assert result == Price(currency="USD", value=0.1)
+        assert result == Price(currency="USD", value=Decimal("0.1"))
 
     async def test_get_latest_price_per_hour_with_multiple_prices(
         self,
@@ -216,13 +275,13 @@ class TestAWSNodePriceCollector:
         ec2_client: mock.AsyncMock,
     ) -> None:
         ec2_client.describe_spot_price_history.return_value = {
-            "SpotPriceHistory": [{"SpotPrice": 0.27}]
+            "SpotPriceHistory": [{"SpotPrice": "0.27"}]
         }
 
         async with collector_factory(is_spot=True) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price(currency="USD", value=0.27)
+        assert result == Price(currency="USD", value=Decimal("0.27"))
 
         ec2_client.describe_spot_price_history.assert_awaited_once_with(
             AvailabilityZone="us-east-1a",
@@ -478,28 +537,28 @@ class TestGCPNodePriceCollector:
     ) -> None:
         with collector_factory("n1-highmem-8", "n1-highmem-8") as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=0.473212, currency="USD")
+            assert result == Price(value=Decimal("0.473212"), currency="USD")
 
     async def test_get_latest_price_per_hour_cpu_instance_preemptible(
         self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
     ) -> None:
         with collector_factory("n1-highmem-8", "n1-highmem-8", True) as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=0.099624, currency="USD")
+            assert result == Price(value=Decimal("0.099624"), currency="USD")
 
     async def test_get_latest_price_per_hour_gpu_instance(
         self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
     ) -> None:
         with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8") as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=2.273212, currency="USD")
+            assert result == Price(value=Decimal("2.273212"), currency="USD")
 
     async def test_get_latest_price_per_hour_gpu_instance_preemptible(
         self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
     ) -> None:
         with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8", True) as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=0.639624, currency="USD")
+            assert result == Price(value=Decimal("0.639624"), currency="USD")
 
     async def test_get_latest_price_per_hour_unknown_instance_type(
         self, collector_factory: Callable[..., ContextManager[GCPNodePriceCollector]]
@@ -575,7 +634,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=0.9, currency="USD")
+        assert result == Price(value=Decimal(0.9), currency="USD")
 
     async def test_get_latest_price_per_hour_general_purpose_instance(
         self,
@@ -599,7 +658,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_D2s_v3")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=0.096, currency="USD")
+        assert result == Price(value=Decimal(0.096), currency="USD")
 
     async def test_get_latest_price_per_hour_multiple_prices(
         self,
@@ -639,7 +698,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=0.9, currency="USD")
+        assert result == Price(value=Decimal(0.9), currency="USD")
 
     async def test_get_latest_price_per_hour_unknown_instance_type(
         self,
@@ -670,7 +729,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6", is_spot=True)
         result = await collector.get_latest_value()
 
-        assert result == Price(value=0.9, currency="USD")
+        assert result == Price(value=Decimal(0.9), currency="USD")
 
 
 class TestPodPriceCollector:
@@ -734,7 +793,7 @@ class TestPodPriceCollector:
     def node_price_collector(self) -> mock.AsyncMock:
         result = mock.Mock(spec=Collector[Price])
         type(result).current_value = mock.PropertyMock(
-            return_value=Price(value=1.0, currency="USD")
+            return_value=Price(value=Decimal("1.0"), currency="USD")
         )
         return result
 
@@ -770,7 +829,7 @@ class TestPodPriceCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"job": Price(value=0.1, currency="USD")}
+        assert result == {"job": Price(value=Decimal("0.1"), currency="USD")}
 
     async def test_get_latest_price_per_hour_high_cpu(
         self, collector_factory: Callable[..., PodPriceCollector]
@@ -781,7 +840,7 @@ class TestPodPriceCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"job": Price(value=1.0, currency="USD")}
+        assert result == {"job": Price(value=Decimal(1), currency="USD")}
 
     async def test_get_latest_price_per_hour_high_memory(
         self, collector_factory: Callable[..., PodPriceCollector]
@@ -792,7 +851,7 @@ class TestPodPriceCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"job": Price(value=1.0, currency="USD")}
+        assert result == {"job": Price(value=Decimal(1), currency="USD")}
 
     async def test_get_latest_price_per_hour_gpu(
         self,
@@ -804,7 +863,7 @@ class TestPodPriceCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"job": Price(value=0.75, currency="USD")}
+        assert result == {"job": Price(value=Decimal("0.75"), currency="USD")}
 
     async def test_get_latest_price_per_memory_overused(
         self, collector_factory: Callable[..., PodPriceCollector]
@@ -815,7 +874,7 @@ class TestPodPriceCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"job": Price(value=1.0, currency="USD")}
+        assert result == {"job": Price(value=Decimal(1), currency="USD")}
 
     async def test_get_latest_price_per_hour_multiple_pods(
         self, collector_factory: Callable[..., PodPriceCollector]
@@ -828,8 +887,8 @@ class TestPodPriceCollector:
         result = await collector.get_latest_value()
 
         assert result == {
-            "job1": Price(value=0.1, currency="USD"),
-            "job2": Price(value=0.2, currency="USD"),
+            "job1": Price(value=Decimal("0.1"), currency="USD"),
+            "job2": Price(value=Decimal("0.2"), currency="USD"),
         }
 
     async def test_get_latest_price_per_hour_zero_node_resources(
@@ -842,5 +901,5 @@ class TestPodPriceCollector:
         result = await collector.get_latest_value()
 
         assert result == {
-            "job1": Price(value=0.0, currency="USD"),
+            "job1": Price(value=Decimal(), currency="USD"),
         }

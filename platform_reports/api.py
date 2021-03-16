@@ -52,6 +52,7 @@ from .metrics import (
     AWSNodePriceCollector,
     AzureNodePriceCollector,
     Collector,
+    ConfigPriceCollector,
     GCPNodePriceCollector,
     PodPriceCollector,
     Price,
@@ -459,7 +460,13 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     )
                 )
             else:
-                node_price_collector = Collector(Price())
+                node_price_collector = await exit_stack.enter_async_context(
+                    ConfigPriceCollector(
+                        config_client=config_client,
+                        cluster_name=config.cluster_name,
+                        node_pool_name=node_pool_name,
+                    )
+                )
             app["node_price_collector"] = node_price_collector
 
             pod_price_collector = await exit_stack.enter_async_context(

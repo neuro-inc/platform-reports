@@ -115,7 +115,9 @@ class ConfigPriceCollector(Collector[Price]):
 
         for resource_pool in cluster.orchestrator.resource_pool_types:
             if resource_pool.name == self._node_pool_name:
-                return Price(value=resource_pool.price, currency=resource_pool.currency)
+                return Price(
+                    value=resource_pool.price, currency=resource_pool.currency or ""
+                )
 
         return Price()
 

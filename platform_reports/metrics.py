@@ -203,7 +203,7 @@ class AWSNodePriceCollector(Collector[Price]):
         id2 = next(iter(on_demand[id1]["priceDimensions"]))
         price_per_unit = on_demand[id1]["priceDimensions"][id2]["pricePerUnit"]
         if "USD" in price_per_unit:
-            return Price(currency="USD", value=Decimal(price_per_unit["USD"]))
+            return Price(currency="USD", value=Decimal(str(price_per_unit["USD"])))
         logger.warning(
             "AWS product currencies are not supported: %s", list(price_per_unit.keys())
         )
@@ -227,7 +227,7 @@ class AWSNodePriceCollector(Collector[Price]):
                 self._zone,
             )
             return Price()
-        return Price(currency="USD", value=Decimal(history[0]["SpotPrice"]))
+        return Price(currency="USD", value=Decimal(str(history[0]["SpotPrice"])))
 
 
 class AzureNodePriceCollector(Collector[Price]):
@@ -288,7 +288,8 @@ class AzureNodePriceCollector(Collector[Price]):
             )
             return Price()
         return Price(
-            currency=items[0]["currencyCode"], value=Decimal(items[0]["retailPrice"])
+            currency=items[0]["currencyCode"],
+            value=Decimal(str(items[0]["retailPrice"])),
         )
 
 
@@ -428,7 +429,7 @@ class GCPNodePriceCollector(Collector[Price]):
         tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))
         unit_price = tiered_rate["unitPrice"]
         # UnitPrice contains price in nanos which is 1 USD * 10^-9
-        return Decimal(unit_price["units"]) * 10 ** 9 + unit_price["nanos"]
+        return Decimal(str(unit_price["units"])) * 10 ** 9 + unit_price["nanos"]
 
 
 class PodPriceCollector(Collector[Mapping[str, Price]]):

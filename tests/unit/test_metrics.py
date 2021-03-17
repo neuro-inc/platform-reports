@@ -622,7 +622,11 @@ class TestAzureNodePriceCollector:
         collector_factory: Callable[..., AzureNodePriceCollector],
     ) -> None:
         prices_client = await prices_client_factory(
-            {"Items": [{"currencyCode": "USD", "retailPrice": 0.9, "productName": ""}]},
+            {
+                "Items": [
+                    {"currencyCode": "USD", "retailPrice": "0.9", "productName": ""}
+                ]
+            },
             (
                 "serviceName eq 'Virtual Machines' "
                 "and priceType eq 'Consumption' "
@@ -634,7 +638,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(0.9), currency="USD")
+        assert result == Price(value=Decimal("0.9"), currency="USD")
 
     async def test_get_latest_price_per_hour_general_purpose_instance(
         self,
@@ -658,7 +662,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_D2s_v3")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(0.096), currency="USD")
+        assert result == Price(value=Decimal("0.096"), currency="USD")
 
     async def test_get_latest_price_per_hour_multiple_prices(
         self,
@@ -698,7 +702,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6")
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(0.9), currency="USD")
+        assert result == Price(value=Decimal("0.9"), currency="USD")
 
     async def test_get_latest_price_per_hour_unknown_instance_type(
         self,
@@ -729,7 +733,7 @@ class TestAzureNodePriceCollector:
         collector = collector_factory(prices_client, "Standard_NC6", is_spot=True)
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(0.9), currency="USD")
+        assert result == Price(value=Decimal("0.9"), currency="USD")
 
 
 class TestPodPriceCollector:

@@ -29,14 +29,6 @@ from platform_reports.config import (
 )
 
 
-pytest_plugins = [
-    "tests.integration.platform_auth",
-    "tests.integration.platform_config",
-    "tests.integration.platform_api",
-    "tests.integration.kube",
-]
-
-
 @dataclass(frozen=True)
 class Address:
     host: str

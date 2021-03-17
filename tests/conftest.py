@@ -5,6 +5,14 @@ from typing import Dict, List, Sequence
 import pytest
 
 
+pytest_plugins = [
+    "tests.integration.platform_auth",
+    "tests.integration.platform_config",
+    "tests.integration.platform_api",
+    "tests.integration.kube",
+]
+
+
 @pytest.fixture(scope="session")
 def dashboards_expressions() -> Dict[str, Sequence[str]]:
     result: Dict[str, Sequence[str]] = {}

@@ -4,6 +4,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from importlib.resources import path
 from pathlib import Path
 from types import TracebackType
@@ -38,7 +39,7 @@ GOOGLE_COMPUTE_ENGINE_ID = "services/6F81-5844-456A"
 @dataclass(frozen=True)
 class Price:
     currency: str = ""
-    value: float = 0.0
+    value: Decimal = Decimal()
 
     def __str__(self) -> str:
         return f"{self.value} ({self.currency})" if self.currency else str(self.value)
@@ -93,6 +94,34 @@ class Collector(Generic[_TValue]):
         pass
 
 
+class ConfigPriceCollector(Collector[Price]):
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        cluster_name: str,
+        node_pool_name: str,
+        interval_s: float = 60,
+    ) -> None:
+        super().__init__(Price(), interval_s)
+
+        self._config_client = config_client
+        self._cluster_name = cluster_name
+        self._node_pool_name = node_pool_name
+        self._loop = asyncio.get_event_loop()
+        self._client: Any = None
+
+    async def get_latest_value(self) -> Price:
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+
+        for resource_pool in cluster.orchestrator.resource_pool_types:
+            if resource_pool.name == self._node_pool_name:
+                return Price(
+                    value=resource_pool.price, currency=resource_pool.currency or ""
+                )
+
+        return Price()
+
+
 class AWSNodePriceCollector(Collector[Price]):
     def __init__(
         self,
@@ -105,6 +134,7 @@ class AWSNodePriceCollector(Collector[Price]):
         interval_s: float = 3600,
     ) -> None:
         super().__init__(Price(), interval_s)
+
         self._pricing_client = pricing_client
         self._ec2_client = ec2_client
         self._region = region
@@ -173,7 +203,7 @@ class AWSNodePriceCollector(Collector[Price]):
         id2 = next(iter(on_demand[id1]["priceDimensions"]))
         price_per_unit = on_demand[id1]["priceDimensions"][id2]["pricePerUnit"]
         if "USD" in price_per_unit:
-            return Price(currency="USD", value=float(price_per_unit["USD"]))
+            return Price(currency="USD", value=Decimal(str(price_per_unit["USD"])))
         logger.warning(
             "AWS product currencies are not supported: %s", list(price_per_unit.keys())
         )
@@ -197,7 +227,7 @@ class AWSNodePriceCollector(Collector[Price]):
                 self._zone,
             )
             return Price()
-        return Price(currency="USD", value=history[0]["SpotPrice"])
+        return Price(currency="USD", value=Decimal(str(history[0]["SpotPrice"])))
 
 
 class AzureNodePriceCollector(Collector[Price]):
@@ -257,7 +287,10 @@ class AzureNodePriceCollector(Collector[Price]):
                 self._region,
             )
             return Price()
-        return Price(currency=items[0]["currencyCode"], value=items[0]["retailPrice"])
+        return Price(
+            currency=items[0]["currencyCode"],
+            value=Decimal(str(items[0]["retailPrice"])),
+        )
 
 
 class GCPNodePriceCollector(Collector[Price]):
@@ -311,16 +344,16 @@ class GCPNodePriceCollector(Collector[Price]):
             None,
             self._get_instance_price_per_hour,
             resource_pool.cpu,
-            resource_pool.memory_mb / 1024,
+            resource_pool.memory_mb,
             resource_pool.gpu or 0,
             resource_pool.gpu_model or "",
         )
 
     def _get_instance_price_per_hour(
-        self, cpu: float, memory_gb: float, gpu: int, gpu_model: str
+        self, cpu: float, memory_mb: int, gpu: int, gpu_model: str
     ) -> Price:
-        prices_in_nanos: Dict[str, float] = {}
-        expected_prices_count = bool(cpu) + bool(memory_gb) + bool(gpu)
+        prices_in_nanos: Dict[str, Decimal] = {}
+        expected_prices_count = bool(cpu) + bool(memory_mb) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
         for sku in self._get_service_skus():
             # The only reliable way to match instance type with sku is through
@@ -338,10 +371,10 @@ class GCPNodePriceCollector(Collector[Price]):
                 price_in_nanos = self._get_price_in_nanos(sku)
                 if sku_description_words.intersection(("core", "cpu", "vcpu")):
                     assert "cpu" not in prices_in_nanos
-                    prices_in_nanos["cpu"] = cpu * price_in_nanos
+                    prices_in_nanos["cpu"] = price_in_nanos * Decimal(str(cpu))
                 if "ram" in sku_description_words:
                     assert "ram" not in prices_in_nanos
-                    prices_in_nanos["ram"] = memory_gb * price_in_nanos
+                    prices_in_nanos["ram"] = price_in_nanos * memory_mb / 1024
 
             # Calculate price for the attached GPU
             if (
@@ -358,7 +391,9 @@ class GCPNodePriceCollector(Collector[Price]):
         assert (
             len(prices_in_nanos) == expected_prices_count
         ), f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
-        return Price(value=sum(prices_in_nanos.values(), 0.0) / 10 ** 9, currency="USD")
+        return Price(
+            value=sum(prices_in_nanos.values(), Decimal()) / 10 ** 9, currency="USD"
+        )
 
     def _get_service_skus(self) -> Iterator[Dict[str, Any]]:
         next_page_token: Optional[str] = ""
@@ -382,7 +417,7 @@ class GCPNodePriceCollector(Collector[Price]):
                     yield sku
             next_page_token = response.get("nextPageToken") or None
 
-    def _get_price_in_nanos(self, sku: Dict[str, Any]) -> int:
+    def _get_price_in_nanos(self, sku: Dict[str, Any]) -> Decimal:
         # PricingInfo can contain multiple objects. Each corresponds to separate
         # time interval. But as long as we don't provide time constraints
         # in Google API query we will receive only latest value.
@@ -394,7 +429,7 @@ class GCPNodePriceCollector(Collector[Price]):
         tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))
         unit_price = tiered_rate["unitPrice"]
         # UnitPrice contains price in nanos which is 1 USD * 10^-9
-        return int(unit_price["units"]) * 10 ** 9 + unit_price["nanos"]
+        return Decimal(str(unit_price["units"])) * 10 ** 9 + unit_price["nanos"]
 
 
 class PodPriceCollector(Collector[Mapping[str, Price]]):
@@ -487,15 +522,17 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
 
     def _get_pod_resources_fraction(
         self, node_resources: Resources, pod_resources: Resources
-    ) -> float:
-        cpu_fraction = 0.0
+    ) -> Decimal:
+        cpu_fraction = Decimal()
         if node_resources.cpu_m and pod_resources.cpu_m:
-            cpu_fraction = pod_resources.cpu_m / node_resources.cpu_m
-        memory_fraction = 0.0
+            cpu_fraction = Decimal(pod_resources.cpu_m) / node_resources.cpu_m
+        memory_fraction = Decimal()
         if node_resources.memory_mb and pod_resources.memory_mb:
-            memory_fraction = pod_resources.memory_mb / node_resources.memory_mb
-        gpu_fraction = 0.0
+            memory_fraction = (
+                Decimal(pod_resources.memory_mb) / node_resources.memory_mb
+            )
+        gpu_fraction = Decimal()
         if node_resources.gpu and pod_resources.gpu:
-            gpu_fraction = pod_resources.gpu / node_resources.gpu
+            gpu_fraction = Decimal(pod_resources.gpu) / node_resources.gpu
         max_fraction = max(cpu_fraction, memory_fraction, gpu_fraction)
-        return min(1.0, max_fraction)
+        return min(Decimal(1), max_fraction)

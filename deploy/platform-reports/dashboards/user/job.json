@@ -242,7 +242,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "sum(container_memory_usage_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -826,7 +826,7 @@
             "steppedLine": false,
             "targets": [
                 {
-                    "expr": "sum(container_memory_usage_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
+                    "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
                     "hide": false,
                     "interval": "",
                     "intervalFactor": 1,
@@ -834,7 +834,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(container_memory_usage_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
+                    "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
                     "interval": "",
                     "legendFormat": "Free",
                     "refId": "B"

@@ -536,3 +536,66 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
             gpu_fraction = Decimal(pod_resources.gpu) / node_resources.gpu
         max_fraction = max(cpu_fraction, memory_fraction, gpu_fraction)
         return min(Decimal(1), max_fraction)
+
+
+class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        kube_client: KubeClient,
+        cluster_name: str,
+        node_name: str,
+        jobs_namespace: str,
+        job_label: str,
+        preset_label: str,
+        interval_s: float = 60,
+    ) -> None:
+        super().__init__({}, interval_s)
+
+        self._kube_client = kube_client
+        self._config_client = config_client
+        self._jobs_namespace = jobs_namespace
+        self._job_label = job_label
+        self._preset_label = preset_label
+        self._cluster_name = cluster_name
+        self._node_name = node_name
+
+    async def get_latest_value(self) -> Mapping[str, Decimal]:
+        # Calculate prices only for pods in Pending and Running phases
+        pods = await self._kube_client.get_pods(
+            namespace=self._jobs_namespace,
+            label_selector=self._job_label,
+            field_selector=",".join(
+                (
+                    f"spec.nodeName={self._node_name}",
+                    "status.phase!=Failed",
+                    "status.phase!=Succeeded",
+                    "status.phase!=Unknown",
+                ),
+            ),
+        )
+        if not pods:
+            logger.info("Node doesn't have any pods in Running phase")
+            return {}
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+        resource_presets = {p.name: p for p in cluster.orchestrator.resource_presets}
+        result: Dict[str, Decimal] = {}
+        for pod in pods:
+            logger.debug("Checking pod %r credits per hour", pod.metadata.name)
+            preset_name = pod.metadata.labels.get(self._preset_label)
+            if not preset_name:
+                logger.warning("Pod %r preset is not specified", preset_name)
+                result[pod.metadata.name] = Decimal()
+                continue
+            if preset_name not in resource_presets:
+                logger.warning("Preset %r is unknown", preset_name)
+                result[pod.metadata.name] = Decimal()
+                continue
+            pod_credits_per_hour = resource_presets[preset_name].credits_per_hour
+            logger.debug(
+                "Pod %r credits per hour: %s",
+                pod.metadata.name,
+                str(pod_credits_per_hour),
+            )
+            result[pod.metadata.name] = pod_credits_per_hour
+        return result

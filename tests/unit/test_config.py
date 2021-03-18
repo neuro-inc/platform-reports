@@ -59,6 +59,7 @@ class TestEnvironConfigFactory:
             "NP_NODE_POOL_LABEL": "node-pool",
             "NP_NODE_PREEMPTIBLE_LABEL": "preemptible",
             "NP_JOB_LABEL": "job",
+            "NP_PRESET_LABEL": "preset",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
@@ -86,6 +87,7 @@ class TestEnvironConfigFactory:
             node_pool_label="node-pool",
             node_preemptible_label="preemptible",
             job_label="job",
+            preset_label="preset",
         )
 
     def test_create_prometheus_proxy_defaults(self) -> None:

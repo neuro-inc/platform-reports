@@ -61,6 +61,7 @@ class MetricsConfig:
     node_pool_label: str = "platform.neuromation.io/nodepool"
     node_preemptible_label: str = "platform.neuromation.io/preemptible"
     job_label: str = "platform.neuromation.io/job"
+    preset_label: str = "platform.neuromation.io/preset"
 
 
 @dataclass(frozen=True)
@@ -125,6 +126,9 @@ class EnvironConfigFactory:
                 "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
             ),
             job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
+            preset_label=self._environ.get(
+                "NP_PRESET_LABEL", MetricsConfig.preset_label
+            ),
         )
 
     def create_prometheus_proxy(self) -> PrometheusProxyConfig:

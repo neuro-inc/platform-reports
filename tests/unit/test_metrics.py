@@ -26,6 +26,7 @@ from platform_config_client import (
     OrchestratorConfig,
     ResourcePoolType,
 )
+from platform_config_client.models import ResourcePreset
 from yarl import URL
 
 from platform_reports.kube_client import (
@@ -43,6 +44,7 @@ from platform_reports.metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    PodCreditsCollector,
     PodPriceCollector,
     Price,
 )
@@ -907,3 +909,138 @@ class TestPodPriceCollector:
         assert result == {
             "job1": Price(value=Decimal(), currency="USD"),
         }
+
+
+class TestPodCreditsCollector:
+    @pytest.fixture
+    def config_client_factory(self) -> Callable[..., mock.AsyncMock]:
+        def _create(resource_presets: Sequence[ResourcePreset]) -> mock.AsyncMock:
+            result = mock.AsyncMock(spec=ConfigClient)
+            result.get_cluster.return_value = Cluster(
+                name="default",
+                orchestrator=OrchestratorConfig(
+                    job_hostname_template="",
+                    job_fallback_hostname="",
+                    job_schedule_timeout_s=30,
+                    job_schedule_scale_up_timeout_s=30,
+                    resource_presets=resource_presets,
+                ),
+            )
+            return result
+
+        return _create
+
+    @pytest.fixture
+    def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
+        def _create(**pod_labels: Dict[str, str]) -> mock.AsyncMock:
+            async def get_pods(
+                namespace: str = "", field_selector: str = "", label_selector: str = ""
+            ) -> Sequence[Pod]:
+                assert namespace == "platform-jobs"
+                assert label_selector == "job"
+                assert field_selector == ",".join(
+                    (
+                        "spec.nodeName=minikube",
+                        "status.phase!=Failed",
+                        "status.phase!=Succeeded",
+                        "status.phase!=Unknown",
+                    ),
+                )
+                return [
+                    Pod(
+                        metadata=Metadata(name=name, labels=labels),
+                        status=PodStatus(phase=PodPhase.RUNNING),
+                        containers=[],
+                    )
+                    for name, labels in pod_labels.items()
+                ]
+
+            result = mock.AsyncMock(spec=KubeClient)
+            result.get_pods.side_effect = get_pods
+            return result
+
+        return _create
+
+    @pytest.fixture
+    def collector_factory(
+        self,
+        config_client_factory: Callable[..., ConfigClient],
+        kube_client_factory: Callable[..., KubeClient],
+    ) -> Callable[..., PodCreditsCollector]:
+        def _create(
+            resource_presets: Sequence[ResourcePreset] = (),
+            **pod_labels: Dict[str, str]
+        ) -> PodCreditsCollector:
+            config_client = config_client_factory(resource_presets)
+            kube_client = kube_client_factory(**pod_labels)
+            return PodCreditsCollector(
+                config_client=config_client,
+                kube_client=kube_client,
+                cluster_name="default",
+                node_name="minikube",
+                jobs_namespace="platform-jobs",
+                job_label="job",
+                preset_label="preset",
+            )
+
+        return _create
+
+    async def test_get_latest_value(
+        self, collector_factory: Callable[..., PodPriceCollector]
+    ) -> None:
+        collector = collector_factory(
+            [
+                ResourcePreset(
+                    name="cpu", cpu=1, memory_mb=1024, credits_per_hour=Decimal(10)
+                )
+            ],
+            job={"preset": "cpu"},
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Decimal(10)}
+
+    async def test_get_latest_value_multiple_pods(
+        self, collector_factory: Callable[..., PodPriceCollector]
+    ) -> None:
+        collector = collector_factory(
+            [
+                ResourcePreset(
+                    name="cpu1", cpu=1, memory_mb=1024, credits_per_hour=Decimal(10)
+                ),
+                ResourcePreset(
+                    name="cpu2", cpu=1, memory_mb=1024, credits_per_hour=Decimal(11)
+                ),
+            ],
+            job1={"preset": "cpu1"},
+            job2={"preset": "cpu2"},
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {
+            "job1": Decimal(10),
+            "job2": Decimal(11),
+        }
+
+    async def test_get_latest_value_no_pods(
+        self, collector_factory: Callable[..., PodPriceCollector]
+    ) -> None:
+        collector = collector_factory()
+        result = await collector.get_latest_value()
+
+        assert result == {}
+
+    async def test_get_latest_value_job_without_preset(
+        self, collector_factory: Callable[..., PodPriceCollector]
+    ) -> None:
+        collector = collector_factory(
+            [
+                ResourcePreset(
+                    name="cpu", cpu=1, memory_mb=1024, credits_per_hour=Decimal(10)
+                )
+            ],
+            job={},
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"job": Decimal()}

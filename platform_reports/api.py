@@ -3,6 +3,7 @@ import copy
 import logging
 import os
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
+from decimal import Decimal
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
@@ -54,6 +55,7 @@ from .metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    PodCreditsCollector,
     PodPriceCollector,
     Price,
 )
@@ -89,6 +91,10 @@ class MetricsHandler:
         return self._app["pod_price_collector"]
 
     @property
+    def _pod_credits_collector(self) -> Collector[Mapping[str, Decimal]]:
+        return self._app["pod_credits_collector"]
+
+    @property
     def _config(self) -> MetricsConfig:
         return self._app["config"]
 
@@ -97,6 +103,9 @@ class MetricsHandler:
         pod_prices_per_hour_text = self._get_pod_prices_per_hour_text()
         if pod_prices_per_hour_text:
             text.append(pod_prices_per_hour_text)
+        pod_credits_per_hour_text = self._get_pod_credits_per_hour_text()
+        if pod_credits_per_hour_text:
+            text.append(pod_credits_per_hour_text)
         return Response(text="\n\n".join(text))
 
     def _get_node_price_per_hour_text(self) -> str:
@@ -123,6 +132,23 @@ class MetricsHandler:
         for name, price in pod_prices_per_hour.items():
             metrics.append(
                 f'kube_pod_price_per_hour{{pod="{name}",currency="{price.currency}"}} {price.value}'  # noqa: E501
+            )
+        return "\n".join(metrics)
+
+    def _get_pod_credits_per_hour_text(self) -> str:
+        pod_credits_per_hour = self._pod_credits_collector.current_value
+        if not pod_credits_per_hour:
+            return ""
+        metrics: List[str] = [
+            dedent(
+                """\
+                # HELP kube_pod_credits_per_hour The credits of the pod per hour.
+                # TYPE kube_pod_credits_per_hour gauge"""
+            )
+        ]
+        for name, credits_per_hour in pod_credits_per_hour.items():
+            metrics.append(
+                f'kube_pod_credits_per_hour{{pod="{name}"}} {credits_per_hour}'
             )
         return "\n".join(metrics)
 
@@ -483,12 +509,29 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             )
             app["pod_price_collector"] = pod_price_collector
 
+            pod_credits_collector = await exit_stack.enter_async_context(
+                PodCreditsCollector(
+                    config_client=config_client,
+                    kube_client=kube_client,
+                    cluster_name=config.cluster_name,
+                    node_name=config.node_name,
+                    jobs_namespace=config.jobs_namespace,
+                    job_label=config.job_label,
+                    preset_label=config.preset_label,
+                )
+            )
+            app["pod_credits_collector"] = pod_credits_collector
+
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
             )
 
             await exit_stack.enter_async_context(
                 run_task(await pod_price_collector.start())
+            )
+
+            await exit_stack.enter_async_context(
+                run_task(await pod_credits_collector.start())
             )
 
             yield

@@ -79,7 +79,7 @@ prometheus-operator:
             - record: kube_pod_price_per_hour_labeled
               expr: (kube_pod_price_per_hour * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels) * on(pod) group_left(label_platform_neuromation_io_nodepool) (kube_pod_info * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels)
             - record: kube_pod_credits_per_hour_labeled
-              expr: (kube_pod_credits_per_hour * on(pod) group_left(label_platform_neuromation_io_userg) kube_pod_labels) * on(pod) group_left(label_platform_neuromation_io_nodepool) (kube_pod_info * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels)
+              expr: (kube_pod_credits_per_hour * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels) * on(pod) group_left(label_platform_neuromation_io_nodepool) (kube_pod_info * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels)
             - record: DCGM_FI_DEV_COUNT_POD
               expr: max by(job,pod) (DCGM_FI_DEV_COUNT)
 

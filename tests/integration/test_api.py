@@ -49,11 +49,15 @@ kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
                 assert re.search(
                     r"""\# HELP kube_node_price_per_hour The price of the node per hour\.
 \# TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour\{node="minikube",currency="USD"\} 0\.0?
+kube_node_price_per_hour\{node="minikube",currency="USD"\} 0(\.0+)?
 
-\# HELP kube_pod_price_per_hour The price of the pod per hour.
+\# HELP kube_pod_price_per_hour The price of the pod per hour\.
 \# TYPE kube_pod_price_per_hour gauge
-(kube_pod_price_per_hour\{pod=".+",currency="USD"\} 0(\.0)?\s*)+""",
+(kube_pod_price_per_hour\{pod=".+",currency="USD"\} 0(\.0+)?\s*)+
+
+\# HELP kube_pod_credits_per_hour The credits of the pod per hour\.
+\# TYPE kube_pod_credits_per_hour gauge
+(kube_pod_credits_per_hour\{pod=".+"\} 0(\.0+)?\s*)+""",
                     text,
                 ), text
 

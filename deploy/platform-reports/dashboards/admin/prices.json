@@ -35,7 +35,7 @@
                             }
                         ]
                     },
-                    "unit": "currencyUSD"
+                    "unit": "none"
                 },
                 "overrides": []
             },
@@ -57,7 +57,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "(15 / 3600) * sum (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "(15 / 3600) * sum (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "instant": true,
                     "interval": "",
@@ -67,7 +67,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Jobs Price",
+            "title": "Jobs Credits",
             "type": "stat"
         },
         {
@@ -244,6 +244,7 @@
         },
         {
             "datasource": null,
+            "description": "Jobs seen in Running state during selected time interval.",
             "fieldConfig": {
                 "defaults": {
                     "custom": {
@@ -269,16 +270,12 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Price"
+                            "options": "Credits"
                         },
                         "properties": [
                             {
-                                "id": "decimals",
-                                "value": 3
-                            },
-                            {
                                 "id": "unit",
-                                "value": "currencyUSD"
+                                "value": "none"
                             },
                             {
                                 "id": "mappings",
@@ -286,12 +283,16 @@
                                     {
                                         "from": "",
                                         "id": 1,
-                                        "text": "$0.000",
+                                        "text": "0",
                                         "to": "",
                                         "type": 1,
                                         "value": "null"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 3
                             }
                         ]
                     },
@@ -329,7 +330,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) max by(pod,label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) max by(pod,label_platform_neuromation_io_user,label_platform_neuromation_io_preset) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -338,21 +339,13 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_price_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
                     "refId": "B"
-                },
-                {
-                    "expr": "max_over_time(DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.*\"}[$__range])",
-                    "format": "table",
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "C"
                 }
             ],
             "timeFrom": null,
@@ -376,21 +369,18 @@
                         },
                         "indexByName": {
                             "Time": 1,
-                            "Value #A": 5,
-                            "Value #B": 6,
-                            "Value #C": 3,
-                            "job": 7,
-                            "label_platform_neuromation_io_gpu_model": 4,
+                            "Value #A": 4,
+                            "Value #B": 5,
+                            "label_platform_neuromation_io_preset": 3,
                             "label_platform_neuromation_io_user": 2,
-                            "pod": 0,
-                            "prometheus": 8,
-                            "prometheus_replica": 9
+                            "pod": 0
                         },
                         "renameByName": {
                             "Value #A": "Start Time",
-                            "Value #B": "Price",
+                            "Value #B": "Credits",
                             "Value #C": "GPU",
                             "label_platform_neuromation_io_gpu_model": "GPU Model",
+                            "label_platform_neuromation_io_preset": "Preset",
                             "label_platform_neuromation_io_user": "User",
                             "pod": "Job"
                         }
@@ -426,7 +416,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Jobs Price"
+                            "options": "Jobs Credits"
                         },
                         "properties": [
                             {
@@ -435,7 +425,7 @@
                             },
                             {
                                 "id": "unit",
-                                "value": "currencyUSD"
+                                "value": "none"
                             },
                             {
                                 "id": "mappings",
@@ -490,7 +480,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "label_join(15 * sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (count_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range])),\"key\",\",\",\"label_platform_neuromation_io_user\",\"label_platform_neuromation_io_nodepool\")",
+                    "expr": "label_join(15 * sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (count_over_time(kube_pod_credits_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range])),\"key\",\",\",\"label_platform_neuromation_io_user\",\"label_platform_neuromation_io_nodepool\")",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -499,7 +489,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max without (label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (label_join((15 / 3600) * sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (sum_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range])),\"key\",\",\",\"label_platform_neuromation_io_user\",\"label_platform_neuromation_io_nodepool\"))",
+                    "expr": "max without (label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (label_join((15 / 3600) * sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_nodepool) (sum_over_time(kube_pod_credits_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range])),\"key\",\",\",\"label_platform_neuromation_io_user\",\"label_platform_neuromation_io_nodepool\"))",
                     "format": "table",
                     "instant": true,
                     "interval": "",
@@ -534,7 +524,7 @@
                         },
                         "renameByName": {
                             "Value #A": "Jobs Duration",
-                            "Value #B": "Jobs Price",
+                            "Value #B": "Jobs Credits",
                             "key": "",
                             "label_platform_neuromation_io_nodepool": "Node Pool",
                             "label_platform_neuromation_io_user": "User"
@@ -571,7 +561,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Jobs Price"
+                            "options": "Jobs Credits"
                         },
                         "properties": [
                             {
@@ -580,7 +570,7 @@
                             },
                             {
                                 "id": "unit",
-                                "value": "currencyUSD"
+                                "value": "none"
                             },
                             {
                                 "id": "mappings",
@@ -638,7 +628,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "15 * sum by(label_platform_neuromation_io_user) (count_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "15 * sum by(label_platform_neuromation_io_user) (count_over_time(kube_pod_credits_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -647,7 +637,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "(15 / 3600) * sum by(label_platform_neuromation_io_user) (sum_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "(15 / 3600) * sum by(label_platform_neuromation_io_user) (sum_over_time(kube_pod_credits_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -675,7 +665,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "Value #A": "Jobs Duration",
-                            "Value #B": "Jobs Price",
+                            "Value #B": "Jobs Credits",
                             "label_platform_neuromation_io_user": "User"
                         }
                     }

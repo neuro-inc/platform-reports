@@ -42,10 +42,10 @@ class Price:
     value: Decimal = Decimal()
 
     def __str__(self) -> str:
-        return f"{self.value} ({self.currency})" if self.currency else str(self.value)
+        return f"{self.value} {self.currency}" if self.currency else str(self.value)
 
     def __repr__(self) -> str:
-        return self.__str__()
+        return f"{self.value!r} {self.currency}" if self.currency else f"{self.value!r}"
 
 
 _TValue = TypeVar("_TValue")

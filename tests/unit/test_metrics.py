@@ -86,6 +86,7 @@ class TestConfigPriceCollector:
             name="default",
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
+                job_internal_hostname_template="",
                 job_fallback_hostname="",
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
@@ -313,6 +314,7 @@ class TestGCPNodePriceCollector:
             name="default",
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
+                job_internal_hostname_template="",
                 job_fallback_hostname="",
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
@@ -747,6 +749,7 @@ class TestPodPriceCollector:
                 name="default",
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
+                    job_internal_hostname_template="",
                     job_fallback_hostname="",
                     job_schedule_timeout_s=30,
                     job_schedule_scale_up_timeout_s=30,
@@ -920,6 +923,7 @@ class TestPodCreditsCollector:
                 name="default",
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
+                    job_internal_hostname_template="",
                     job_fallback_hostname="",
                     job_schedule_timeout_s=30,
                     job_schedule_scale_up_timeout_s=30,

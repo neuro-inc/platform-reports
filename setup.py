@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup_requires = ("setuptools_scm",)
 install_requires = (
-    "neuro_auth_client==21.1.6",
+    "neuro_auth_client==21.3.2",
     "platform_config_client==21.4.11",
     "neuromation==20.12.7",
     "platform-logging==0.3",

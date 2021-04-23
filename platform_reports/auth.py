@@ -3,7 +3,7 @@ from typing import Dict, Iterable, List, Sequence
 
 from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
-from neuromation.api import Client as ApiClient
+from neuro_sdk import Client as ApiClient
 
 from .prometheus import Join, LabelMatcherOperator, Metric, Vector, parse_query
 

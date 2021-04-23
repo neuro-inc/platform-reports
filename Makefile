@@ -38,6 +38,7 @@ PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operato
 export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
 
 setup:
+	pip install -U pip
 	pip install -r requirements/dev.txt
 	pre-commit install
 

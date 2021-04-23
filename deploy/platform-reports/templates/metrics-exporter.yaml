@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: neuro-metrics-exporter
+  name: platform-metrics-exporter
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
 spec:
   updateStrategy:
@@ -10,13 +10,13 @@ spec:
     matchLabels:
       app: {{ include "platform-reports.name" . }}
       release: {{ .Release.Name | quote }}
-      component: neuro-metrics-exporter
+      service: platform-metrics-exporter
   template:
     metadata:
       labels:
         app: {{ include "platform-reports.name" . }}
         release: {{ .Release.Name | quote }}
-        component: neuro-metrics-exporter
+        service: platform-metrics-exporter
       annotations:
 {{- if .Values.metricsServer.podMetadata.annotations }}
 {{ toYaml .Values.metricsServer.podMetadata.annotations | indent 8 }}
@@ -42,7 +42,7 @@ spec:
       containers:
         # Use slim image version to reduce service startup time
         - image: {{ .Values.image.repository }}:{{ .Values.image.slimTag }}
-          name: neuro-metrics-exporter
+          name: platform-metrics-exporter
           command: ["metrics-server"]
           env:
             - name: NP_LOG_LEVEL
@@ -79,6 +79,20 @@ spec:
               value: {{ .Values.nodePoolLabels.preemptible }}
             - name: NP_JOB_LABEL
               value: {{ .Values.platformJobs.label }}
+            {{- if .Values.zipkin }}
+            - name: NP_ZIPKIN_URL
+              value: {{ .Values.zipkin.url }}
+            - name: NP_ZIPKIN_SAMPLE_RATE
+              value: {{ .Values.zipkin.sampleRate | quote }}
+            {{- end }}
+            {{- if .Values.sentry }}
+            - name: NP_SENTRY_DSN
+              value: {{ .Values.sentry.dsn }}
+            - name: NP_SENTRY_CLUSTER_NAME
+              value: {{ .Values.sentry.clusterName }}
+            - name: NP_SENTRY_SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | quote }}
+            {{- end }}
           ports:
             - name: metrics
               containerPort: {{ .Values.metricsServer.port }}
@@ -129,14 +143,14 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: neuro-metrics-exporter
+  name: platform-metrics-exporter
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
-    component: neuro-metrics-exporter
+    service: platform-metrics-exporter
 spec:
   selector:
     app: {{ include "platform-reports.name" . }}
     release: {{ .Release.Name | quote }}
-    component: neuro-metrics-exporter
+    service: platform-metrics-exporter
   ports:
     - name: metrics
       port: {{ .Values.metricsServer.port }}
@@ -145,14 +159,14 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: neuro-metrics-exporter
+  name: platform-metrics-exporter
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
       app: {{ include "platform-reports.name" . }}
       release: {{ .Release.Name | quote }}
-      component: neuro-metrics-exporter
+      service: platform-metrics-exporter
   endpoints:
     - port: metrics
       path: /metrics

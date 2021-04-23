@@ -25,6 +25,7 @@ from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
 from platform_config_client import Cluster, ConfigClient
+from platform_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources
@@ -73,7 +74,12 @@ class Collector(Generic[_TValue]):
             try:
                 logger.info("Next update will be in %s seconds", self._interval_s)
                 await asyncio.sleep(self._interval_s)
-                self._value = await self.get_latest_value()
+
+                async with new_trace_cm(
+                    name=f"{self.__class__.__name__}.get_latest_value"
+                ):
+                    self._value = await self.get_latest_value()
+
                 logger.info("Updated value to %s", self._value)
             except asyncio.CancelledError:
                 raise
@@ -398,16 +404,17 @@ class GCPNodePriceCollector(Collector[Price]):
     def _get_service_skus(self) -> Iterator[Dict[str, Any]]:
         next_page_token: Optional[str] = ""
         while next_page_token is not None:
-            request = (
-                self._client.services()
-                .skus()
-                .list(
-                    parent=GOOGLE_COMPUTE_ENGINE_ID,
-                    currencyCode="USD",
-                    pageToken=next_page_token,
+            async with trace_cm(name="list_service_skus"):
+                request = (
+                    self._client.services()
+                    .skus()
+                    .list(
+                        parent=GOOGLE_COMPUTE_ENGINE_ID,
+                        currencyCode="USD",
+                        pageToken=next_page_token,
+                    )
                 )
-            )
-            response = request.execute()
+                response = request.execute()
             for sku in response["skus"]:
                 if (
                     sku["category"]["resourceFamily"] == "Compute"

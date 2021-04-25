@@ -83,7 +83,7 @@ spec:
             - name: NP_ZIPKIN_URL
               value: {{ .Values.zipkin.url }}
             - name: NP_ZIPKIN_SAMPLE_RATE
-              value: {{ .Values.zipkin.sampleRate | quote }}
+              value: {{ .Values.zipkin.sampleRate | default 0 | quote }}
             {{- end }}
             {{- if .Values.sentry }}
             - name: NP_SENTRY_DSN
@@ -91,7 +91,7 @@ spec:
             - name: NP_SENTRY_CLUSTER_NAME
               value: {{ .Values.sentry.clusterName }}
             - name: NP_SENTRY_SAMPLE_RATE
-              value: {{ .Values.sentry.sampleRate | quote }}
+              value: {{ .Values.sentry.sampleRate | default 0 | quote }}
             {{- end }}
           ports:
             - name: metrics

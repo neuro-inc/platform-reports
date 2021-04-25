@@ -6,7 +6,7 @@ install_requires = (
     "neuro_auth_client==21.4.24",
     "platform_config_client==21.4.20",
     "neuro-sdk==21.4.23",
-    "platform-logging==21.4.22",
+    "platform-logging==21.4.25",
     "aiohttp==3.7.4",
     "python-jose==3.2.0",
     "lark-parser==0.11.2",

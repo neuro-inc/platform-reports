@@ -395,7 +395,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-proxy:9090
+          url: http://platform-prometheus-proxy:9090
           access: proxy
           isDefault: true
           jsonData:
@@ -421,3 +421,7 @@ grafana:
 
   serviceMonitor:
     selfMonitor: false
+
+zipkin: {}
+
+sentry: {}

@@ -8,6 +8,7 @@ def platform_api_app() -> aiohttp.web.Application:
         return aiohttp.web.json_response(
             {
                 "headless_callback_url": "headless_callback_url",
+                "admin_url": "admin_url",
                 "auth_url": "auth_url",
                 "token_url": "token_url",
                 "client_id": "client_id",
@@ -18,9 +19,11 @@ def platform_api_app() -> aiohttp.web.Application:
                         "name": "default",
                         "registry_url": "registry_url",
                         "storage_url": "storage_url",
+                        "blob_storage_url": "blob_storage_url",
                         "users_url": "users_url",
                         "monitoring_url": "monitoring_url",
                         "secrets_url": "secrets_url",
+                        "disks_url": "disks_url",
                         "resource_presets": [],
                     }
                 ],

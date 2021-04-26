@@ -10,7 +10,9 @@ from platform_reports.config import (
     MetricsConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
+    SentryConfig,
     ServerConfig,
+    ZipkinConfig,
 )
 
 
@@ -60,6 +62,9 @@ class TestEnvironConfigFactory:
             "NP_NODE_PREEMPTIBLE_LABEL": "preemptible",
             "NP_JOB_LABEL": "job",
             "NP_PRESET_LABEL": "preset",
+            "NP_ZIPKIN_URL": "https://zipkin:9411",
+            "NP_SENTRY_DSN": "https://sentry",
+            "NP_SENTRY_CLUSTER_NAME": "test",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
@@ -88,6 +93,14 @@ class TestEnvironConfigFactory:
             node_preemptible_label="preemptible",
             job_label="job",
             preset_label="preset",
+            zipkin=ZipkinConfig(
+                url=URL("https://zipkin:9411"), app_name="platform-metrics-exporter"
+            ),
+            sentry=SentryConfig(
+                dsn=URL("https://sentry"),
+                app_name="platform-metrics-exporter",
+                cluster_name="test",
+            ),
         )
 
     def test_create_prometheus_proxy_defaults(self) -> None:
@@ -129,6 +142,9 @@ class TestEnvironConfigFactory:
             "NP_AUTH_URL": "https://dev.neu.ro",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
+            "NP_ZIPKIN_URL": "https://zipkin:9411",
+            "NP_SENTRY_DSN": "https://sentry",
+            "NP_SENTRY_CLUSTER_NAME": "test",
         }
 
         result = EnvironConfigFactory(env).create_prometheus_proxy()
@@ -145,6 +161,14 @@ class TestEnvironConfigFactory:
             ),
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
+            ),
+            zipkin=ZipkinConfig(
+                url=URL("https://zipkin:9411"), app_name="platform-prometheus-proxy"
+            ),
+            sentry=SentryConfig(
+                dsn=URL("https://sentry"),
+                app_name="platform-prometheus-proxy",
+                cluster_name="test",
             ),
         )
 
@@ -187,6 +211,9 @@ class TestEnvironConfigFactory:
             "NP_AUTH_URL": "https://dev.neu.ro",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
+            "NP_ZIPKIN_URL": "https://zipkin:9411",
+            "NP_SENTRY_DSN": "https://sentry",
+            "NP_SENTRY_CLUSTER_NAME": "test",
         }
 
         result = EnvironConfigFactory(env).create_grafana_proxy()
@@ -202,4 +229,67 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
+            zipkin=ZipkinConfig(
+                url=URL("https://zipkin:9411"), app_name="platform-grafana-proxy"
+            ),
+            sentry=SentryConfig(
+                dsn=URL("https://sentry"),
+                app_name="platform-grafana-proxy",
+                cluster_name="test",
+            ),
+        )
+
+    def test_create_zipkin_none(self) -> None:
+        result = EnvironConfigFactory({}).create_zipkin(default_app_name="app")
+
+        assert result is None
+
+    def test_create_zipkin_default(self) -> None:
+        env = {"NP_ZIPKIN_URL": "https://zipkin:9411"}
+        result = EnvironConfigFactory(env).create_zipkin(default_app_name="app")
+
+        assert result == ZipkinConfig(url=URL("https://zipkin:9411"), app_name="app")
+
+    def test_create_zipkin_custom(self) -> None:
+        env = {
+            "NP_ZIPKIN_URL": "https://zipkin:9411",
+            "NP_ZIPKIN_APP_NAME": "api",
+            "NP_ZIPKIN_SAMPLE_RATE": "1",
+        }
+        result = EnvironConfigFactory(env).create_zipkin(default_app_name="app")
+
+        assert result == ZipkinConfig(
+            url=URL("https://zipkin:9411"), app_name="api", sample_rate=1
+        )
+
+    def test_create_sentry_none(self) -> None:
+        result = EnvironConfigFactory({}).create_sentry(default_app_name="app")
+
+        assert result is None
+
+    def test_create_sentry_default(self) -> None:
+        env = {
+            "NP_SENTRY_DSN": "https://sentry",
+            "NP_SENTRY_CLUSTER_NAME": "test",
+        }
+        result = EnvironConfigFactory(env).create_sentry(default_app_name="app")
+
+        assert result == SentryConfig(
+            dsn=URL("https://sentry"), app_name="app", cluster_name="test"
+        )
+
+    def test_create_sentry_custom(self) -> None:
+        env = {
+            "NP_SENTRY_DSN": "https://sentry",
+            "NP_SENTRY_APP_NAME": "api",
+            "NP_SENTRY_CLUSTER_NAME": "test",
+            "NP_SENTRY_SAMPLE_RATE": "1",
+        }
+        result = EnvironConfigFactory(env).create_sentry(default_app_name="app")
+
+        assert result == SentryConfig(
+            dsn=URL("https://sentry"),
+            app_name="api",
+            cluster_name="test",
+            sample_rate=1,
         )

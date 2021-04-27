@@ -36,7 +36,7 @@ metricsServer:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
   podMetadata:
     annotations: {}
 
@@ -48,14 +48,14 @@ prometheusProxy:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
 
 grafanaProxy:
   replicas: 2
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
   ingress: {}
 
 prometheus-operator:

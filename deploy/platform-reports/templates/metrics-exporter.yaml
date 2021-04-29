@@ -143,7 +143,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: platform-metrics-exporter
+  name: neuro-metrics-exporter
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
     service: platform-metrics-exporter
 spec:

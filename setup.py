@@ -13,7 +13,7 @@ install_requires = (
     "aiobotocore==1.3.0",
     "google-api-python-client==2.0.2",
     "aiozipkin==1.0.0",
-    "sentry-sdk==1.0.0",
+    "sentry-sdk==1.1.0",
 )
 
 setup(

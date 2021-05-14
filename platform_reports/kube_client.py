@@ -3,8 +3,8 @@ import logging
 import ssl
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import SimpleNamespace, TracebackType
-from typing import Any, Dict, Optional, Sequence, Type
+from types import TracebackType
+from typing import Any, Dict, List, Optional, Sequence, Type
 
 import aiohttp
 from yarl import URL
@@ -113,30 +113,14 @@ class Pod:
 
 
 class KubeClient:
-    def __init__(self, config: KubeConfig) -> None:
+    def __init__(
+        self,
+        config: KubeConfig,
+        trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
+    ) -> None:
         self._config = config
+        self._trace_configs = trace_configs
         self._client: Optional[aiohttp.ClientSession] = None
-
-    async def _on_request_start(
-        self,
-        session: aiohttp.ClientSession,
-        trace_config_ctx: SimpleNamespace,
-        params: aiohttp.TraceRequestStartParams,
-    ) -> None:
-        logger.info("Sending %s %s", params.method, params.url)
-
-    async def _on_request_end(
-        self,
-        session: aiohttp.ClientSession,
-        trace_config_ctx: SimpleNamespace,
-        params: aiohttp.TraceRequestEndParams,
-    ) -> None:
-        default_args = (params.method, params.response.status, params.url)
-        if 400 <= params.response.status:
-            response_text = await params.response.text()
-            logger.warning("Received %s %s %s\n%s", *default_args, response_text)
-        else:
-            logger.info("Received %s %s %s", *default_args)
 
     def _create_ssl_context(self) -> Optional[ssl.SSLContext]:
         if self._config.url.scheme != "https":
@@ -179,14 +163,11 @@ class KubeClient:
         timeout = aiohttp.ClientTimeout(
             connect=self._config.conn_timeout_s, total=self._config.read_timeout_s
         )
-        trace_config = aiohttp.TraceConfig()
-        trace_config.on_request_start.append(self._on_request_start)
-        trace_config.on_request_end.append(self._on_request_end)
         return aiohttp.ClientSession(
             connector=connector,
             timeout=timeout,
             headers=headers,
-            trace_configs=[trace_config],
+            trace_configs=self._trace_configs,
         )
 
     async def aclose(self) -> None:

@@ -20,14 +20,14 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: grafana-proxy
+              serviceName: platform-grafana-proxy
               servicePort: http
             path: /api/dashboards
     - host: {{ . | quote }}
       http:
         paths:
           - backend:
-              serviceName: grafana-proxy
+              serviceName: platform-grafana-proxy
               servicePort: http
             path: /ping
     - host: {{ . | quote }}

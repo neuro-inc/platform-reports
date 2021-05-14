@@ -2953,7 +2953,7 @@
                             "refId": "A"
                         },
                         {
-                            "expr": "max by(gpu) ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
+                            "expr": "max ((DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\",node=~\"^(?i:($node_name))$\"})",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "Total",

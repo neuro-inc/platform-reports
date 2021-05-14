@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prometheus-proxy
+  name: platform-prometheus-proxy
   labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
-    component: prometheus-proxy
+    service: platform-prometheus-proxy
 spec:
   replicas: {{ .Values.prometheusProxy.replicas | default 1 }}
   selector:
     matchLabels:
       app: {{ include "platform-reports.name" . }}
       release: {{ .Release.Name | quote }}
-      component: prometheus-proxy
+      service: platform-prometheus-proxy
   template:
     metadata:
       labels:
         app: {{ include "platform-reports.name" . }}
         release: {{ .Release.Name | quote }}
-        component: prometheus-proxy
+        service: platform-prometheus-proxy
       {{- if .Values.secrets }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
@@ -48,6 +48,20 @@ spec:
               value: {{ .Values.platform.accessTokenCookieNames }}
             - name: NP_API_URL
               value: {{ .Values.platform.apiUrl }}
+            {{- if .Values.zipkin }}
+            - name: NP_ZIPKIN_URL
+              value: {{ .Values.zipkin.url }}
+            - name: NP_ZIPKIN_SAMPLE_RATE
+              value: {{ .Values.zipkin.sampleRate | default 0 | quote }}
+            {{- end }}
+            {{- if .Values.sentry }}
+            - name: NP_SENTRY_DSN
+              value: {{ .Values.sentry.dsn }}
+            - name: NP_SENTRY_CLUSTER_NAME
+              value: {{ .Values.sentry.clusterName }}
+            - name: NP_SENTRY_SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | default 0 | quote }}
+            {{- end }}
           {{- if .Values.prometheusProxy.resources }}
           resources: {{ toYaml .Values.prometheusProxy.resources | nindent 12 }}
           {{- end }}

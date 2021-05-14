@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from multidict import MultiDict
 from neuro_auth_client import AuthClient, Permission
-from neuromation.api import Client as ApiClient, JobDescription as Job
+from neuro_sdk import Client as ApiClient, JobDescription as Job
 from yarl import URL
 
 from platform_reports.auth import (
@@ -27,9 +27,9 @@ def job_factory() -> Callable[[str], Job]:
             status=None,  # type: ignore
             history=None,  # type: ignore
             container=None,  # type: ignore
-            is_preemptible=None,  # type: ignore
             uri=URL(f"job://default/user/{id}"),
             pass_config=None,  # type: ignore
+            scheduler_enabled=False,
         )
 
     return _factory

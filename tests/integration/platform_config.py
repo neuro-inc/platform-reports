@@ -30,6 +30,7 @@ def platform_config_app() -> aiohttp.web.Application:
                     ],
                 },
                 "storage": {"url": f"https://{name}.org.neu.ro/api/v1/storage"},
+                "blob_storage": {"url": f"https://{name}.org.neu.ro/api/v1/blob"},
                 "registry": {"url": f"https://registry.{name}.org.neu.ro"},
                 "monitoring": {"url": f"https://{name}.org.neu.ro/api/v1/jobs"},
                 "secrets": {"url": f"https://{name}.org.neu.ro/api/v1/secrets"},

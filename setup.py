@@ -3,15 +3,17 @@ from setuptools import find_packages, setup
 
 setup_requires = ("setuptools_scm",)
 install_requires = (
-    "neuro_auth_client==21.1.6",
-    "platform_config_client==21.4.11",
-    "neuromation==20.12.7",
-    "platform-logging==0.3",
+    "neuro_auth_client==21.4.24",
+    "platform_config_client==21.4.20",
+    "neuro-sdk==21.4.23",
+    "platform-logging==21.5.7",
     "aiohttp==3.7.4",
     "python-jose==3.2.0",
     "lark-parser==0.11.2",
-    "aiobotocore==1.2.2",
+    "aiobotocore==1.3.0",
     "google-api-python-client==2.0.2",
+    "aiozipkin==1.0.0",
+    "sentry-sdk==1.0.0",
 )
 
 setup(

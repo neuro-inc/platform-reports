@@ -10,10 +10,10 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
     Dict,
     Generic,
-    Iterator,
     Mapping,
     Optional,
     Type,
@@ -25,6 +25,7 @@ from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
 from platform_config_client import Cluster, ConfigClient
+from platform_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources
@@ -73,7 +74,12 @@ class Collector(Generic[_TValue]):
             try:
                 logger.info("Next update will be in %s seconds", self._interval_s)
                 await asyncio.sleep(self._interval_s)
-                self._value = await self.get_latest_value()
+
+                async with new_trace_cm(
+                    name=f"{self.__class__.__name__}.get_latest_value"
+                ):
+                    self._value = await self.get_latest_value()
+
                 logger.info("Updated value to %s", self._value)
             except asyncio.CancelledError:
                 raise
@@ -340,22 +346,20 @@ class GCPNodePriceCollector(Collector[Price]):
         if self._node_pool_name not in resource_pools:
             return Price(currency="USD")
         resource_pool = resource_pools[self._node_pool_name]
-        return await self._loop.run_in_executor(
-            None,
-            self._get_instance_price_per_hour,
+        return await self._get_instance_price_per_hour(
             resource_pool.cpu,
             resource_pool.memory_mb,
             resource_pool.gpu or 0,
             resource_pool.gpu_model or "",
         )
 
-    def _get_instance_price_per_hour(
+    async def _get_instance_price_per_hour(
         self, cpu: float, memory_mb: int, gpu: int, gpu_model: str
     ) -> Price:
         prices_in_nanos: Dict[str, Decimal] = {}
         expected_prices_count = bool(cpu) + bool(memory_mb) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
-        for sku in self._get_service_skus():
+        async for sku in self._get_service_skus():
             # The only reliable way to match instance type with sku is through
             # sku description field. Other sku fields don't contain instance type
             # specific fields.
@@ -395,19 +399,13 @@ class GCPNodePriceCollector(Collector[Price]):
             value=sum(prices_in_nanos.values(), Decimal()) / 10 ** 9, currency="USD"
         )
 
-    def _get_service_skus(self) -> Iterator[Dict[str, Any]]:
+    async def _get_service_skus(self) -> AsyncIterator[Dict[str, Any]]:
         next_page_token: Optional[str] = ""
         while next_page_token is not None:
-            request = (
-                self._client.services()
-                .skus()
-                .list(
-                    parent=GOOGLE_COMPUTE_ENGINE_ID,
-                    currencyCode="USD",
-                    pageToken=next_page_token,
+            async with trace_cm(name="list_service_skus"):
+                response = await self._loop.run_in_executor(
+                    None, self._list_service_skus, next_page_token
                 )
-            )
-            response = request.execute()
             for sku in response["skus"]:
                 if (
                     sku["category"]["resourceFamily"] == "Compute"
@@ -416,6 +414,18 @@ class GCPNodePriceCollector(Collector[Price]):
                 ):
                     yield sku
             next_page_token = response.get("nextPageToken") or None
+
+    def _list_service_skus(self, next_page_token: str) -> Any:
+        request = (
+            self._client.services()
+            .skus()
+            .list(
+                parent=GOOGLE_COMPUTE_ENGINE_ID,
+                currencyCode="USD",
+                pageToken=next_page_token,
+            )
+        )
+        return request.execute()
 
     def _get_price_in_nanos(self, sku: Dict[str, Any]) -> Decimal:
         # PricingInfo can contain multiple objects. Each corresponds to separate

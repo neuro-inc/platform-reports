@@ -45,8 +45,10 @@ spec:
           name: platform-metrics-exporter
           command: ["metrics-server"]
           env:
+            {{- if .Values.logLevel }}
             - name: NP_LOG_LEVEL
               value: {{ .Values.logLevel }}
+            {{- end }}
             - name: NP_METRICS_API_PORT
               value: {{ .Values.metricsServer.port | quote }}
             - name: NP_CONFIG_URL

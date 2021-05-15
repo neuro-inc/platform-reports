@@ -30,8 +30,10 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           command: ["grafana-proxy"]
           env:
+            {{- if .Values.logLevel }}
             - name: NP_LOG_LEVEL
               value: {{ .Values.logLevel }}
+            {{- end }}
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName }}
             - name: NP_GRAFANA_HOST

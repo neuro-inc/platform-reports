@@ -1,23 +1,11 @@
 import asyncio
-import copy
 import logging
-import os
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-)
+from typing import AsyncIterator, Awaitable, Callable, List, Mapping, Optional, Sequence
 
 import aiobotocore
 import aiohttp
@@ -40,7 +28,6 @@ from neuro_auth_client import AuthClient, Permission
 from neuro_sdk import Client as ApiClient, Factory as ClientFactory
 from platform_config_client.client import ConfigClient
 from platform_logging import (
-    DEFAULT_CONFIG,
     init_logging,
     make_request_logging_trace_config,
     make_sentry_trace_config,
@@ -680,12 +667,6 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
     return app
 
 
-def create_logging_config() -> Dict[str, Any]:
-    config: Dict[str, Any] = copy.deepcopy(DEFAULT_CONFIG)
-    config["root"]["level"] = os.environ.get("NP_LOG_LEVEL", "INFO")
-    return config
-
-
 def make_logging_trace_configs() -> List[aiohttp.TraceConfig]:
     return [make_request_logging_trace_config()]
 
@@ -722,7 +703,7 @@ def setup_tracing(
 
 
 def run_metrics_server() -> None:  # pragma: no coverage
-    init_logging(create_logging_config())
+    init_logging()
 
     config = EnvironConfigFactory().create_metrics()
     logging.info("Loaded config: %r", config)
@@ -735,7 +716,7 @@ def run_metrics_server() -> None:  # pragma: no coverage
 
 
 def run_prometheus_proxy() -> None:  # pragma: no coverage
-    init_logging(create_logging_config())
+    init_logging()
 
     config = EnvironConfigFactory().create_prometheus_proxy()
     logging.info("Loaded config: %r", config)
@@ -750,7 +731,7 @@ def run_prometheus_proxy() -> None:  # pragma: no coverage
 
 
 def run_grafana_proxy() -> None:  # pragma: no coverage
-    init_logging(create_logging_config())
+    init_logging()
 
     config = EnvironConfigFactory().create_grafana_proxy()
     logging.info("Loaded config: %r", config)

@@ -102,9 +102,6 @@ class MetricsHandler:
 
     async def handle(self, request: Request) -> Response:
         text = [self._get_node_price_per_hour_text()]
-        pod_prices_per_hour_text = self._get_pod_prices_per_hour_text()
-        if pod_prices_per_hour_text:
-            text.append(pod_prices_per_hour_text)
         pod_credits_per_hour_text = self._get_pod_credits_per_hour_text()
         if pod_credits_per_hour_text:
             text.append(pod_credits_per_hour_text)

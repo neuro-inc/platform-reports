@@ -74,8 +74,6 @@ prometheus-operator:
               expr: kube_pod_running * on(job,pod) kube_pod_status_scheduled_time
             - record: kube_pod_running_scheduled_duration
               expr: timestamp(kube_pod_running) - on(job,pod) kube_pod_running_scheduled_time >= 0
-            - record: kube_pod_price_per_hour_labeled
-              expr: (kube_pod_price_per_hour * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels) * on(pod) group_left(label_platform_neuromation_io_nodepool) (kube_pod_info * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels)
             - record: kube_pod_credits_per_hour_labeled
               expr: (kube_pod_credits_per_hour * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels) * on(pod) group_left(label_platform_neuromation_io_nodepool) (kube_pod_info * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels)
             - record: DCGM_FI_DEV_COUNT_POD

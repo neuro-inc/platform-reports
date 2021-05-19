@@ -114,7 +114,7 @@
             "pluginVersion": "7.2.1",
             "targets": [
                 {
-                    "expr": "15 * sum (count_over_time(kube_pod_price_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
+                    "expr": "15 * sum (count_over_time(kube_pod_credits_per_hour_labeled{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]))",
                     "format": "table",
                     "instant": true,
                     "interval": "",

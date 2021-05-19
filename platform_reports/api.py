@@ -539,10 +539,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             )
 
             await exit_stack.enter_async_context(
-                run_task(await pod_price_collector.start())
-            )
-
-            await exit_stack.enter_async_context(
                 run_task(await pod_credits_collector.start())
             )
 

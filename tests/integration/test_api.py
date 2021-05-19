@@ -51,10 +51,6 @@ kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
 \# TYPE kube_node_price_per_hour gauge
 kube_node_price_per_hour\{node="minikube",currency="USD"\} 0(\.0+)?
 
-\# HELP kube_pod_price_per_hour The price of the pod per hour\.
-\# TYPE kube_pod_price_per_hour gauge
-(kube_pod_price_per_hour\{pod=".+",currency="USD"\} 0(\.0+)?\s*)+
-
 \# HELP kube_pod_credits_per_hour The credits of the pod per hour\.
 \# TYPE kube_pod_credits_per_hour gauge
 (kube_pod_credits_per_hour\{pod=".+"\} 0(\.0+)?\s*)+""",

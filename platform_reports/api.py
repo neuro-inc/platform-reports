@@ -102,9 +102,6 @@ class MetricsHandler:
 
     async def handle(self, request: Request) -> Response:
         text = [self._get_node_price_per_hour_text()]
-        pod_prices_per_hour_text = self._get_pod_prices_per_hour_text()
-        if pod_prices_per_hour_text:
-            text.append(pod_prices_per_hour_text)
         pod_credits_per_hour_text = self._get_pod_credits_per_hour_text()
         if pod_credits_per_hour_text:
             text.append(pod_credits_per_hour_text)
@@ -536,10 +533,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
-            )
-
-            await exit_stack.enter_async_context(
-                run_task(await pod_price_collector.start())
             )
 
             await exit_stack.enter_async_context(

@@ -4,14 +4,14 @@ from setuptools import find_packages, setup
 setup_requires = ("setuptools_scm",)
 install_requires = (
     "neuro_auth_client==21.5.17",
-    "platform_config_client==21.4.20",
-    "neuro-sdk==21.4.23",
+    "platform_config_client==21.5.18",
+    "neuro-sdk==21.5.17",
     "platform-logging==21.5.13",
     "aiohttp==3.7.4.post0",
     "python-jose==3.2.0",
-    "lark-parser==0.11.2",
+    "lark-parser==0.11.3",
     "aiobotocore==1.3.0",
-    "google-api-python-client==2.0.2",
+    "google-api-python-client==2.4.0",
     "aiozipkin==1.1.0",
     "sentry-sdk==1.1.0",
 )

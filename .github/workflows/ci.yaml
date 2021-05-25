@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches: [master]
-    tags: ['v*.*.*']
+    tags: [v*.*.*]
   pull_request:
     branches: [master]
   pull_request_target:
@@ -36,7 +36,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py') }}
+        key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py')
+          }}
     - name: Install dependencies
       run: make setup
     - name: Lint
@@ -78,7 +79,7 @@ jobs:
     name: Deploy on dev
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     env:
       ARTIFACTORY_DOCKER_REPO: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}

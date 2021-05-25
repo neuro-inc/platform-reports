@@ -13,30 +13,6 @@ updates:
     interval: daily
     time: "03:00"
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: black
-    versions:
-    - 21.4b0
-  - dependency-name: platform-logging
-    versions:
-    - 21.4.2
-  - dependency-name: neuro-auth-client
-    versions:
-    - 21.3.2
-  - dependency-name: pytest-asyncio
-    versions:
-    - 0.15.0
-  - dependency-name: aiobotocore
-    versions:
-    - 1.2.1
-    - 1.3.0
-  - dependency-name: pre-commit
-    versions:
-    - 2.11.0
-    - 2.12.0
-  - dependency-name: google-api-python-client
-    versions:
-    - 2.0.0
-    - 2.1.0
+  insecure-external-code-execution: allow
   registries:
   - python-index-devpi-dev-neu-ro-testuser-dev

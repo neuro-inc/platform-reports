@@ -33,7 +33,7 @@ jobs:
       with:
         python-version: 3.8.5
     - name: Cache packages
-      uses: actions/cache@v1
+      uses: actions/cache@v2.1.6
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-py-3.8-${{ hashFiles('requirements/*.txt') }}-${{ hashFiles('setup.py')

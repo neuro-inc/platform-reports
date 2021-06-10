@@ -414,7 +414,9 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 )
             )
 
-            kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
+            kube_client = await exit_stack.enter_async_context(
+                KubeClient(config.kube, trace_configs=make_logging_trace_configs())
+            )
             node = await kube_client.get_node(config.node_name)
             zone = (
                 node.metadata.labels.get("failure-domain.beta.kubernetes.io/zone")

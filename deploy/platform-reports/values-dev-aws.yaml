@@ -18,7 +18,7 @@ platform:
 metricsServer:
   podMetadata:
     annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-d04bce531282b98cb801932de6c118c7
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-366c09e4841fcc83df56b8f070c34716
 
 prometheusProxy:
   replicas: 2
@@ -43,7 +43,7 @@ prometheus-operator:
           key: thanos-object-storage.yaml
       podMetadata:
         annotations:
-          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+          iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-366c09e4841fcc83df56b8f070c34716
       storageSpec:
         volumeClaimTemplate:
           spec:
@@ -72,18 +72,18 @@ thanos:
       spec:
         storageClassName: gp2
     annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-366c09e4841fcc83df56b8f070c34716
 
   bucket:
     annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-366c09e4841fcc83df56b8f070c34716
 
   compact:
     persistentVolumeClaim:
       spec:
         storageClassName: gp2
     annotations:
-      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-d04bce531282b98cb801932de6c118c7
+      iam.amazonaws.com/role: arn:aws:iam::771188043543:role/s3-366c09e4841fcc83df56b8f070c34716
 
   objstore:
     type: S3

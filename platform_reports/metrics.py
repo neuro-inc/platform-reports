@@ -594,7 +594,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
             logger.debug("Checking pod %r credits per hour", pod.metadata.name)
             preset_name = pod.metadata.labels.get(self._preset_label)
             if not preset_name:
-                logger.warning("Pod %r preset is not specified", preset_name)
+                logger.warning("Pod %r preset is not specified", pod.metadata.name)
                 result[pod.metadata.name] = Decimal()
                 continue
             if preset_name not in resource_presets:

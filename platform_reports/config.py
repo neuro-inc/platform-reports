@@ -23,14 +23,15 @@ class KubeConfig:
     url: URL
     cert_authority_path: Optional[str] = None
     cert_authority_data_pem: Optional[str] = None
-    auth_type: KubeClientAuthType = KubeClientAuthType.TOKEN
-    auth_cert_path: Optional[str] = None
-    auth_cert_key_path: Optional[str] = None
+    auth_type: KubeClientAuthType = KubeClientAuthType.NONE
+    client_cert_path: Optional[str] = None
+    client_key_path: Optional[str] = None
     token: Optional[str] = None
     token_path: Optional[str] = None
     conn_timeout_s: int = 300
     read_timeout_s: int = 100
     conn_pool_size: int = 100
+    conn_keep_alive_timeout_s: int = 15
 
 
 @dataclass(frozen=True)
@@ -126,7 +127,7 @@ class EnvironConfigFactory:
                 host=self._environ.get("NP_METRICS_API_HOST", ServerConfig.host),
                 port=int(self._environ.get("NP_METRICS_API_PORT", ServerConfig.port)),
             ),
-            kube=self._create_kube(),
+            kube=self.create_kube(),
             platform_config=self._create_platform_config(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             node_name=self._environ["NP_NODE_NAME"],
@@ -222,12 +223,33 @@ class EnvironConfigFactory:
             token=self._environ["NP_CONFIG_TOKEN"],
         )
 
-    def _create_kube(self) -> KubeConfig:
+    def create_kube(self) -> KubeConfig:
         return KubeConfig(
-            auth_type=KubeClientAuthType.TOKEN,
-            url=URL("https://kubernetes.default.svc"),
-            token_path="/var/run/secrets/kubernetes.io/serviceaccount/token",
-            cert_authority_path="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            url=URL(self._environ["NP_KUBE_URL"]),
+            auth_type=KubeClientAuthType(
+                self._environ.get("NP_KUBE_AUTH_TYPE", KubeConfig.auth_type.value)
+            ),
+            token=self._environ.get("NP_KUBE_TOKEN"),
+            token_path=self._environ.get("NP_KUBE_TOKEN_PATH"),
+            cert_authority_data_pem=self._environ.get("NP_KUBE_CERT_AUTHORITY_DATA"),
+            cert_authority_path=self._environ.get("NP_KUBE_CERT_AUTHORITY_PATH"),
+            client_cert_path=self._environ.get("NP_KUBE_CLIENT_CERT_PATH"),
+            client_key_path=self._environ.get("NP_KUBE_CLIENT_KEY_PATH"),
+            conn_timeout_s=int(
+                self._environ.get("NP_KUBE_CONN_TIMEOUT", KubeConfig.conn_timeout_s)
+            ),
+            read_timeout_s=int(
+                self._environ.get("NP_KUBE_READ_TIMEOUT", KubeConfig.read_timeout_s)
+            ),
+            conn_pool_size=int(
+                self._environ.get("NP_KUBE_CONN_POOL_SIZE", KubeConfig.conn_pool_size)
+            ),
+            conn_keep_alive_timeout_s=int(
+                self._environ.get(
+                    "NP_KUBE_CONN_KEEP_ALIVE_TIMEOUT",
+                    KubeConfig.conn_keep_alive_timeout_s,
+                )
+            ),
         )
 
     def create_zipkin(self, default_app_name: str) -> Optional[ZipkinConfig]:

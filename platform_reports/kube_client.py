@@ -158,8 +158,8 @@ class KubeClient:
         )
         if self._config.auth_type == KubeClientAuthType.CERTIFICATE:
             ssl_context.load_cert_chain(
-                self._config.auth_cert_path,  # type: ignore
-                self._config.auth_cert_key_path,
+                self._config.client_cert_path,  # type: ignore
+                self._config.client_key_path,
             )
         return ssl_context
 

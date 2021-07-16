@@ -23,6 +23,7 @@ class TestEnvironConfigFactory:
             "NP_CONFIG_TOKEN": "token",
             "NP_CLUSTER_NAME": "default",
             "NP_NODE_NAME": "node",
+            "NP_KUBE_URL": "https://kubernetes.default.svc",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
@@ -33,12 +34,8 @@ class TestEnvironConfigFactory:
                 url=URL("http://dev.neu.ro"), token="token"
             ),
             kube=KubeConfig(
-                auth_type=KubeClientAuthType.TOKEN,
                 url=URL("https://kubernetes.default.svc"),
-                token_path="/var/run/secrets/kubernetes.io/serviceaccount/token",
-                cert_authority_path=(
-                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-                ),
+                auth_type=KubeClientAuthType.NONE,
             ),
             cluster_name="default",
             node_name="node",
@@ -65,6 +62,7 @@ class TestEnvironConfigFactory:
             "NP_ZIPKIN_URL": "https://zipkin:9411",
             "NP_SENTRY_DSN": "https://sentry",
             "NP_SENTRY_CLUSTER_NAME": "test",
+            "NP_KUBE_URL": "https://kubernetes.default.svc",
         }
 
         result = EnvironConfigFactory(env).create_metrics()
@@ -75,12 +73,8 @@ class TestEnvironConfigFactory:
                 url=URL("http://dev.neu.ro"), token="token"
             ),
             kube=KubeConfig(
-                auth_type=KubeClientAuthType.TOKEN,
                 url=URL("https://kubernetes.default.svc"),
-                token_path="/var/run/secrets/kubernetes.io/serviceaccount/token",
-                cert_authority_path=(
-                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-                ),
+                auth_type=KubeClientAuthType.NONE,
             ),
             cluster_name="default",
             node_name="node",
@@ -292,4 +286,36 @@ class TestEnvironConfigFactory:
             app_name="api",
             cluster_name="test",
             sample_rate=1,
+        )
+
+    def test_create_kube(self) -> None:
+        env = {
+            "NP_KUBE_URL": "https://kubernetes.default.svc",
+            "NP_KUBE_AUTH_TYPE": "token",
+            "NP_KUBE_TOKEN": "k8s-token",
+            "NP_KUBE_TOKEN_PATH": "k8s-token-path",
+            "NP_KUBE_CERT_AUTHORITY_DATA": "k8s-ca-data",
+            "NP_KUBE_CERT_AUTHORITY_PATH": "k8s-ca-path",
+            "NP_KUBE_CLIENT_CERT_PATH": "k8s-client-cert-path",
+            "NP_KUBE_CLIENT_KEY_PATH": "k8s-client-key-path",
+            "NP_KUBE_CONN_TIMEOUT": "100",
+            "NP_KUBE_READ_TIMEOUT": "200",
+            "NP_KUBE_CONN_POOL_SIZE": "300",
+            "NP_KUBE_CONN_KEEP_ALIVE_TIMEOUT": "400",
+        }
+        result = EnvironConfigFactory(env).create_kube()
+
+        assert result == KubeConfig(
+            url=URL("https://kubernetes.default.svc"),
+            auth_type=KubeClientAuthType.TOKEN,
+            token="k8s-token",
+            token_path="k8s-token-path",
+            cert_authority_data_pem="k8s-ca-data",
+            cert_authority_path="k8s-ca-path",
+            client_cert_path="k8s-client-cert-path",
+            client_key_path="k8s-client-key-path",
+            conn_timeout_s=100,
+            read_timeout_s=200,
+            conn_pool_size=300,
+            conn_keep_alive_timeout_s=400,
         )

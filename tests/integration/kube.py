@@ -51,8 +51,8 @@ def kube_config(
         url=URL(_kube_config_cluster_payload["server"]),
         auth_type=KubeClientAuthType.CERTIFICATE,
         cert_authority_data_pem=_cert_authority_data_pem,
-        auth_cert_path=_kube_config_user_payload["client-certificate"],
-        auth_cert_key_path=_kube_config_user_payload["client-key"],
+        client_cert_path=_kube_config_user_payload["client-certificate"],
+        client_key_path=_kube_config_user_payload["client-key"],
     )
 
 

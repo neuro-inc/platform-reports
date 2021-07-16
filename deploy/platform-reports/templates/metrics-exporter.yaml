@@ -51,6 +51,14 @@ spec:
             {{- end }}
             - name: NP_METRICS_API_PORT
               value: {{ .Values.metricsServer.port | quote }}
+            - name: NP_KUBE_URL
+              value: https://kubernetes.default.svc
+            - name: NP_KUBE_AUTH_TYPE
+              value: token
+            - name: NP_KUBE_CERT_AUTHORITY_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - name: NP_KUBE_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: NP_CONFIG_URL
               value: {{ .Values.platform.configUrl }}
             - name: NP_CONFIG_TOKEN

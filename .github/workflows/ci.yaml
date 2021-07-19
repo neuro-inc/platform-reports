@@ -2,7 +2,7 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [master,adjust-cluster-name]
+    branches: [master]
     tags: [v*.*.*]
   pull_request:
     branches: [master]
@@ -78,8 +78,8 @@ jobs:
   deploy_dev:
     name: Deploy on dev
     runs-on: ubuntu-latest
-#    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/adjust-cluster-name'
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     env:
       ARTIFACTORY_DOCKER_REPO: ${{ secrets.ARTIFACTORY_DOCKER_REPO }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}

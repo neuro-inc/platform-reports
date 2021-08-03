@@ -8,7 +8,7 @@ install_requires = (
     "neuro-sdk==21.7.29",
     "platform-logging==21.7.27",
     "aiohttp==3.7.4.post0",
-    "python-jose==3.2.0",
+    "python-jose==3.3.0",
     "lark-parser==0.11.3",
     "aiobotocore==1.3.3",
     "google-api-python-client==2.14.1",

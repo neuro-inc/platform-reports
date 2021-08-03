@@ -24,8 +24,8 @@ import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
+from neuro_logging import new_trace_cm, trace_cm
 from platform_config_client import Cluster, ConfigClient
-from platform_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources

@@ -19,7 +19,7 @@ from typing import (
 )
 
 import aiohttp
-from platform_logging import trace
+from neuro_logging import trace
 from yarl import URL
 
 from .config import KubeClientAuthType, KubeConfig

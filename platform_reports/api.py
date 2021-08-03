@@ -25,9 +25,7 @@ from aiohttp.web_urldispatcher import AbstractRoute
 from jose import jwt
 from multidict import CIMultiDict, CIMultiDictProxy
 from neuro_auth_client import AuthClient, Permission
-from neuro_sdk import Client as ApiClient, Factory as ClientFactory
-from platform_config_client.client import ConfigClient
-from platform_logging import (
+from neuro_logging import (
     init_logging,
     make_request_logging_trace_config,
     make_sentry_trace_config,
@@ -37,6 +35,8 @@ from platform_logging import (
     setup_zipkin,
     setup_zipkin_tracer,
 )
+from neuro_sdk import Client as ApiClient, Factory as ClientFactory
+from platform_config_client.client import ConfigClient
 
 from .auth import AuthService
 from .config import (

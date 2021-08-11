@@ -212,7 +212,7 @@ prometheus-operator:
     updateStrategy:
       type: RollingUpdate
       rollingUpdate:
-        maxUnavailable: 1
+        maxUnavailable: 100%
 
   prometheusOperator:
     image:

@@ -56,6 +56,8 @@ grafanaProxy:
       memory: 256Mi
   ingress: {}
 
+createPrometheusOperatorCustomResource: true
+
 prometheus-operator:
   nameOverride: prometheus
   fullnameOverride: prometheus

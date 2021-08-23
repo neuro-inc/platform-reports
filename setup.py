@@ -10,7 +10,7 @@ install_requires = (
     "aiohttp==3.7.4.post0",
     "python-jose==3.3.0",
     "lark-parser==0.11.3",
-    "aiobotocore==1.3.3",
+    "aiobotocore==1.4.0",
     "google-api-python-client==2.17.0",
     "aiozipkin==1.1.0",
     "sentry-sdk==1.3.1",

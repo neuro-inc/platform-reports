@@ -3,8 +3,6 @@ ARG PYTHON_BASE=buster
 
 FROM python:${PYTHON_VERSION} AS installer
 
-ARG PIP_EXTRA_INDEX_URL
-
 ENV PATH=/root/.local/bin:$PATH
 
 # Separate step for requirements to speed up docker builds

@@ -35,8 +35,6 @@ YQ = docker run --rm -u root -v $(shell pwd):/workdir mikefarah/yq:4
 
 PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.38/example/prometheus-operator-crd
 
-export PIP_EXTRA_INDEX_URL ?= $(shell python pip_extra_index_url.py)
-
 setup:
 	pip install -U pip
 	pip install -r requirements/dev.txt
@@ -68,12 +66,10 @@ test_integration:
 docker_build:
 	python setup.py sdist
 	docker build \
-		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=buster \
 		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
 		-t $(IMAGE_NAME):latest .
 	docker build \
-		--build-arg PIP_EXTRA_INDEX_URL \
 		--build-arg PYTHON_BASE=slim-buster \
 		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \
 		-t $(IMAGE_NAME):latest-slim .

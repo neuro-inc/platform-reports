@@ -321,7 +321,7 @@ class PermissionsService:
 
     async def get_job_permissions(
         self, job_ids: Sequence[str], action: str = "read"
-    ) -> List[str]:
+    ) -> List[Permission]:
         result: List[Permission] = []
 
         for job_id in set(job_ids):
@@ -331,7 +331,7 @@ class PermissionsService:
                 result.append(self._job_permissions[job_id])
             else:
                 job = await self._api_client.jobs.status(job_id)
-                permission = Permission(uri=str(job.uri), action="read")
+                permission = Permission(uri=str(job.uri), action=action)
                 self._job_permissions[job_id] = permission
                 result.append(permission)
 

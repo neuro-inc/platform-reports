@@ -19,7 +19,7 @@ def platform_api_app() -> aiohttp.web.Application:
                         "name": "default",
                         "registry_url": "registry_url",
                         "storage_url": "storage_url",
-                        "blob_storage_url": "blob_storage_url",
+                        "buckets_url": "buckets_url",
                         "users_url": "users_url",
                         "monitoring_url": "monitoring_url",
                         "secrets_url": "secrets_url",

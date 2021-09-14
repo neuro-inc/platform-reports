@@ -20,13 +20,13 @@ import aiohttp
 import pytest
 from aiobotocore.client import AioBaseClient
 from aiohttp import web
-from platform_config_client import (
+from neuro_config_client import (
     Cluster,
     ConfigClient,
     OrchestratorConfig,
     ResourcePoolType,
 )
-from platform_config_client.models import ResourcePreset
+from neuro_config_client.models import ResourcePreset
 from yarl import URL
 
 from platform_reports.kube_client import (

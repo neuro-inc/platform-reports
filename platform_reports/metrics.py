@@ -24,8 +24,8 @@ import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
+from neuro_config_client import Cluster, ConfigClient
 from neuro_logging import new_trace_cm, trace_cm
-from platform_config_client import Cluster, ConfigClient
 from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources
@@ -118,7 +118,7 @@ class ConfigPriceCollector(Collector[Price]):
 
     async def get_latest_value(self) -> Price:
         cluster = await self._config_client.get_cluster(self._cluster_name)
-
+        assert cluster.orchestrator is not None
         for resource_pool in cluster.orchestrator.resource_pool_types:
             if resource_pool.name == self._node_pool_name:
                 return Price(
@@ -342,6 +342,7 @@ class GCPNodePriceCollector(Collector[Price]):
 
     async def get_latest_value(self) -> Price:
         cluster = await self._config_client.get_cluster(self._cluster_name)
+        assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
         if self._node_pool_name not in resource_pools:
             return Price(currency="USD")
@@ -510,6 +511,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
         return result
 
     def _get_node_resources(self, cluster: Cluster) -> Resources:
+        assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
         if self._node_pool_name not in resource_pools:
             return Resources()
@@ -517,7 +519,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
         return Resources(
             cpu_m=int(resource_pool.cpu * 1000),
             memory_mb=resource_pool.memory_mb,
-            gpu=resource_pool.gpu,
+            gpu=resource_pool.gpu or 0,
         )
 
     def _get_pod_resources(self, pod: Pod) -> Resources:
@@ -588,6 +590,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
             logger.info("Node doesn't have any pods in Running phase")
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
+        assert cluster.orchestrator is not None
         resource_presets = {p.name: p for p in cluster.orchestrator.resource_presets}
         result: Dict[str, Decimal] = {}
         for pod in pods:

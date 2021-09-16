@@ -21,6 +21,8 @@ RUN pip install --user $DIST_FILENAME
 
 FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service
 
+LABEL org.opencontainers.image.source = "https://github.com/neuro-inc/platform-reports"
+
 WORKDIR /app
 
 ENV PATH=/root/.local/bin:$PATH

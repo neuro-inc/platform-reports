@@ -129,6 +129,7 @@ jobs:
     - name: Deploy to kubernetes
       run: make helm_deploy
 
+    concurrency: deploy_dev
   release:
     name: Release package
     runs-on: ubuntu-latest

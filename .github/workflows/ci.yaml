@@ -72,6 +72,13 @@ jobs:
         ./minikube.sh start
     - name: Run integration tests
       run: make test_integration
+    - name: Build image
+      run: make docker_build
+    - name: Upload image artifact
+      uses: neuro-inc/upload-image-action@v21.9.2
+      with:
+        image: platform-reports
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy_dev:
     name: Deploy on dev

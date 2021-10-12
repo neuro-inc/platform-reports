@@ -26,7 +26,7 @@ ARTIFACTORY_IMAGE_SLIM = $(ARTIFACTORY_IMAGE_REPO):$(TAG_SLIM)
 HELM_ENV ?= dev
 HELM_CHART = platform-reports
 
-LINT_PATHS = platform_reports tests setup.py
+LINT_PATHS = platform_reports tests
 
 WAIT_FOR_IT_URL = https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
 WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
@@ -64,7 +64,8 @@ test_integration:
 	exit $$exit_code
 
 docker_build:
-	python setup.py sdist
+	pip install -U build
+	python -m build
 	docker build \
 		--build-arg PYTHON_BASE=buster \
 		--build-arg DIST_FILENAME=`python setup.py --fullname`.tar.gz \

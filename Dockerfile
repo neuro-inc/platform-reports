@@ -7,7 +7,7 @@ ARG DIST_FILENAME
 
 ENV PATH=/root/.local/bin:$PATH
 
-RUN echo "Install ${DIST_FILENAME}
+RUN echo "Install ${DIST_FILENAME}"
 
 # Copy to tmp folder to don't pollute home dir
 RUN mkdir -p /tmp/dist

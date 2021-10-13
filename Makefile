@@ -64,9 +64,9 @@ test_integration:
 	exit $$exit_code
 
 docker_build:
-	#rm -rf build dist
-	#pip install -U build
-	#python -m build
+	rm -rf build dist
+	pip install -U build
+	python -m build
 	docker build \
 		--build-arg PYTHON_BASE=buster \
 		--build-arg DIST_FILENAME=$(wildcard dist/*.whl) \

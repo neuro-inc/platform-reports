@@ -7,12 +7,14 @@ ARG DIST_FILENAME
 
 ENV PATH=/root/.local/bin:$PATH
 
+RUN echo "Install ${DIST_FILENAME}
+
 # Copy to tmp folder to don't pollute home dir
 RUN mkdir -p /tmp/dist
-COPY ${DIST_FILENAME} /tmp/${DIST_FILENAME}
+COPY dist/${DIST_FILENAME} /tmp/dist/${DIST_FILENAME}
 
 RUN ls /tmp/dist
-RUN pip install --user /tmp/${DIST_FILENAME}
+RUN pip install --user /tmp/dist/${DIST_FILENAME}
 
 FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service
 

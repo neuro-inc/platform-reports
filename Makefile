@@ -68,7 +68,9 @@ docker_build:
 	pip install -U build
 	python -m build
 	tree
-	$(eval DIST_FILENAME=$(notdir $(wildcard dist/*.whl)))
+	$(eval WHEEL_NAMES=$(wildcard dist/*.whl))
+	$(eval DIST_FILENAME=$(notdir $(WHEEL_NAMES)))
+	echo $(WHEEL_NAMES) $(DIST_FILENAME)
 	docker build \
 		--build-arg PYTHON_BASE=buster \
 		--build-arg DIST_FILENAME=$(DIST_FILENAME) \

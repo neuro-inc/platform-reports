@@ -67,14 +67,11 @@ docker_build:
 	rm -rf build dist
 	pip install -U build
 	python -m build
-	tree
 	docker build \
 		--build-arg PYTHON_BASE=buster \
-		--build-arg DIST_FILENAME=$(notdir $(wildcard dist/*.whl)) \
 		-t $(IMAGE_NAME):latest .
 	docker build \
 		--build-arg PYTHON_BASE=slim-buster \
-		--build-arg DIST_FILENAME=$(notdir $(wildcard dist/*.whl)) \
 		-t $(IMAGE_NAME):latest-slim .
 
 docker_push: docker_build

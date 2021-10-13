@@ -67,17 +67,11 @@ docker_build:
 	rm -rf build dist
 	pip install -U build
 	python -m build
-	tree
-	$(eval WHEEL_NAMES=$(wildcard dist/*.whl))
-	$(eval DIST_FILENAME=$(notdir $(WHEEL_NAMES)))
-	echo $(WHEEL_NAMES) $(DIST_FILENAME)
 	docker build \
 		--build-arg PYTHON_BASE=buster \
-		--build-arg DIST_FILENAME=$(DIST_FILENAME) \
 		-t $(IMAGE_NAME):latest .
 	docker build \
 		--build-arg PYTHON_BASE=slim-buster \
-		--build-arg DIST_FILENAME=$(DIST_FILENAME) \
 		-t $(IMAGE_NAME):latest-slim .
 
 docker_push: docker_build

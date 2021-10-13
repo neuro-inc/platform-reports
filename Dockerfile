@@ -3,18 +3,14 @@ ARG PYTHON_BASE=buster
 
 FROM python:${PYTHON_VERSION} AS installer
 
-ARG DIST_FILENAME
-
 ENV PATH=/root/.local/bin:$PATH
-
-RUN echo "Install ${DIST_FILENAME}"
 
 # Copy to tmp folder to don't pollute home dir
 RUN mkdir -p /tmp/dist
-COPY dist/${DIST_FILENAME} /tmp/dist/${DIST_FILENAME}
+COPY dist /tmp/dist
 
 RUN ls /tmp/dist
-RUN pip install --user /tmp/dist/${DIST_FILENAME}
+RUN pip install --user --find-links /tmp/dist platform-reports
 
 FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service
 

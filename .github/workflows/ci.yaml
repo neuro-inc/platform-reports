@@ -74,6 +74,7 @@ jobs:
       run: make test_integration
     - name: Build image
       run: make docker_build
+      working-directory: ${{ github.workspace }}
     - name: Upload image artifact
       uses: neuro-inc/upload-image-action@v21.9.2
       with:

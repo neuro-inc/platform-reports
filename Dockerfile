@@ -9,7 +9,7 @@ ENV PATH=/root/.local/bin:$PATH
 
 COPY ${DIST_FILENAME} ${DIST_FILENAME}
 
-RUN ls /dist
+RUN ls dist
 RUN pip install --user ${DIST_FILENAME}
 
 FROM python:${PYTHON_VERSION}-${PYTHON_BASE} as service

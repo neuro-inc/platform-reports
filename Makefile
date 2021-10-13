@@ -98,7 +98,7 @@ azure_k8s_login:
 	az aks get-credentials --resource-group $(AZURE_RG_NAME) --name $(CLUSTER_NAME)
 
 helm_install:
-	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)
+	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- -v $(HELM_VERSION)
 	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com --version 1.0.2
 	helm repo add grafana https://grafana.github.io/helm-charts
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin

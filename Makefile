@@ -99,6 +99,7 @@ azure_k8s_login:
 
 helm_install:
 	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- -v $(HELM_VERSION)
+	helm repo add stable https://charts.helm.sh/stable
 	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	helm repo add grafana https://grafana.github.io/helm-charts
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin --version 1.0.2

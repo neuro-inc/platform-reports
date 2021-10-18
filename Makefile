@@ -37,7 +37,7 @@ PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operato
 
 setup:
 	pip install -U pip
-	pip install -r requirements/dev.txt
+	pip install -e .[dev]
 	pre-commit install
 
 format:

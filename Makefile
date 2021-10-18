@@ -98,11 +98,10 @@ azure_k8s_login:
 	az aks get-credentials --resource-group $(AZURE_RG_NAME) --name $(CLUSTER_NAME)
 
 helm_install:
-	curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v $(HELM_VERSION)
-	helm init --client-only
+	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- -v $(HELM_VERSION)
 	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
 	helm repo add grafana https://grafana.github.io/helm-charts
-	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin
+	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin --version 1.0.2
 
 _helm_fetch:
 	rm -rf temp_deploy/$(HELM_CHART)
@@ -140,7 +139,7 @@ helm_deploy: _helm_fetch _helm_expand_vars
 	helm upgrade $(HELM_CHART) temp_deploy/$(HELM_CHART) \
 		--install \
 		--wait \
-		--timeout 600 \
+		--timeout 600s \
 		--namespace platform \
 		-f deploy/$(HELM_CHART)/values-$(HELM_ENV)-$(CLOUD_PROVIDER).yaml \
 		--set "image.repository=$(IMAGE_REPO)"

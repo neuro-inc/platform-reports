@@ -56,8 +56,6 @@ grafanaProxy:
       memory: 256Mi
   ingress: {}
 
-createPrometheusOperatorCustomResource: true
-
 prometheus-operator:
   nameOverride: prometheus
   fullnameOverride: prometheus
@@ -241,7 +239,7 @@ prometheus-operator:
           tag: v1.2.1
 
     createCustomResource: false
-    cleanupCustomResource: true
+    cleanupCustomResource: false
 
     kubeletService:
       enabled: true

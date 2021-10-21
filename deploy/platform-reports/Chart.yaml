@@ -4,11 +4,11 @@ version: 1.0.0
 dependencies:
   - name: prometheus-operator
     version: "8.15.5"
-    repository: "@stable"
+    repository: "https://charts.helm.sh/stable"
   - name: thanos
     version: "0.3.23"
-    repository: "@banzaicloud"
+    repository: "https://kubernetes-charts.banzaicloud.com"
     condition: objectStore.supported
   - name: grafana
     version: "5.8.16"
-    repository: "@grafana"
+    repository: "https://grafana.github.io/helm-charts"

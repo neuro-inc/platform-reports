@@ -1,9 +1,0 @@
-{{- $prometheusOperatorValues := index .Values "prometheus-operator" -}}
-{{- if $prometheusOperatorValues.prometheusOperator.enabled -}}
-{{- if .Values.createPrometheusOperatorCustomResource -}}
-{{- range $path, $bytes := .Files.Glob "prometheus-crds/*.yaml" }}
-{{ $.Files.Get $path }}
----
-{{- end }}
-{{- end }}
-{{- end }}

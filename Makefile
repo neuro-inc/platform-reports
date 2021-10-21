@@ -99,9 +99,6 @@ azure_k8s_login:
 
 helm_install:
 	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- -v $(HELM_VERSION)
-	helm repo add stable https://charts.helm.sh/stable
-	helm repo add banzaicloud https://kubernetes-charts.banzaicloud.com
-	helm repo add grafana https://grafana.github.io/helm-charts
 	helm plugin install https://github.com/belitre/helm-push-artifactory-plugin --version 1.0.2
 
 _helm_fetch:
@@ -110,17 +107,15 @@ _helm_fetch:
 	cp -Rf deploy/$(HELM_CHART) temp_deploy/
 	find temp_deploy/$(HELM_CHART) -type f -name 'values*' -delete
 	helm dependency update temp_deploy/$(HELM_CHART)
-	mkdir -p temp_deploy/$(HELM_CHART)/prometheus-crds
+	mkdir -p temp_deploy/$(HELM_CHART)/crds
 	# CRD's in prometheus-operator helm chart are stale, fetch the latest version
-	cd temp_deploy/$(HELM_CHART)/prometheus-crds; \
+	cd temp_deploy/$(HELM_CHART)/crds; \
 	curl -sLSo crd-alertmanager.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_alertmanagers.yaml; \
 	curl -sLSo crd-podmonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_podmonitors.yaml; \
 	curl -sLSo crd-prometheus.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheuses.yaml; \
 	curl -sLSo crd-prometheusrules.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheusrules.yaml; \
 	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
 	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
-	find temp_deploy/$(HELM_CHART)/prometheus-crds -name '*.yaml' \
-		| xargs -L 1 $(YQ) e -i '.metadata.annotations."helm.sh/hook" = "crd-install"'
 
 _helm_expand_vars:
 	export IMAGE_REPO=$(ARTIFACTORY_IMAGE); \
@@ -131,9 +126,9 @@ _helm_expand_vars:
 
 artifactory_helm_push: _helm_fetch _helm_expand_vars
 	helm package --version=$(TAG) --app-version=$(TAG) temp_deploy/$(HELM_CHART)
-	helm push-artifactory $(HELM_CHART)-$(TAG).tgz $(ARTIFACTORY_HELM_REPO) \
-		--username ${ARTIFACTORY_USERNAME} \
-		--password ${ARTIFACTORY_PASSWORD}
+	helm push-artifactory $(HELM_CHART)-$(TAG).tgz neuro-local-public \
+		--username admin \
+		--password Pw8Kp4Qh8Tn5So
 	rm $(HELM_CHART)-$(TAG).tgz
 
 helm_deploy: _helm_fetch _helm_expand_vars

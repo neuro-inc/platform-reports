@@ -7,7 +7,7 @@ from tempfile import mktemp
 from textwrap import dedent
 from typing import AsyncIterator, Awaitable, Callable, List, Mapping, Optional, Sequence
 
-import aiobotocore
+import aiobotocore.session
 import aiohttp
 import aiohttp.web
 import pkg_resources
@@ -448,7 +448,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 assert config.region
                 assert zone
                 assert instance_type
-                session = aiobotocore.get_session()
+                session = aiobotocore.session.get_session()
                 pricing_client = await exit_stack.enter_async_context(
                     session.create_client(
                         "pricing", get_aws_pricing_api_region(config.region)

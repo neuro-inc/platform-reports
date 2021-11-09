@@ -25,6 +25,7 @@ imagePullSecrets: []
 secrets: []
 
 nvidiaDCGMExporter:
+  nameOverride: nvidia-dcgm-exporter
   fullnameOverride: nvidia-dcgm-exporter
 
   image:
@@ -32,8 +33,6 @@ nvidiaDCGMExporter:
     tag: 1.7.2
 
 metricsExporter:
-  fullnameOverride: platform-prometheus-proxy
-
   port: 9500
   resources:
     requests:
@@ -43,8 +42,6 @@ metricsExporter:
     annotations: {}
 
 prometheusProxy:
-  fullnameOverride: platform-prometheus-proxy
-
   prometheus:
     host: thanos-query-http
     port: 10902
@@ -55,9 +52,6 @@ prometheusProxy:
       memory: 256Mi
 
 grafanaProxy:
-  nameOverride: platform-grafana-proxy
-  fullnameOverride: platform-grafana-proxy
-
   replicas: 2
   resources:
     requests:
@@ -131,6 +125,9 @@ prometheus-operator:
       repository: coreos/kube-state-metrics # quay.io/coreos/kube-state-metrics
       tag: v1.9.6
 
+    customLabels:
+      service: kube-state-metrics
+
     resources:
       requests:
         cpu: 100m
@@ -198,6 +195,9 @@ prometheus-operator:
       repository: prometheus/node-exporter # quay.io/prometheus/node-exporter
       tag: v1.0.0
 
+    podLabels:
+      service: prometheus-node-exporter
+
     securityContext:
       runAsUser: 0
       runAsNonRoot: false
@@ -227,6 +227,9 @@ prometheus-operator:
     image:
       repository: coreos/prometheus-operator # quay.io/coreos/prometheus-operator
       tag: v0.38.2
+
+    podLabels:
+      service: prometheus-operator
 
     prometheusConfigReloaderImage:
       repository: coreos/prometheus-config-reloader # quay.io/coreos/prometheus-config-reloader
@@ -264,6 +267,8 @@ prometheus-operator:
         repository: prometheus/prometheus # quay.io/prometheus/prometheus
         tag: v2.18.1
 
+      podMetadata:
+        labels: prometheus
       replicas: 1
       retention: 12h
       scrapeInterval: 15s
@@ -314,6 +319,8 @@ thanos:
         resources:
           requests:
             storage: 10Gi
+    labels:
+      service: thanos-store
 
   # Compact service works with data in object storage
   compact:
@@ -338,6 +345,16 @@ thanos:
         resources:
           requests:
             storage: 10Gi
+    labels:
+      service: thanos-compact
+
+  query:
+    labels:
+      service: thanos-query
+
+  bucket:
+    labels:
+      service: thanos-bucket
 
   rule:
     enabled: false
@@ -355,6 +372,9 @@ grafana:
   image:
     repository: grafana/grafana # grafana/grafana
     tag: 7.2.1
+
+  podLabels:
+    service: grafana
 
   adminUser: admin
 

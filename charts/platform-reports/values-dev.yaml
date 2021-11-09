@@ -16,14 +16,23 @@ platform:
         key: cluster_token
 
 metricsExporter:
+  nameOverride: platform-metrics-exporter
+  fullnameOverride: platform-metrics-exporter
+
   podMetadata:
     annotations:
       iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-366c09e4841fcc83df56b8f070c34716
 
 prometheusProxy:
+  nameOverride: platform-prometheus-proxy
+  fullnameOverride: platform-prometheus-proxy
+
   replicas: 2
 
 grafanaProxy:
+  nameOverride: platform-grafana-proxy
+  fullnameOverride: platform-grafana-proxy
+
   replicas: 2
   ingress:
     extraAnnotations:

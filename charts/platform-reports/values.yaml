@@ -19,17 +19,21 @@ platformJobs:
 image:
   repository: "$IMAGE_REPO"
   tag: "$IMAGE_TAG"
-  slimTag: "$IMAGE_SLIM_TAG"
-
-nvidiaDCGMExporterImage:
-  repository: $DOCKER_SERVER/nvidia/dcgm-exporter # nvidia/dcgm-exporter
-  tag: 1.7.2
 
 imagePullSecrets: []
 
 secrets: []
 
-metricsServer:
+nvidiaDCGMExporter:
+  fullnameOverride: nvidia-dcgm-exporter
+
+  image:
+    repository: nvidia/dcgm-exporter # nvidia/dcgm-exporter
+    tag: 1.7.2
+
+metricsExporter:
+  fullnameOverride: platform-prometheus-proxy
+
   port: 9500
   resources:
     requests:
@@ -39,6 +43,8 @@ metricsServer:
     annotations: {}
 
 prometheusProxy:
+  fullnameOverride: platform-prometheus-proxy
+
   prometheus:
     host: thanos-query-http
     port: 10902
@@ -49,6 +55,9 @@ prometheusProxy:
       memory: 256Mi
 
 grafanaProxy:
+  nameOverride: platform-grafana-proxy
+  fullnameOverride: platform-grafana-proxy
+
   replicas: 2
   resources:
     requests:
@@ -119,7 +128,7 @@ prometheus-operator:
     fullnameOverride: kube-state-metrics
 
     image:
-      repository: $DOCKER_SERVER/coreos/kube-state-metrics # quay.io/coreos/kube-state-metrics
+      repository: coreos/kube-state-metrics # quay.io/coreos/kube-state-metrics
       tag: v1.9.6
 
     resources:
@@ -186,7 +195,7 @@ prometheus-operator:
     fullnameOverride: prometheus-node-exporter
 
     image:
-      repository: $DOCKER_SERVER/prometheus/node-exporter # quay.io/prometheus/node-exporter
+      repository: prometheus/node-exporter # quay.io/prometheus/node-exporter
       tag: v1.0.0
 
     securityContext:
@@ -216,26 +225,26 @@ prometheus-operator:
 
   prometheusOperator:
     image:
-      repository: $DOCKER_SERVER/coreos/prometheus-operator # quay.io/coreos/prometheus-operator
+      repository: coreos/prometheus-operator # quay.io/coreos/prometheus-operator
       tag: v0.38.2
 
     prometheusConfigReloaderImage:
-      repository: $DOCKER_SERVER/coreos/prometheus-config-reloader # quay.io/coreos/prometheus-config-reloader
+      repository: coreos/prometheus-config-reloader # quay.io/coreos/prometheus-config-reloader
       tag: v0.38.2
 
     configmapReloadImage:
-      repository: $DOCKER_SERVER/coreos/configmap-reload # quay.io/coreos/configmap-reload
+      repository: coreos/configmap-reload # quay.io/coreos/configmap-reload
       tag: v0.0.1
 
     tlsProxy:
       image:
-        repository: $DOCKER_SERVER/squareup/ghostunnel # squareup/ghostunnel
+        repository: squareup/ghostunnel # squareup/ghostunnel
         tag: v1.5.2
 
     admissionWebhooks:
       patch:
         image:
-          repository: $DOCKER_SERVER/jettech/kube-webhook-certgen # jettech/kube-webhook-certgen
+          repository: jettech/kube-webhook-certgen # jettech/kube-webhook-certgen
           tag: v1.2.1
 
     createCustomResource: false
@@ -252,7 +261,7 @@ prometheus-operator:
       selfMonitor: false
     prometheusSpec:
       image:
-        repository: $DOCKER_SERVER/prometheus/prometheus # quay.io/prometheus/prometheus
+        repository: prometheus/prometheus # quay.io/prometheus/prometheus
         tag: v2.18.1
 
       replicas: 1
@@ -274,7 +283,7 @@ prometheus-operator:
                 storage: 10Gi
       # thanos sidecar
       thanos:
-        image: $DOCKER_SERVER/thanos/thanos:v0.14.0 # quay.io/thanos/thanos
+        image: thanos/thanos:v0.14.0 # quay.io/thanos/thanos
         version: v0.14.0
 
   grafana:
@@ -285,7 +294,7 @@ thanos:
   fullnameOverride: thanos
 
   image:
-    repository: $DOCKER_SERVER/thanos/thanos # quay.io/thanos/thanos
+    repository: thanos/thanos # quay.io/thanos/thanos
     tag: v0.14.0
 
   store:
@@ -344,7 +353,7 @@ grafana:
   fullnameOverride: grafana
 
   image:
-    repository: $DOCKER_SERVER/grafana/grafana # grafana/grafana
+    repository: grafana/grafana # grafana/grafana
     tag: 7.2.1
 
   adminUser: admin
@@ -354,12 +363,12 @@ grafana:
 
   initChownData:
     image:
-      repository: $DOCKER_SERVER/busybox # busybox
+      repository: busybox # busybox
       tag: latest
 
   sidecar:
     image:
-      repository: $DOCKER_SERVER/kiwigrid/k8s-sidecar # kiwigrid/k8s-sidecar
+      repository: kiwigrid/k8s-sidecar # kiwigrid/k8s-sidecar
       tag: 1.1.0
 
     datasources:

@@ -1,8 +1,9 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: platform-metrics-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.metricsExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: platform-metrics-exporter
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -10,18 +11,18 @@ spec:
       maxUnavailable: 100%
   selector:
     matchLabels:
-      app: {{ include "platform-reports.name" . }}
+      app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
       service: platform-metrics-exporter
   template:
     metadata:
       labels:
-        app: {{ include "platform-reports.name" . }}
+        app: {{ include "platformReports.name" . }}
         release: {{ .Release.Name | quote }}
         service: platform-metrics-exporter
       annotations:
-{{- if .Values.metricsServer.podMetadata.annotations }}
-{{ toYaml .Values.metricsServer.podMetadata.annotations | indent 8 }}
+{{- if .Values.metricsExporter.podMetadata.annotations }}
+{{ toYaml .Values.metricsExporter.podMetadata.annotations | indent 8 }}
 {{- end }}
 {{- if .Values.secrets }}
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
@@ -43,7 +44,7 @@ spec:
       {{- end }}
       containers:
         # Use slim image version to reduce service startup time
-        - image: {{ .Values.image.repository }}:{{ .Values.image.slimTag }}
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: platform-metrics-exporter
           command: ["metrics-server"]
           env:
@@ -52,7 +53,7 @@ spec:
               value: {{ .Values.logLevel }}
             {{- end }}
             - name: NP_METRICS_API_PORT
-              value: {{ .Values.metricsServer.port | quote }}
+              value: {{ .Values.metricsExporter.port | quote }}
             - name: NP_KUBE_URL
               value: https://kubernetes.default.svc
             - name: NP_KUBE_AUTH_TYPE
@@ -107,10 +108,10 @@ spec:
             {{- end }}
           ports:
             - name: metrics
-              containerPort: {{ .Values.metricsServer.port }}
+              containerPort: {{ .Values.metricsExporter.port }}
               protocol: TCP
-          {{- if .Values.metricsServer.resources }}
-          resources: {{ toYaml .Values.metricsServer.resources | nindent 12 }}
+          {{- if .Values.metricsExporter.resources }}
+          resources: {{ toYaml .Values.metricsExporter.resources | nindent 12 }}
           {{- end }}
           # Service initialization can take some time before probe handler start responding
           readinessProbe:
@@ -155,28 +156,29 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: neuro-metrics-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.metricsExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     service: platform-metrics-exporter
 spec:
   selector:
-    app: {{ include "platform-reports.name" . }}
+    app: {{ include "platformReports.name" . }}
     release: {{ .Release.Name | quote }}
     service: platform-metrics-exporter
   ports:
     - name: metrics
-      port: {{ .Values.metricsServer.port }}
+      port: {{ .Values.metricsExporter.port }}
       targetPort: metrics
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: platform-metrics-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.metricsExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: platform-metrics-exporter
 spec:
   selector:
     matchLabels:
-      app: {{ include "platform-reports.name" . }}
+      app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
       service: platform-metrics-exporter
   endpoints:

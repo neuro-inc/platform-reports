@@ -15,7 +15,7 @@ platform:
         name: platformservices-secret
         key: cluster_token
 
-metricsServer:
+metricsExporter:
   podMetadata:
     annotations:
       iam.amazonaws.com/role: arn:aws:iam::771188043543:role/pricing-366c09e4841fcc83df56b8f070c34716
@@ -31,10 +31,6 @@ grafanaProxy:
     hosts: [metrics-dev.neu.ro]
 
 prometheus-operator:
-  global:
-    imagePullSecrets:
-      - name: artifactory
-
   prometheus:
     prometheusSpec:
       thanos:
@@ -55,16 +51,6 @@ prometheus-operator:
 
   kubelet:
     namespace: platform
-
-  kube-state-metrics:
-    serviceAccount:
-      imagePullSecrets:
-        - name: artifactory
-
-  prometheus-node-exporter:
-    serviceAccount:
-      imagePullSecrets:
-        - name: artifactory
 
 thanos:
   store:
@@ -92,9 +78,6 @@ thanos:
       endpoint: s3.us-east-1.amazonaws.com
 
 grafana:
-  image:
-    pullSecrets: [artifactory]
-
   adminPassword: password
 
 sentry:

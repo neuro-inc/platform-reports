@@ -2,4 +2,3 @@ charts/
 tmpcharts/
 chart.lock
 requirements.lock
-prometheus-crds/

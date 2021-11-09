@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: platform-grafana-proxy
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
-    service: platform-grafana-proxy
+  name: {{ include "platformReports.prometheusProxy.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: platform-prometheus-proxy
 spec:
-  replicas: {{ .Values.grafanaProxy.replicas | default 1 }}
+  replicas: {{ .Values.prometheusProxy.replicas | default 1 }}
   selector:
     matchLabels:
-      app: {{ include "platform-reports.name" . }}
+      app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
-      service: platform-grafana-proxy
+      service: platform-prometheus-proxy
   template:
     metadata:
       labels:
-        app: {{ include "platform-reports.name" . }}
+        app: {{ include "platformReports.name" . }}
         release: {{ .Release.Name | quote }}
-        service: platform-grafana-proxy
+        service: platform-prometheus-proxy
       {{- if .Values.secrets }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
@@ -28,18 +28,18 @@ spec:
       containers:
         - name: proxy
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          command: ["grafana-proxy"]
+          command: ["prometheus-proxy"]
           env:
             {{- if .Values.logLevel }}
             - name: NP_LOG_LEVEL
               value: {{ .Values.logLevel }}
             {{- end }}
             - name: NP_CLUSTER_NAME
-              value: {{ .Values.platform.clusterName }}
-            - name: NP_GRAFANA_HOST
-              value: grafana
-            - name: NP_GRAFANA_PORT
-              value: "80"
+              value: {{ .Values.platform.clusterName | quote }}
+            - name: NP_PROMETHEUS_HOST
+              value: {{ .Values.prometheusProxy.prometheus.host | quote }}
+            - name: NP_PROMETHEUS_PORT
+              value: {{ .Values.prometheusProxy.prometheus.port | quote }}
             - name: NP_AUTH_URL
               value: {{ .Values.platform.authUrl }}
             - name: NP_AUTH_TOKEN
@@ -64,8 +64,8 @@ spec:
             - name: NP_SENTRY_SAMPLE_RATE
               value: {{ .Values.sentry.sampleRate | default 0 | quote }}
             {{- end }}
-          {{- if .Values.grafanaProxy.resources }}
-          resources: {{ toYaml .Values.grafanaProxy.resources | nindent 12 }}
+          {{- if .Values.prometheusProxy.resources }}
+          resources: {{ toYaml .Values.prometheusProxy.resources | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: 8080
@@ -73,13 +73,13 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /ping
+              path: /api/v1/ping
               port: http
             initialDelaySeconds: 3
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /ping
+              path: /api/v1/ping
               port: http
             initialDelaySeconds: 3
             periodSeconds: 3

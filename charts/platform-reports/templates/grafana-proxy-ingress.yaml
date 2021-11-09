@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: grafana
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.grafanaProxy.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
   annotations:
     ingress.kubernetes.io/auth-trust-headers: "true"
     ingress.kubernetes.io/auth-type: forward
@@ -20,21 +20,21 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: platform-grafana-proxy
+              serviceName: {{ include "platformReports.grafanaProxy.fullname" $ }}
               servicePort: http
             path: /api/dashboards
     - host: {{ . | quote }}
       http:
         paths:
           - backend:
-              serviceName: platform-grafana-proxy
+              serviceName: {{ include "platformReports.grafanaProxy.fullname" $ }}
               servicePort: http
             path: /ping
     - host: {{ . | quote }}
       http:
         paths:
           - backend:
-              serviceName: grafana
+              serviceName: {{ include "platformReports.grafana.fullname" $ }}
               servicePort: 80
             path: /
     {{- end }}

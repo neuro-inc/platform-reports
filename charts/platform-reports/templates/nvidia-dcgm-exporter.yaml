@@ -2,8 +2,9 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: nvidia-dcgm-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: nvidia-dcgm-exporter
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -11,15 +12,15 @@ spec:
       maxUnavailable: 100%
   selector:
     matchLabels:
-      app: {{ include "platform-reports.name" . }}
+      app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
-      component: nvidia-dcgm-exporter
+      service: nvidia-dcgm-exporter
   template:
     metadata:
       labels:
-        app: {{ include "platform-reports.name" . }}
+        app: {{ include "platformReports.name" . }}
         release: {{ .Release.Name | quote }}
-        component: nvidia-dcgm-exporter
+        service: nvidia-dcgm-exporter
     spec:
       affinity:
         nodeAffinity:
@@ -36,7 +37,7 @@ spec:
         - effect: NoSchedule
           operator: Exists
       containers:
-        - image: {{ .Values.nvidiaDCGMExporterImage.repository }}:{{ .Values.nvidiaDCGMExporterImage.tag }}
+        - image: {{ .Values.nvidiaDCGMExporter.image.repository }}:{{ .Values.nvidiaDCGMExporter.image.tag }}
           name: nvidia-dcgm-exporter
           env:
             - name: DCGM_EXPORTER_COLLECTORS
@@ -68,7 +69,7 @@ spec:
             path: /var/lib/kubelet/pod-resources
         - name: dcgm-counters
           configMap:
-            name: nvidia-dcgm-counters
+            name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}-counters
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
@@ -76,14 +77,14 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: nvidia-dcgm-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
-    component: nvidia-dcgm-exporter
+  name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: nvidia-dcgm-exporter
 spec:
   selector:
-    app: {{ include "platform-reports.name" . }}
+    app: {{ include "platformReports.name" . }}
     release: {{ .Release.Name | quote }}
-    component: nvidia-dcgm-exporter
+    service: nvidia-dcgm-exporter
   ports:
     - name: metrics
       port: 9400
@@ -91,14 +92,15 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: nvidia-dcgm-exporter
-  labels: {{ include "platform-reports.labels.standard" . | nindent 4 }}
+  name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: nvidia-dcgm-exporter
 spec:
   selector:
     matchLabels:
-      app: {{ include "platform-reports.name" . }}
+      app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
-      component: nvidia-dcgm-exporter
+      service: nvidia-dcgm-exporter
   endpoints:
     - port: metrics
       path: /metrics

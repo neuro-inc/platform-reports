@@ -70,8 +70,8 @@ docker_build:
 		-t $(IMAGE_NAME):latest .
 
 docker_push: docker_build
-	docker tag $(IMAGE_NAME):latest $(IMAGE)
-	docker push $(IMAGE)
+	docker tag $(IMAGE_NAME):latest $(IMAGE_REPO):$(TAG)
+	docker push $(IMAGE_REPO):$(TAG)
 
 	docker tag $(IMAGE_NAME):latest $(IMAGE_REPO):latest
 	docker push $(IMAGE_REPO):latest

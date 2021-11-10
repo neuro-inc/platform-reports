@@ -104,6 +104,7 @@ helm_create_chart: _helm_fetch_crds
 	echo "$$CHART" > charts/$(HELM_CHART)/Chart.yaml
 
 helm_deploy: helm_create_chart
+	helm dependency update charts/$(HELM_CHART)
 	helm upgrade $(HELM_CHART) charts/$(HELM_CHART) \
 		-f charts/$(HELM_CHART)/values-$(HELM_ENV).yaml \
 		--namespace platform --install --wait --timeout 600s

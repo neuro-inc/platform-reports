@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Callable, Dict, Sequence
 from unittest import mock
 
@@ -28,6 +29,8 @@ def job_factory() -> Callable[[str], Job]:
             history=None,  # type: ignore
             container=None,  # type: ignore
             uri=URL(f"job://default/user/{id}"),
+            total_price_credits=Decimal("500"),
+            price_credits_per_hour=Decimal("5"),
             pass_config=None,  # type: ignore
             scheduler_enabled=False,
         )

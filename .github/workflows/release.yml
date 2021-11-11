@@ -75,7 +75,7 @@ jobs:
       run: make helm_create_chart
       env:
         IMAGE_REGISTRY: github
-        TAG: ${{ needs.publish_image.outputs.tag }}
+        IMAGE_TAG: ${{ needs.publish_image.outputs.version }}
         GITHUB_OWNER: ${{ github.repository_owner }}
         HELM_CHART_VERSION: ${{ needs.publish_image.outputs.version }}
         HELM_APP_VERSION: ${{ needs.publish_image.outputs.version }}

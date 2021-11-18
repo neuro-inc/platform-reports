@@ -111,8 +111,8 @@ jobs:
       uses: azure/setup-helm@v1
       with:
         version: v3.7.0
-    - name: Set tag
-      run: echo "TAG=$GITHUB_SHA" >> $GITHUB_ENV
+    - name: Set image tag
+      run: echo "IMAGE_TAG=$GITHUB_SHA" >> $GITHUB_ENV
     - name: Configure AWS credentials
       if: env.CLOUD_PROVIDER == 'aws'
       uses: aws-actions/configure-aws-credentials@v1

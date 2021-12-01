@@ -79,9 +79,6 @@ jobs:
     env:
       AWS_ACCOUNT_ID: 771188043543
       AWS_REGION: us-east-1
-      AZURE_ACR_NAME: ${{ secrets.AZURE_DEV_ACR_NAME }}
-      AZURE_REGION: ${{ secrets.AZURE_DEV_REGION }}
-      AZURE_RG_NAME: ${{ secrets.AZURE_DEV_RG_NAME }}
       CLUSTER_NAME: aws-dev
       HELM_ENV: dev
     steps:

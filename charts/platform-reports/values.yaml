@@ -59,7 +59,7 @@ grafanaProxy:
       memory: 256Mi
   ingress: {}
 
-prometheus-operator:
+kube-prometheus-stack:
   nameOverride: prometheus
   fullnameOverride: prometheus
 

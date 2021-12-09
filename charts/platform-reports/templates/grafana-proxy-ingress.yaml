@@ -1,5 +1,5 @@
 {{- if .Values.grafanaProxy.ingress }}
-apiVersion: {{ include "platformReports.ingress.apiVersion" . }}
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: {{ include "platformReports.grafanaProxy.fullname" . }}

@@ -25,7 +25,7 @@ WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
 YQ = docker run --rm -u root -v $(shell pwd):/workdir mikefarah/yq:4
 
-PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.38/example/prometheus-operator-crd
+PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.39/example/prometheus-operator-crd
 
 setup:
 	pip install -U pip

@@ -293,7 +293,7 @@ kube-prometheus-stack:
                 storage: 10Gi
       # thanos sidecar
       thanos:
-        image: thanos/thanos:v0.14.0 # quay.io/thanos/thanos
+        image: quay.io/thanos/thanos:v0.14.0
         version: v0.14.0
 
   grafana:

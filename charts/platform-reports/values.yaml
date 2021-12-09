@@ -123,7 +123,7 @@ prometheus-operator:
 
     image:
       repository: quay.io/coreos/kube-state-metrics
-      tag: v1.9.6
+      tag: v1.9.7
 
     customLabels:
       service: kube-state-metrics
@@ -193,7 +193,7 @@ prometheus-operator:
 
     image:
       repository: quay.io/prometheus/node-exporter
-      tag: v1.0.0
+      tag: v1.0.1
 
     podLabels:
       service: prometheus-node-exporter
@@ -236,8 +236,12 @@ prometheus-operator:
       tag: v0.38.2
 
     configmapReloadImage:
-      repository: quay.io/coreos/configmap-reload
-      tag: v0.0.1
+      repository: docker.io/jimmidyson/configmap-reload
+      tag: v0.4.0
+
+    kubectlImage:
+      repository: docker.io/bitnami/kubectl
+      tag: 1.16.15
 
     tlsProxy:
       image:
@@ -265,7 +269,7 @@ prometheus-operator:
     prometheusSpec:
       image:
         repository: quay.io/prometheus/prometheus
-        tag: v2.18.1
+        tag: v2.21.0
 
       podMetadata:
         labels:

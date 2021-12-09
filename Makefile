@@ -25,8 +25,6 @@ WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
 
 YQ = docker run --rm -u root -v $(shell pwd):/workdir mikefarah/yq:4
 
-PROMETHEUS_CRD_URL = https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.39/example/prometheus-operator-crd
-
 setup:
 	pip install -U pip
 	pip install -e .[dev]
@@ -70,18 +68,7 @@ docker_push: docker_build
 	docker tag $(IMAGE_NAME):latest $(IMAGE_REPO):latest
 	docker push $(IMAGE_REPO):latest
 
-_helm_fetch_crds:
-	mkdir charts/$(HELM_CHART)/crds
-	# CRD's in prometheus-operator helm chart are stale, fetch the latest version
-	cd charts/$(HELM_CHART)/crds; \
-	curl -sLSo crd-alertmanager.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_alertmanagers.yaml; \
-	curl -sLSo crd-podmonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_podmonitors.yaml; \
-	curl -sLSo crd-prometheus.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheuses.yaml; \
-	curl -sLSo crd-prometheusrules.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_prometheusrules.yaml; \
-	curl -sLSo crd-servicemonitor.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_servicemonitors.yaml; \
-	curl -sLSo crd-thanosrulers.yaml $(PROMETHEUS_CRD_URL)/monitoring.coreos.com_thanosrulers.yaml
-
-helm_create_chart: _helm_fetch_crds
+helm_create_chart:
 	export IMAGE_REPO=$(IMAGE_REPO); \
 	export IMAGE_TAG=$(IMAGE_TAG); \
 	export CHART_VERSION=$(HELM_CHART_VERSION); \

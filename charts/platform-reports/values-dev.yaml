@@ -39,7 +39,7 @@ grafanaProxy:
       external-dns.platform.neuromation.io: "true"
     hosts: [metrics-dev.neu.ro]
 
-prometheus-operator:
+kube-prometheus-stack:
   prometheus:
     prometheusSpec:
       thanos:

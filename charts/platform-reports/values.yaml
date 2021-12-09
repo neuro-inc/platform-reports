@@ -454,9 +454,6 @@ grafana:
     dashboards:
       default_home_dashboard_path: /etc/grafana/dashboards/home.json
 
-  serviceMonitor:
-    selfMonitor: false
-
 zipkin: {}
 
 sentry: {}

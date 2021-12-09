@@ -12,5 +12,5 @@ dependencies:
     repository: "https://kubernetes-charts.banzaicloud.com"
     condition: objectStore.supported
   - name: grafana
-    version: "5.8.16"
+    version: "6.2.2"
     repository: "https://grafana.github.io/helm-charts"

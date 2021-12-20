@@ -42,6 +42,12 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
+class PlatformAuthConfig:
+    url: Optional[URL]
+    token: str = field(repr=False)
+
+
+@dataclass(frozen=True)
 class PlatformServiceConfig:
     url: URL
     token: str = field(repr=False)
@@ -87,7 +93,7 @@ class MetricsConfig:
 class PrometheusProxyConfig:
     server: ServerConfig
     prometheus_server: ServerConfig
-    platform_auth: PlatformServiceConfig
+    platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
@@ -101,7 +107,7 @@ class PrometheusProxyConfig:
 class GrafanaProxyConfig:
     server: ServerConfig
     grafana_server: ServerConfig
-    platform_auth: PlatformServiceConfig
+    platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
@@ -114,6 +120,13 @@ class GrafanaProxyConfig:
 class EnvironConfigFactory:
     def __init__(self, environ: Optional[Dict[str, str]] = None) -> None:
         self._environ = environ or os.environ
+
+    def _get_url(self, name: str) -> Optional[URL]:
+        value = self._environ[name]
+        if value == "-":
+            return None
+        else:
+            return URL(value)
 
     def create_metrics(self) -> MetricsConfig:
         gcp_service_account_key_path = MetricsConfig.gcp_service_account_key_path
@@ -207,9 +220,9 @@ class EnvironConfigFactory:
             port=int(self._environ["NP_GRAFANA_PORT"]),
         )
 
-    def _create_platform_auth(self) -> PlatformServiceConfig:
-        return PlatformServiceConfig(
-            url=URL(self._environ["NP_AUTH_URL"]), token=self._environ["NP_AUTH_TOKEN"]
+    def _create_platform_auth(self) -> PlatformAuthConfig:
+        return PlatformAuthConfig(
+            url=self._get_url("NP_AUTH_URL"), token=self._environ["NP_AUTH_TOKEN"]
         )
 
     def _create_platform_api(self) -> PlatformServiceConfig:

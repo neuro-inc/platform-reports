@@ -8,6 +8,7 @@ from platform_reports.config import (
     KubeClientAuthType,
     KubeConfig,
     MetricsConfig,
+    PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
     SentryConfig,
@@ -103,7 +104,7 @@ class TestEnvironConfigFactory:
             "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_PROMETHEUS_HOST": "prometheus",
             "NP_PROMETHEUS_PORT": "9090",
-            "NP_AUTH_URL": "https://dev.neu.ro",
+            "NP_AUTH_URL": "-",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
         }
@@ -115,9 +116,7 @@ class TestEnvironConfigFactory:
             access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(),
             prometheus_server=ServerConfig(host="prometheus", port=9090),
-            platform_auth=PlatformServiceConfig(
-                url=URL("https://dev.neu.ro"), token="token"
-            ),
+            platform_auth=PlatformAuthConfig(url=None, token="token"),
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
@@ -150,7 +149,7 @@ class TestEnvironConfigFactory:
             prometheus_server=ServerConfig(
                 scheme="https", host="prometheus", port=9090
             ),
-            platform_auth=PlatformServiceConfig(
+            platform_auth=PlatformAuthConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
             platform_api=PlatformServiceConfig(
@@ -172,7 +171,7 @@ class TestEnvironConfigFactory:
             "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES": "sat,dat",
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
-            "NP_AUTH_URL": "https://dev.neu.ro",
+            "NP_AUTH_URL": "-",
             "NP_AUTH_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
         }
@@ -184,9 +183,7 @@ class TestEnvironConfigFactory:
             access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(),
             grafana_server=ServerConfig(host="grafana", port=3000),
-            platform_auth=PlatformServiceConfig(
-                url=URL("https://dev.neu.ro"), token="token"
-            ),
+            platform_auth=PlatformAuthConfig(url=None, token="token"),
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
@@ -217,7 +214,7 @@ class TestEnvironConfigFactory:
             access_token_cookie_names=["sat", "dat"],
             server=ServerConfig(scheme="https", host="platform-reports", port=80),
             grafana_server=ServerConfig(scheme="https", host="grafana", port=3000),
-            platform_auth=PlatformServiceConfig(
+            platform_auth=PlatformAuthConfig(
                 url=URL("https://dev.neu.ro"), token="token"
             ),
             platform_api=PlatformServiceConfig(

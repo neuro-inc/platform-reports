@@ -5,6 +5,7 @@ import logging
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
+from importlib.metadata import version
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
@@ -12,7 +13,6 @@ from textwrap import dedent
 import aiobotocore.session
 import aiohttp
 import aiohttp.web
-import pkg_resources
 from aiohttp.web import (
     HTTPBadRequest,
     HTTPForbidden,
@@ -388,7 +388,7 @@ def get_aws_pricing_api_region(region: str) -> str:
     return "us-east-1"
 
 
-package_version = pkg_resources.get_distribution("platform-reports").version
+package_version = version(__package__)
 
 
 async def add_version_to_header(request: Request, response: StreamResponse) -> None:

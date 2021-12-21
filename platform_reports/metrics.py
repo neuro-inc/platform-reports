@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator, Awaitable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from importlib.resources import path
+from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Generic, TypeVar
@@ -157,10 +157,10 @@ class AWSNodePriceCollector(Collector[Price]):
     def _get_region_long_names(self) -> dict[str, str]:
         result: dict[str, str] = {}
         # https://github.com/boto/botocore/blob/master/botocore/data/endpoints.json
-        with path("botocore", "data") as data_path:
-            endpoints_path = data_path / "endpoints.json"
-            with endpoints_path.open("r", encoding="utf-8") as f:
-                endpoints = json.load(f)
+        root = files("botocore")
+        endpoints_path = root / "data/endpoints.json"
+        with endpoints_path.open("r", encoding="utf-8") as f:
+            endpoints = json.load(f)
         for partition in endpoints["partitions"]:
             regions = partition["regions"]
             for region in regions:

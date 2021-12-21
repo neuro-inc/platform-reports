@@ -7,18 +7,14 @@ import asyncio
 import json
 import logging
 import re
+from collections.abc import AsyncIterator, Awaitable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from importlib.resources import path
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Generic,
-    Optional,
-    TypeVar,
-)
+from typing import Any, Generic, Optional, TypeVar
 
 import aiohttp
 from aiobotocore.client import AioBaseClient

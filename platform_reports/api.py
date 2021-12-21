@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 import asyncio
 import logging
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
 from pathlib import Path

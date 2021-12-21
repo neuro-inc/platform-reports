@@ -4,6 +4,7 @@ from collections.abc import Sequence
 import enum
 import logging
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional

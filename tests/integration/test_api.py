@@ -4,6 +4,8 @@ from contextlib import AbstractAsyncContextManager
 from collections.abc import Callable
 import re
 import time
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import replace
 
 import aiohttp

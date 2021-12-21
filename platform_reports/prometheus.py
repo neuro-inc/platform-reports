@@ -6,6 +6,7 @@ import abc
 import enum
 import logging
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Optional, Union
 

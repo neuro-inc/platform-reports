@@ -9,12 +9,17 @@ from contextlib import AbstractAsyncContextManager
 from collections.abc import Sequence
 import asyncio
 import json
-from contextlib import asynccontextmanager, contextmanager, suppress
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
+from contextlib import (
+    AbstractAsyncContextManager,
+    AbstractContextManager,
+    asynccontextmanager,
+    contextmanager,
+    suppress,
+)
 from decimal import Decimal
 from pathlib import Path
-from typing import (
-    Any,
-)
+from typing import Any
 from unittest import mock
 
 import aiohttp
@@ -120,7 +125,9 @@ class TestConfigPriceCollector:
 
     async def test_get_latest_value(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[ConfigPriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[ConfigPriceCollector]
+        ],
     ) -> None:
         async with collector_factory("node-pool") as collector:
             result = await collector.get_latest_value()
@@ -129,7 +136,9 @@ class TestConfigPriceCollector:
 
     async def test_get_latest_value_unknown_node_pool(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[ConfigPriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[ConfigPriceCollector]
+        ],
     ) -> None:
         async with collector_factory("unknown-node-pool") as collector:
             result = await collector.get_latest_value()
@@ -937,7 +946,7 @@ class TestPodCreditsCollector:
 
     @pytest.fixture
     def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
-        def _create(**pod_labels: Dict[str, str]) -> mock.AsyncMock:
+        def _create(**pod_labels: dict[str, str]) -> mock.AsyncMock:
             async def get_pods(
                 namespace: str = "", field_selector: str = "", label_selector: str = ""
             ) -> Sequence[Pod]:
@@ -974,7 +983,7 @@ class TestPodCreditsCollector:
     ) -> Callable[..., PodCreditsCollector]:
         def _create(
             resource_presets: Sequence[ResourcePreset] = (),
-            **pod_labels: Dict[str, str]
+            **pod_labels: dict[str, str]
         ) -> PodCreditsCollector:
             config_client = config_client_factory(resource_presets)
             kube_client = kube_client_factory(**pod_labels)

@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from collections.abc import Callable
-from collections.abc import Mapping
-from collections.abc import AsyncIterator
-from collections.abc import Awaitable
 import asyncio
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
@@ -13,7 +8,6 @@ from decimal import Decimal
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
-from typing import Optional
 
 import aiobotocore.session
 import aiohttp

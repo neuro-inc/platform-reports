@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 import enum
 import functools
 import logging
@@ -9,7 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Awaitable, Callable, Optional, TypeVar, cast
+from typing import Any, Awaitable, Callable, TypeVar, cast
 
 import aiohttp
 from neuro_logging import trace
@@ -41,7 +40,7 @@ class Metadata:
     labels: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Metadata":
+    def from_payload(cls, payload: dict[str, Any]) -> Metadata:
         return cls(name=payload["name"], labels=payload.get("labels", {}))
 
 
@@ -50,7 +49,7 @@ class Node:
     metadata: Metadata
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Node":
+    def from_payload(cls, payload: dict[str, Any]) -> Node:
         return cls(metadata=Metadata.from_payload(payload["metadata"]))
 
 
@@ -67,7 +66,7 @@ class PodStatus:
     phase: PodPhase
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "PodStatus":
+    def from_payload(cls, payload: dict[str, Any]) -> PodStatus:
         return cls(phase=PodPhase(payload.get("phase", "Unknown")))
 
 
@@ -78,7 +77,7 @@ class Resources:
     gpu: int = 0
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Resources":
+    def from_payload(cls, payload: dict[str, Any]) -> Resources:
         return cls(
             cpu_m=cls._parse_cpu_m(payload.get("cpu", "0")),
             memory_mb=cls._parse_memory_mb(payload.get("memory", "0Mi")),
@@ -106,7 +105,7 @@ class Container:
     resource_requests: Resources = field(default_factory=Resources)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Container":
+    def from_payload(cls, payload: dict[str, Any]) -> Container:
         return cls(
             name=payload["name"],
             resource_requests=Resources.from_payload(
@@ -122,7 +121,7 @@ class Pod:
     containers: Sequence[Container]
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Pod":
+    def from_payload(cls, payload: dict[str, Any]) -> Pod:
         return cls(
             metadata=Metadata.from_payload(payload["metadata"]),
             status=PodStatus.from_payload(payload.get("status", {})),

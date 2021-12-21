@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from collections.abc import Sequence
 import logging
 from collections.abc import Iterable, Sequence
 

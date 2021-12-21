@@ -1,12 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
-from collections.abc import AsyncIterator
-from collections.abc import Callable
-from contextlib import AbstractContextManager
-from collections.abc import Awaitable
-from contextlib import AbstractAsyncContextManager
-from collections.abc import Sequence
 import asyncio
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
@@ -179,7 +172,9 @@ class TestAWSNodePriceCollector:
 
     async def test_get_latest_price_per_hour(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[AWSNodePriceCollector]
+        ],
         pricing_client: mock.AsyncMock,
     ) -> None:
         pricing_client.get_products.return_value = {
@@ -227,7 +222,9 @@ class TestAWSNodePriceCollector:
 
     async def test_get_latest_price_per_hour_with_multiple_prices(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[AWSNodePriceCollector]
+        ],
         pricing_client: mock.AsyncMock,
     ) -> None:
         price_item = {
@@ -254,7 +251,9 @@ class TestAWSNodePriceCollector:
 
     async def test_get_latest_price_per_hour_with_unsupported_currency(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[AWSNodePriceCollector]
+        ],
         pricing_client: mock.AsyncMock,
     ) -> None:
         pricing_client.get_products.return_value = {
@@ -284,7 +283,9 @@ class TestAWSNodePriceCollector:
 
     async def test_get_latest_spot_price_per_hour(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[AWSNodePriceCollector]
+        ],
         ec2_client: mock.AsyncMock,
     ) -> None:
         ec2_client.describe_spot_price_history.return_value = {
@@ -305,7 +306,9 @@ class TestAWSNodePriceCollector:
 
     async def test_get_latest_spot_price_per_hour_no_history(
         self,
-        collector_factory: Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]],
+        collector_factory: Callable[
+            ..., AbstractAsyncContextManager[AWSNodePriceCollector]
+        ],
         ec2_client: mock.AsyncMock,
     ) -> None:
         ec2_client.describe_spot_price_history.return_value = {"SpotPriceHistory": []}
@@ -547,42 +550,48 @@ class TestGCPNodePriceCollector:
         return _create
 
     async def test_get_latest_price_per_hour_cpu_instance(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory("n1-highmem-8", "n1-highmem-8") as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("0.473212"), currency="USD")
 
     async def test_get_latest_price_per_hour_cpu_instance_preemptible(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory("n1-highmem-8", "n1-highmem-8", True) as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("0.099624"), currency="USD")
 
     async def test_get_latest_price_per_hour_gpu_instance(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8") as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("2.273212"), currency="USD")
 
     async def test_get_latest_price_per_hour_gpu_instance_preemptible(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8", True) as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("0.639624"), currency="USD")
 
     async def test_get_latest_price_per_hour_unknown_instance_type(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory("n1-highmem-8", "unknown", True) as collector:
             with pytest.raises(AssertionError, match=r"Found prices only for: \[\]"):
                 await collector.get_latest_value()
 
     async def test_get_latest_price_per_hour_unknown_gpu(
-        self, collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]]
+        self,
+        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with collector_factory(
             "n1-highmem-8-1xv100", "n1-highmem-8", True

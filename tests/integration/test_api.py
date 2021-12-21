@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
-from collections.abc import Callable
 import re
 import time
 from collections.abc import Callable
@@ -43,7 +41,9 @@ kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
     async def test_node_and_pod_metrics(
         self,
         client: aiohttp.ClientSession,
-        metrics_server_factory: Callable[[MetricsConfig], AbstractAsyncContextManager[URL]],
+        metrics_server_factory: Callable[
+            [MetricsConfig], AbstractAsyncContextManager[URL]
+        ],
         metrics_config: MetricsConfig,
     ) -> None:
         metrics_config = replace(metrics_config, job_label="")

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from collections.abc import Callable
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine, Sequence
 from typing import Any
 
 import aiohttp

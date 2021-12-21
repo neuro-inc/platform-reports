@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
-from collections.abc import AsyncIterator
-from collections.abc import Awaitable
 import asyncio
 import json
 import logging
@@ -14,7 +11,7 @@ from decimal import Decimal
 from importlib.resources import path
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 import aiohttp
 from aiobotocore.client import AioBaseClient

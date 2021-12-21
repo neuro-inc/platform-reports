@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
-from collections.abc import AsyncIterator
-from collections.abc import Callable
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Coroutine,
-    Sequence,
-)
+from typing import Any, Coroutine, Sequence
 
 import aiohttp
 import pytest

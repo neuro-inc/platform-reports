@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 import enum
 import logging
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
 from yarl import URL

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from collections.abc import Mapping
 import abc
 import enum
 import logging
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from lark import Lark, Transformer, v_args
 from lark.exceptions import LarkError
@@ -133,9 +131,7 @@ def parse_query(query: str) -> Vector | None:
 
 
 class VectorTransformer(Transformer[Optional[Vector]]):
-    def __default__(
-        self, data: str, children: list[Any], meta: Meta
-    ) -> Vector | None:
+    def __default__(self, data: str, children: list[Any], meta: Meta) -> Vector | None:
         for child in children:
             if isinstance(child, Vector):
                 return child
@@ -182,9 +178,7 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             label_matchers=self._get_label_matchers(label_matchers),
         )
 
-    def instant_selector_without_metric(
-        self, children: list[str | Tree]
-    ) -> Vector:
+    def instant_selector_without_metric(self, children: list[str | Tree]) -> Vector:
         label_matchers: list[Tree] = []
         if children:
             label_matchers = children[0].children  # type: ignore

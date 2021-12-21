@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from collections.abc import Sequence
 import enum
 import functools
 import logging
@@ -9,11 +12,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Type,
     TypeVar,
     cast,
 )
@@ -45,10 +44,10 @@ def reconnect(func: T) -> T:
 @dataclass(frozen=True)
 class Metadata:
     name: str
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "Metadata":
+    def from_payload(cls, payload: dict[str, Any]) -> Metadata:
         return cls(name=payload["name"], labels=payload.get("labels", {}))
 
 
@@ -57,7 +56,7 @@ class Node:
     metadata: Metadata
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "Node":
+    def from_payload(cls, payload: dict[str, Any]) -> Node:
         return cls(metadata=Metadata.from_payload(payload["metadata"]))
 
 
@@ -74,7 +73,7 @@ class PodStatus:
     phase: PodPhase
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "PodStatus":
+    def from_payload(cls, payload: dict[str, Any]) -> PodStatus:
         return cls(phase=PodPhase(payload.get("phase", "Unknown")))
 
 
@@ -85,7 +84,7 @@ class Resources:
     gpu: int = 0
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "Resources":
+    def from_payload(cls, payload: dict[str, Any]) -> Resources:
         return cls(
             cpu_m=cls._parse_cpu_m(payload.get("cpu", "0")),
             memory_mb=cls._parse_memory_mb(payload.get("memory", "0Mi")),
@@ -113,7 +112,7 @@ class Container:
     resource_requests: Resources = field(default_factory=Resources)
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "Container":
+    def from_payload(cls, payload: dict[str, Any]) -> Container:
         return cls(
             name=payload["name"],
             resource_requests=Resources.from_payload(
@@ -129,7 +128,7 @@ class Pod:
     containers: Sequence[Container]
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> "Pod":
+    def from_payload(cls, payload: dict[str, Any]) -> Pod:
         return cls(
             metadata=Metadata.from_payload(payload["metadata"]),
             status=PodStatus.from_payload(payload.get("status", {})),
@@ -143,13 +142,13 @@ class KubeClient:
     def __init__(
         self,
         config: KubeConfig,
-        trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
+        trace_configs: list[aiohttp.TraceConfig] | None = None,
     ) -> None:
         self._config = config
         self._trace_configs = trace_configs
-        self._client: Optional[aiohttp.ClientSession] = None
+        self._client: aiohttp.ClientSession | None = None
 
-    def _create_ssl_context(self) -> Optional[ssl.SSLContext]:
+    def _create_ssl_context(self) -> ssl.SSLContext | None:
         if self._config.url.scheme != "https":
             return None
         ssl_context = ssl.create_default_context(
@@ -169,9 +168,9 @@ class KubeClient:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         await self.aclose()
 
@@ -224,7 +223,7 @@ class KubeClient:
         self, namespace: str = "", field_selector: str = "", label_selector: str = ""
     ) -> Sequence[Pod]:
         assert self._client
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if field_selector:
             params["fieldSelector"] = field_selector
         if label_selector:

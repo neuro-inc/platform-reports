@@ -1,4 +1,9 @@
-from typing import Any, Callable, Coroutine, Sequence
+from __future__ import annotations
+
+from collections.abc import Sequence
+from collections.abc import Callable
+from collections.abc import Coroutine
+from typing import Any
 
 import aiohttp
 import pytest

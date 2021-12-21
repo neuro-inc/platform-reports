@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+from contextlib import AbstractAsyncContextManager
+from collections.abc import AsyncIterator
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import (
     Any,
-    AsyncContextManager,
-    AsyncIterator,
-    Callable,
     Coroutine,
     Sequence,
 )
@@ -163,7 +165,7 @@ def metrics_config(
 
 @pytest.fixture
 async def metrics_server_factory() -> Callable[
-    [MetricsConfig], AsyncContextManager[URL]
+    [MetricsConfig], AbstractAsyncContextManager[URL]
 ]:
     @asynccontextmanager
     async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
@@ -182,7 +184,7 @@ async def metrics_server_factory() -> Callable[
 
 @pytest.fixture
 async def metrics_server(
-    metrics_server_factory: Callable[[MetricsConfig], AsyncContextManager[URL]],
+    metrics_server_factory: Callable[[MetricsConfig], AbstractAsyncContextManager[URL]],
     metrics_config: MetricsConfig,
 ) -> AsyncIterator[URL]:
     async with metrics_server_factory(metrics_config) as server:

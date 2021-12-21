@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Callable, Dict, Sequence
 from unittest import mock
 
 import pytest
@@ -67,7 +70,7 @@ class TestDashboards:
         self,
         auth_service: AuthService,
         auth_client: mock.AsyncMock,
-        admin_dashboards_expressions: Dict[str, Sequence[str]],
+        admin_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]
@@ -90,7 +93,7 @@ class TestDashboards:
         self,
         auth_service: AuthService,
         auth_client: mock.AsyncMock,
-        user_dashboards_expressions: Dict[str, Sequence[str]],
+        user_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]

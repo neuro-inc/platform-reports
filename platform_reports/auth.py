@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+from collections.abc import Sequence
 import logging
-from typing import Dict, Iterable, List, Sequence
 
 from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
@@ -122,7 +125,7 @@ class AuthService:
         return await self.check_permissions(user_name, permissions)
 
     def _parse_queries(self, queries: Sequence[str]) -> Sequence[Vector]:
-        result: List[Vector] = []
+        result: list[Vector] = []
         for query in queries:
             vector = parse_query(query)
             if vector:
@@ -143,12 +146,12 @@ class PermissionsService:
     def __init__(self, api_client: ApiClient, cluster_name: str) -> None:
         self._api_client = api_client
         self._cluster_name = cluster_name
-        self._job_permissions: Dict[str, Permission] = {}
+        self._job_permissions: dict[str, Permission] = {}
 
     async def get_vector_permissions(
         self, user_name: str, vectors: Sequence[Vector]
     ) -> Sequence[Permission]:
-        permissions: List[Permission] = []
+        permissions: list[Permission] = []
         for vector in vectors:
             permissions.extend(
                 self._get_strongest_permissions(
@@ -180,7 +183,7 @@ class PermissionsService:
 
     def _get_node_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
-    ) -> List[Permission]:
+    ) -> list[Permission]:
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("node-exporter"):
                 return [
@@ -195,9 +198,9 @@ class PermissionsService:
 
     async def _get_kube_state_metrics_permissions(
         self, user_name: str, metrics: Sequence[Metric]
-    ) -> List[Permission]:
-        permissions: List[Permission] = []
-        platform_job_ids: List[str] = []
+    ) -> list[Permission]:
+        permissions: list[Permission] = []
+        platform_job_ids: list[str] = []
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("kube-state-metrics"):
@@ -222,8 +225,8 @@ class PermissionsService:
 
     async def _get_kubelet_permissions(
         self, user_name: str, metrics: Sequence[Metric]
-    ) -> List[Permission]:
-        platform_job_ids: List[str] = []
+    ) -> list[Permission]:
+        platform_job_ids: list[str] = []
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("kubelet"):
@@ -238,8 +241,8 @@ class PermissionsService:
 
     async def _get_nvidia_dcgm_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
-    ) -> List[Permission]:
-        platform_job_ids: List[str] = []
+    ) -> list[Permission]:
+        platform_job_ids: list[str] = []
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("nvidia-dcgm-exporter"):
@@ -254,8 +257,8 @@ class PermissionsService:
 
     async def _get_neuro_metrics_exporter_permissions(
         self, user_name: str, metrics: Sequence[Metric]
-    ) -> List[Permission]:
-        platform_job_ids: List[str] = []
+    ) -> list[Permission]:
+        platform_job_ids: list[str] = []
 
         for metric in metrics:
             if metric.label_matchers[JOB_MATCHER].matches("neuro-metrics-exporter"):
@@ -286,7 +289,7 @@ class PermissionsService:
     def _get_strongest_permissions(
         self, permissions: Sequence[Permission]
     ) -> Sequence[Permission]:
-        result: List[Permission] = []
+        result: list[Permission] = []
         permissions = sorted(permissions, key=lambda p: p.uri)
         i = 0
         while i < len(permissions):
@@ -300,7 +303,7 @@ class PermissionsService:
     def _get_weakest_permissions(
         self, permissions: Sequence[Permission]
     ) -> Sequence[Permission]:
-        result: List[Permission] = []
+        result: list[Permission] = []
         permissions = sorted(permissions, key=lambda p: p.uri, reverse=True)
         i = 0
         while i < len(permissions):
@@ -321,8 +324,8 @@ class PermissionsService:
 
     async def get_job_permissions(
         self, job_ids: Sequence[str], action: str = "read"
-    ) -> List[Permission]:
-        result: List[Permission] = []
+    ) -> list[Permission]:
+        result: list[Permission] = []
 
         for job_id in set(job_ids):
             if not job_id:

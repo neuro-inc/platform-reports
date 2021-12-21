@@ -1,5 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import replace
-from typing import Dict, Sequence
 
 import pytest
 
@@ -14,7 +16,7 @@ from platform_reports.prometheus import (
 
 class TestDashboards:
     def test_all_dashboards_expressions(
-        self, dashboards_expressions: Dict[str, Sequence[str]]
+        self, dashboards_expressions: dict[str, Sequence[str]]
     ) -> None:
         for key, exprs in dashboards_expressions.items():
             for expr in exprs:

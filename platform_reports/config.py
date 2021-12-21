@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import enum
 import logging
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional, Sequence
 
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
 from yarl import URL
@@ -21,13 +23,13 @@ class KubeClientAuthType(enum.Enum):
 @dataclass(frozen=True)
 class KubeConfig:
     url: URL
-    cert_authority_path: Optional[str] = None
-    cert_authority_data_pem: Optional[str] = None
+    cert_authority_path: str | None = None
+    cert_authority_data_pem: str | None = None
     auth_type: KubeClientAuthType = KubeClientAuthType.NONE
-    client_cert_path: Optional[str] = None
-    client_key_path: Optional[str] = None
-    token: Optional[str] = None
-    token_path: Optional[str] = None
+    client_cert_path: str | None = None
+    client_key_path: str | None = None
+    token: str | None = None
+    token_path: str | None = None
     conn_timeout_s: int = 300
     read_timeout_s: int = 100
     conn_pool_size: int = 100
@@ -43,7 +45,7 @@ class ServerConfig:
 
 @dataclass(frozen=True)
 class PlatformAuthConfig:
-    url: Optional[URL]
+    url: URL | None
     token: str = field(repr=False)
 
 
@@ -77,7 +79,7 @@ class MetricsConfig:
     node_name: str
     cloud_provider: str = ""
     region: str = ""
-    gcp_service_account_key_path: Optional[Path] = None
+    gcp_service_account_key_path: Path | None = None
     azure_prices_url: URL = URL("https://prices.azure.com")
     jobs_namespace: str = ""
     node_pool_label: str = "platform.neuromation.io/nodepool"
@@ -85,8 +87,8 @@ class MetricsConfig:
     job_label: str = "platform.neuromation.io/job"
     preset_label: str = "platform.neuromation.io/preset"
 
-    zipkin: Optional[ZipkinConfig] = None
-    sentry: Optional[SentryConfig] = None
+    zipkin: ZipkinConfig | None = None
+    sentry: SentryConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -99,8 +101,8 @@ class PrometheusProxyConfig:
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
 
-    zipkin: Optional[ZipkinConfig] = None
-    sentry: Optional[SentryConfig] = None
+    zipkin: ZipkinConfig | None = None
+    sentry: SentryConfig | None = None
 
 
 @dataclass(frozen=True)
@@ -113,15 +115,15 @@ class GrafanaProxyConfig:
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
 
-    zipkin: Optional[ZipkinConfig] = None
-    sentry: Optional[SentryConfig] = None
+    zipkin: ZipkinConfig | None = None
+    sentry: SentryConfig | None = None
 
 
 class EnvironConfigFactory:
-    def __init__(self, environ: Optional[Dict[str, str]] = None) -> None:
+    def __init__(self, environ: dict[str, str] | None = None) -> None:
         self._environ = environ or os.environ
 
-    def _get_url(self, name: str) -> Optional[URL]:
+    def _get_url(self, name: str) -> URL | None:
         value = self._environ[name]
         if value == "-":
             return None
@@ -265,7 +267,7 @@ class EnvironConfigFactory:
             ),
         )
 
-    def create_zipkin(self, default_app_name: str) -> Optional[ZipkinConfig]:
+    def create_zipkin(self, default_app_name: str) -> ZipkinConfig | None:
         if "NP_ZIPKIN_URL" not in self._environ:
             return None
 
@@ -276,7 +278,7 @@ class EnvironConfigFactory:
         )
         return ZipkinConfig(url=url, app_name=app_name, sample_rate=sample_rate)
 
-    def create_sentry(self, default_app_name: str) -> Optional[SentryConfig]:
+    def create_sentry(self, default_app_name: str) -> SentryConfig | None:
         if "NP_SENTRY_DSN" not in self._environ:
             return None
 

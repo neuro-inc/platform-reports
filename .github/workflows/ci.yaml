@@ -30,12 +30,12 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8.5
+        python-version: 3.9.9
     - name: Cache packages
       uses: actions/cache@v2.1.7
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-py-3.8-${{ hashFiles('pyproject.toml', 'setup.cfg')
+        key: ${{ runner.os }}-py-3.9.9-${{ hashFiles('pyproject.toml', 'setup.cfg')
           }}
     - name: Install dependencies
       run: make setup
@@ -89,7 +89,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8.5
+        python-version: 3.9.9
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:

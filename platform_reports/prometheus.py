@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import abc
 import enum
 import logging
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from typing import Any, Optional
 
 from lark import Lark, Transformer, v_args
 from lark.exceptions import LarkError
@@ -50,19 +53,19 @@ class LabelMatcher:
         return False
 
     @classmethod
-    def equal(cls, name: str, value: str) -> "LabelMatcher":
+    def equal(cls, name: str, value: str) -> LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.EQ)
 
     @classmethod
-    def not_equal(cls, name: str, value: str) -> "LabelMatcher":
+    def not_equal(cls, name: str, value: str) -> LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.NE)
 
     @classmethod
-    def regex(cls, name: str, value: str) -> "LabelMatcher":
+    def regex(cls, name: str, value: str) -> LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.RE)
 
     @classmethod
-    def not_regex(cls, name: str, value: str) -> "LabelMatcher":
+    def not_regex(cls, name: str, value: str) -> LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.NRE)
 
 
@@ -117,7 +120,7 @@ class Metric(Vector):
         return list(labels)
 
 
-def parse_query(query: str) -> Optional[Vector]:
+def parse_query(query: str) -> Vector | None:
     try:
         ast = promql_parser.parse(query)
     except LarkError as ex:
@@ -128,9 +131,7 @@ def parse_query(query: str) -> Optional[Vector]:
 
 
 class VectorTransformer(Transformer[Optional[Vector]]):
-    def __default__(
-        self, data: str, children: List[Any], meta: Meta
-    ) -> Optional[Vector]:
+    def __default__(self, data: str, children: list[Any], meta: Meta) -> Vector | None:
         for child in children:
             if isinstance(child, Vector):
                 return child
@@ -168,8 +169,8 @@ class VectorTransformer(Transformer[Optional[Vector]]):
     def label_name_list(self, tree: Tree) -> Tree:
         return tree
 
-    def instant_selector_with_metric(self, children: List[Union[str, Tree]]) -> Vector:
-        label_matchers: List[Tree] = []
+    def instant_selector_with_metric(self, children: list[str | Tree]) -> Vector:
+        label_matchers: list[Tree] = []
         if len(children) > 1:
             label_matchers = children[1].children  # type: ignore
         return Metric(
@@ -177,36 +178,34 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             label_matchers=self._get_label_matchers(label_matchers),
         )
 
-    def instant_selector_without_metric(
-        self, children: List[Union[str, Tree]]
-    ) -> Vector:
-        label_matchers: List[Tree] = []
+    def instant_selector_without_metric(self, children: list[str | Tree]) -> Vector:
+        label_matchers: list[Tree] = []
         if children:
             label_matchers = children[0].children  # type: ignore
         return Metric(name="", label_matchers=self._get_label_matchers(label_matchers))
 
-    def or_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def or_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
-    def and_unless_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def and_unless_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
-    def comparison_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def comparison_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
-    def sum_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def sum_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
-    def product_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def product_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
-    def power_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
+    def power_join(self, children: list[str | Tree]) -> Vector | None:
         return self._get_join(children)
 
     def _get_label_matchers(
-        self, label_matchers: List[Tree]
-    ) -> Dict[str, LabelMatcher]:
-        result: Dict[str, LabelMatcher] = {}
+        self, label_matchers: list[Tree]
+    ) -> dict[str, LabelMatcher]:
+        result: dict[str, LabelMatcher] = {}
         for label_matcher in label_matchers:
             name = label_matcher.children[0].value  # type: ignore
             result[name] = LabelMatcher(
@@ -218,8 +217,8 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             )
         return result
 
-    def _get_join(self, children: List[Union[str, Tree]]) -> Optional[Vector]:
-        vectors: List[Vector] = []
+    def _get_join(self, children: list[str | Tree]) -> Vector | None:
+        vectors: list[Vector] = []
         for child in children:
             if isinstance(child, Vector):
                 vectors.append(child)
@@ -229,7 +228,7 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             raise PromQLException("Operation has invalid number of arguments")
         if len(vectors) == 1:
             return vectors[0]
-        grouping: Optional[Tree] = None
+        grouping: Tree | None = None
         if len(children) > 3:
             grouping = children[2]  # type: ignore
         assert not grouping or isinstance(grouping, Tree)
@@ -241,7 +240,7 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             ignoring=self._get_ignoring_labels(grouping),
         )
 
-    def _get_on_labels(self, grouping: Optional[Tree]) -> Sequence[str]:
+    def _get_on_labels(self, grouping: Tree | None) -> Sequence[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "on":  # type: ignore
@@ -250,7 +249,7 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             )
         return []
 
-    def _get_ignoring_labels(self, grouping: Optional[Tree]) -> Sequence[str]:
+    def _get_ignoring_labels(self, grouping: Tree | None) -> Sequence[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "ignoring":  # type: ignore
@@ -259,8 +258,8 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             )
         return []
 
-    def _get_labels(self, labels: List[Union[str, Tree]]) -> Sequence[str]:
-        result: List[str] = []
+    def _get_labels(self, labels: list[str | Tree]) -> Sequence[str]:
+        result: list[str] = []
         for label_name in labels:
             result.append(label_name.value)  # type: ignore
         return result

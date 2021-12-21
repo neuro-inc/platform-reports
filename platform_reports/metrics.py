@@ -1,24 +1,17 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 import re
+from collections.abc import AsyncIterator, Awaitable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from importlib.resources import path
+from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Dict,
-    Generic,
-    Mapping,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import Any, Generic, TypeVar
 
 import aiohttp
 from aiobotocore.client import AioBaseClient
@@ -93,9 +86,9 @@ class Collector(Generic[_TValue]):
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         pass
 
@@ -161,13 +154,13 @@ class AWSNodePriceCollector(Collector[Price]):
         return self
 
     # The pricing API requires human readable names for some reason
-    def _get_region_long_names(self) -> Dict[str, str]:
-        result: Dict[str, str] = {}
+    def _get_region_long_names(self) -> dict[str, str]:
+        result: dict[str, str] = {}
         # https://github.com/boto/botocore/blob/master/botocore/data/endpoints.json
-        with path("botocore", "data") as data_path:
-            endpoints_path = data_path / "endpoints.json"
-            with endpoints_path.open("r", encoding="utf-8") as f:
-                endpoints = json.load(f)
+        root = files("botocore")
+        endpoints_path = root / "data/endpoints.json"
+        with endpoints_path.open("r", encoding="utf-8") as f:
+            endpoints = json.load(f)
         for partition in endpoints["partitions"]:
             regions = partition["regions"]
             for region in regions:
@@ -215,7 +208,7 @@ class AWSNodePriceCollector(Collector[Price]):
         )
         return Price()
 
-    def _create_filter(self, field: str, value: str) -> Dict[str, str]:
+    def _create_filter(self, field: str, value: str) -> dict[str, str]:
         return {"Type": "TERM_MATCH", "Field": field, "Value": value}
 
     async def _get_latest_spot_price(self) -> Price:
@@ -357,7 +350,7 @@ class GCPNodePriceCollector(Collector[Price]):
     async def _get_instance_price_per_hour(
         self, cpu: float, memory_mb: int, gpu: int, gpu_model: str
     ) -> Price:
-        prices_in_nanos: Dict[str, Decimal] = {}
+        prices_in_nanos: dict[str, Decimal] = {}
         expected_prices_count = bool(cpu) + bool(memory_mb) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
         async for sku in self._get_service_skus():
@@ -400,8 +393,8 @@ class GCPNodePriceCollector(Collector[Price]):
             value=sum(prices_in_nanos.values(), Decimal()) / 10 ** 9, currency="USD"
         )
 
-    async def _get_service_skus(self) -> AsyncIterator[Dict[str, Any]]:
-        next_page_token: Optional[str] = ""
+    async def _get_service_skus(self) -> AsyncIterator[dict[str, Any]]:
+        next_page_token: str | None = ""
         while next_page_token is not None:
             async with trace_cm(name="list_service_skus"):
                 response = await self._loop.run_in_executor(
@@ -428,7 +421,7 @@ class GCPNodePriceCollector(Collector[Price]):
         )
         return request.execute()
 
-    def _get_price_in_nanos(self, sku: Dict[str, Any]) -> Decimal:
+    def _get_price_in_nanos(self, sku: dict[str, Any]) -> Decimal:
         # PricingInfo can contain multiple objects. Each corresponds to separate
         # time interval. But as long as we don't provide time constraints
         # in Google API query we will receive only latest value.
@@ -491,7 +484,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
                 "Node resources are not detected, check service configuration"
             )
         logger.debug("Node resources: %s", node_resources)
-        result: Dict[str, Price] = {}
+        result: dict[str, Price] = {}
         for pod in pods:
             pod_resources = self._get_pod_resources(pod)
             logger.debug("Pod %s resources: %s", pod.metadata.name, pod_resources)
@@ -592,7 +585,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.orchestrator is not None
         resource_presets = {p.name: p for p in cluster.orchestrator.resource_presets}
-        result: Dict[str, Decimal] = {}
+        result: dict[str, Decimal] = {}
         for pod in pods:
             logger.debug("Checking pod %r credits per hour", pod.metadata.name)
             preset_name = pod.metadata.labels.get(self._preset_label)

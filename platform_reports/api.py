@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import logging
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
+from importlib.metadata import version
 from pathlib import Path
 from tempfile import mktemp
 from textwrap import dedent
-from typing import AsyncIterator, Awaitable, Callable, List, Mapping, Optional, Sequence
 
 import aiobotocore.session
 import aiohttp
 import aiohttp.web
-import pkg_resources
 from aiohttp.web import (
     HTTPBadRequest,
     HTTPForbidden,
@@ -69,7 +71,7 @@ class ProbesHandler:
     def __init__(self, app: aiohttp.web.Application) -> None:
         self._app = app
 
-    def register(self) -> List[AbstractRoute]:
+    def register(self) -> list[AbstractRoute]:
         return self._app.router.add_routes([aiohttp.web.get("/ping", self.handle_ping)])
 
     @notrace
@@ -121,7 +123,7 @@ class MetricsHandler:
         pod_prices_per_hour = self._pod_price_collector.current_value
         if not pod_prices_per_hour:
             return ""
-        metrics: List[str] = [
+        metrics: list[str] = [
             dedent(
                 """\
                 # HELP kube_pod_price_per_hour The price of the pod per hour.
@@ -138,7 +140,7 @@ class MetricsHandler:
         pod_credits_per_hour = self._pod_credits_collector.current_value
         if not pod_credits_per_hour:
             return ""
-        metrics: List[str] = [
+        metrics: list[str] = [
             dedent(
                 """\
                 # HELP kube_pod_credits_per_hour The credits of the pod per hour.
@@ -364,7 +366,7 @@ async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
 
 @asynccontextmanager
 async def create_api_client(
-    config: PlatformServiceConfig, trace_configs: List[aiohttp.TraceConfig]
+    config: PlatformServiceConfig, trace_configs: list[aiohttp.TraceConfig]
 ) -> AsyncIterator[ApiClient]:
     tmp_config = Path(mktemp())
     platform_api_factory = ClientFactory(tmp_config, trace_configs=trace_configs)
@@ -386,7 +388,7 @@ def get_aws_pricing_api_region(region: str) -> str:
     return "us-east-1"
 
 
-package_version = pkg_resources.get_distribution("platform-reports").version
+package_version = version(__package__)
 
 
 async def add_version_to_header(request: Request, response: StreamResponse) -> None:
@@ -662,13 +664,13 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
     return app
 
 
-def make_logging_trace_configs() -> List[aiohttp.TraceConfig]:
+def make_logging_trace_configs() -> list[aiohttp.TraceConfig]:
     return [make_request_logging_trace_config()]
 
 
 def make_tracing_trace_configs(
-    zipkin: Optional[ZipkinConfig], sentry: Optional[SentryConfig]
-) -> List[aiohttp.TraceConfig]:
+    zipkin: ZipkinConfig | None, sentry: SentryConfig | None
+) -> list[aiohttp.TraceConfig]:
     trace_configs = []
 
     if zipkin:
@@ -681,7 +683,7 @@ def make_tracing_trace_configs(
 
 
 def setup_tracing(
-    server: ServerConfig, zipkin: Optional[ZipkinConfig], sentry: Optional[SentryConfig]
+    server: ServerConfig, zipkin: ZipkinConfig | None, sentry: SentryConfig | None
 ) -> None:  # pragma: no coverage
     if zipkin:
         setup_zipkin_tracer(

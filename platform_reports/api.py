@@ -63,7 +63,6 @@ from .metrics import (
     Price,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

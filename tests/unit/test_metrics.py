@@ -992,7 +992,7 @@ class TestPodCreditsCollector:
     ) -> Callable[..., PodCreditsCollector]:
         def _create(
             resource_presets: Sequence[ResourcePreset] = (),
-            **pod_labels: dict[str, str]
+            **pod_labels: dict[str, str],
         ) -> PodCreditsCollector:
             config_client = config_client_factory(resource_presets)
             kube_client = kube_client_factory(**pod_labels)

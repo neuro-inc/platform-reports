@@ -23,7 +23,6 @@ from yarl import URL
 
 from .kube_client import KubeClient, Pod, Resources
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -9,7 +9,6 @@ from neuro_sdk import Client as ApiClient
 
 from .prometheus import Join, LabelMatcherOperator, Metric, Vector, parse_query
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -10,7 +10,6 @@ from pathlib import Path
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
 from yarl import URL
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -180,9 +179,9 @@ class EnvironConfigFactory:
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
-            access_token_cookie_names=(
-                self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"].split(",")
-            ),
+            access_token_cookie_names=self._environ[
+                "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
+            ].split(","),
             zipkin=self.create_zipkin(default_app_name="platform-prometheus-proxy"),
             sentry=self.create_sentry(default_app_name="platform-prometheus-proxy"),
         )
@@ -194,9 +193,9 @@ class EnvironConfigFactory:
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
-            access_token_cookie_names=(
-                self._environ["NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"].split(",")
-            ),
+            access_token_cookie_names=self._environ[
+                "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
+            ].split(","),
             zipkin=self.create_zipkin(default_app_name="platform-grafana-proxy"),
             sentry=self.create_sentry(default_app_name="platform-grafana-proxy"),
         )

@@ -14,7 +14,6 @@ from lark.tree import Meta, Tree
 
 from .prometheus_grammars import PROMQL
 
-
 logger = logging.getLogger(__name__)
 
 

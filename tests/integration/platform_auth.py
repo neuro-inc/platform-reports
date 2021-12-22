@@ -9,7 +9,6 @@ from jose import jwt
 from neuro_auth_client import AuthClient, Cluster, Permission, User
 from yarl import URL
 
-
 _JWT_SECRET = "secret"
 
 

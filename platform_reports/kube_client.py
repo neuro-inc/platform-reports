@@ -16,7 +16,6 @@ from yarl import URL
 
 from .config import KubeClientAuthType, KubeConfig
 
-
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Callable[..., Awaitable[Any]])

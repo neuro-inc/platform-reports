@@ -226,33 +226,27 @@ kube-prometheus-stack:
   prometheusOperator:
     image:
       repository: quay.io/coreos/prometheus-operator
-      tag: v0.38.2
 
     podLabels:
       service: prometheus-operator
 
     prometheusConfigReloaderImage:
       repository: quay.io/coreos/prometheus-config-reloader
-      tag: v0.38.2
 
     configmapReloadImage:
       repository: docker.io/jimmidyson/configmap-reload
-      tag: v0.4.0
 
     kubectlImage:
       repository: docker.io/bitnami/kubectl
-      tag: 1.16.15
 
     tlsProxy:
       image:
         repository: squareup/ghostunnel
-        tag: v1.5.2
 
     admissionWebhooks:
       patch:
         image:
           repository: jettech/kube-webhook-certgen
-          tag: v1.2.1
 
     createCustomResource: false
     cleanupCustomResource: false
@@ -269,7 +263,6 @@ kube-prometheus-stack:
     prometheusSpec:
       image:
         repository: quay.io/prometheus/prometheus
-        tag: v2.21.0
 
       podMetadata:
         labels:
@@ -305,7 +298,6 @@ thanos:
 
   image:
     repository: quay.io/thanos/thanos
-    tag: v0.14.0
 
   store:
     strategy:
@@ -376,7 +368,6 @@ grafana:
 
   image:
     repository: grafana/grafana
-    tag: 7.2.1
 
   podLabels:
     service: grafana
@@ -394,7 +385,6 @@ grafana:
   sidecar:
     image:
       repository: kiwigrid/k8s-sidecar
-      tag: 1.1.0
 
     datasources:
       enabled: false

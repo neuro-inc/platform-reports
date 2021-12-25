@@ -298,6 +298,7 @@ thanos:
 
   image:
     repository: quay.io/thanos/thanos
+    tag: v0.14.0 # thanos v0.13.0 is broken, pin v0.14.0
 
   store:
     strategy:

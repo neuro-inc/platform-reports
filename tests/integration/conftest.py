@@ -69,7 +69,7 @@ async def cluster_admin_token(
         "cluster-admin",
         [Cluster(name="default")],
         [
-            Permission(uri="cluster://default/admin", action="manage"),
+            Permission(uri="role://default/manager", action="manage"),
             Permission(uri="job://default", action="manage"),
         ],
     )

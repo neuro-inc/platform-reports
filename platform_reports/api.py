@@ -192,13 +192,9 @@ class PrometheusProxyHandler:
                 user_name,
                 [
                     Permission(
-                        uri=(
-                            f"cluster://{self._config.cluster_name}"
-                            "/admin/cloud_provider/infra"
-                        ),
+                        uri=f"role://{self._config.cluster_name}/manager",
                         action="read",
                     ),
-                    Permission(uri=f"job://{self._config.cluster_name}", action="read"),
                 ],
             ):
                 return Response(status=HTTPForbidden.status_code)

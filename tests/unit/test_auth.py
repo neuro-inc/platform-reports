@@ -19,6 +19,8 @@ from platform_reports.auth import (
     AuthService,
 )
 
+JOB_ID = "job-00000000-0000-0000-0000-000000000000"
+
 
 @pytest.fixture
 def job_factory() -> Callable[[str], Job]:
@@ -74,11 +76,7 @@ class TestDashboards:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
-            assert all(
-                p.uri
-                in ("cluster://default/admin/cloud_provider/infra", "job://default")
-                for p in permissions
-            )
+            assert all(p.uri in ("role://default/manager",) for p in permissions)
             return []
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
@@ -117,11 +115,11 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         result = await service.check_permissions(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
         assert result is True
 
@@ -130,15 +128,15 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         auth_client.get_missing_permissions.return_value = [
-            Permission(uri="job://default", action="read")
+            Permission(uri="role://default/manager", action="read")
         ]
 
         result = await service.check_permissions(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
         assert result is False
 
@@ -152,11 +150,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [
-                Permission(
-                    uri="cluster://default/admin/cloud_provider/infra", action="read"
-                )
-            ],
+            [Permission(uri="role://default/manager", action="read")],
         )
 
     @pytest.mark.asyncio
@@ -168,7 +162,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -189,13 +183,16 @@ class TestAuthService:
         api_client: mock.AsyncMock,
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", JOB_DASHBOARD_ID, MultiDict({"var-job_id": "job"})
+            "user",
+            JOB_DASHBOARD_ID,
+            MultiDict({"var-job_id": JOB_ID}),
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_user_jobs_dashboard_without_user_name_permissions(
@@ -233,7 +230,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -246,11 +243,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [
-                Permission(
-                    uri="cluster://default/admin/cloud_provider/infra", action="read"
-                )
-            ],
+            [Permission(uri="role://default/manager", action="read")],
         )
 
     @pytest.mark.asyncio
@@ -262,7 +255,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -275,7 +268,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -288,7 +281,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -300,13 +293,29 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            queries=["kube_pod_labels{job='kube-state-metrics',pod='job'}"],
+            queries=[f"kube_pod_labels{{job='kube-state-metrics',pod='{JOB_ID}'}}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+
+    @pytest.mark.asyncio
+    async def test_check_kube_state_metrics_query_with_service_pod_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                "kube_pod_labels{job='kube-state-metrics',service='platform-storage'}"
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="role://default/manager", action="read")]
+        )
 
     @pytest.mark.asyncio
     async def test_check_kubelet_query_without_pod_permissions(
@@ -318,7 +327,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -331,7 +340,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -344,7 +353,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -356,13 +365,37 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            queries=["container_cpu_usage_seconds_total{job='kubelet',pod='job'}"],
+            queries=[
+                f"container_cpu_usage_seconds_total{{job='kubelet',pod='{JOB_ID}'}}"
+            ],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+
+    @pytest.mark.asyncio
+    async def test_check_kubelet_query_with_service_pod_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """container_cpu_usage_seconds_total{
+                    job='kubelet',
+                    pod='platform-service'
+                }"""
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user",
+            [Permission(uri="role://default/manager", action="read")],
+        )
 
     @pytest.mark.asyncio
     async def test_check_nvidia_dcgm_exporter_query_without_pod_permissions(
@@ -373,7 +406,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -386,7 +419,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -399,7 +432,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -411,13 +444,14 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            queries=["DCGM_FI_DEV_COUNT{job='nvidia-dcgm-exporter',pod='job'}"],
+            queries=[f"DCGM_FI_DEV_COUNT{{job='nvidia-dcgm-exporter',pod='{JOB_ID}'}}"],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_neuro_metrics_exporter_query_without_pod_permissions(
@@ -429,7 +463,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -442,7 +476,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -455,7 +489,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -467,18 +501,22 @@ class TestAuthService:
     ) -> None:
         await service.check_query_permissions(
             user_name="user",
-            queries=["DCGM_FI_DEV_COUNT{job='neuro-metrics-exporter',pod='job'}"],
+            queries=[
+                f"DCGM_FI_DEV_COUNT{{job='neuro-metrics-exporter',pod='{JOB_ID}'}}"
+            ],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_without_job_matcher(self, service: AuthService) -> None:
         result = await service.check_query_permissions(
-            user_name="user", queries=["container_cpu_usage_seconds_total{pod='job'}"]
+            user_name="user",
+            queries=[f"container_cpu_usage_seconds_total{{pod='{JOB_ID}'}}"],
         )
 
         assert result is False
@@ -493,18 +531,19 @@ class TestAuthService:
         await service.check_query_permissions(
             user_name="user",
             queries=[
-                """
-                kube_pod_labels{job='kube-state-metrics'}
+                f"""
+                kube_pod_labels{{job='kube-state-metrics'}}
                 * on(pod)
-                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                container_cpu_usage_seconds_total{{job='kubelet',pod='{JOB_ID}'}}
                 """
             ],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_ignoring_join_for_all_jobs_permissions(
@@ -516,18 +555,18 @@ class TestAuthService:
         await service.check_query_permissions(
             user_name="user",
             queries=[
-                """
-                kube_pod_labels{job='kube-state-metrics'}
+                f"""
+                kube_pod_labels{{job='kube-state-metrics'}}
                 * ignoring(node)
-                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                container_cpu_usage_seconds_total{{job='kubelet',pod='{JOB_ID}'}}
                 """
             ],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_join_platform_api_called_once(
@@ -539,18 +578,19 @@ class TestAuthService:
         await service.check_query_permissions(
             user_name="user",
             queries=[
-                """
-                kube_pod_labels{job='kube-state-metrics',pod='job'}
+                f"""
+                kube_pod_labels{{job='kube-state-metrics',pod='{JOB_ID}'}}
                 * on(pod)
-                container_cpu_usage_seconds_total{job='kubelet',pod='job'}
+                container_cpu_usage_seconds_total{{job='kubelet',pod='{JOB_ID}'}}
                 """
             ],
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user/job", action="read")]
+            "user",
+            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with("job")
+        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
     @pytest.mark.asyncio
     async def test_check_join_for_user_jobs_permissions(
@@ -587,7 +627,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -611,7 +651,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
     @pytest.mark.asyncio
@@ -630,5 +670,5 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )

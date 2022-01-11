@@ -286,8 +286,8 @@ kube-prometheus-stack:
                 storage: 10Gi
       # thanos sidecar
       thanos:
-        image: quay.io/thanos/thanos:v0.14.0
-        version: v0.14.0
+        image: quay.io/thanos/thanos:v0.24.0
+        version: v0.24.0
 
   grafana:
     enabled: false
@@ -298,7 +298,7 @@ thanos:
 
   image:
     repository: quay.io/thanos/thanos
-    tag: v0.14.0 # thanos v0.13.0 is broken, pin v0.14.0
+    tag: v0.24.0
 
   store:
     strategy:
@@ -411,6 +411,7 @@ grafana:
           type: file
           disableDeletion: false
           allowUiUpdates: true
+          editable: true
           options:
             path: /etc/grafana/dashboards/platform
             foldersFromFilesStructure: true

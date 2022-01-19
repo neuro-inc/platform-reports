@@ -15,14 +15,12 @@ from platform_reports.config import MetricsConfig
 
 
 class TestMetrics:
-    @pytest.mark.asyncio
     async def test_ping(
         self, client: aiohttp.ClientSession, metrics_server: URL
     ) -> None:
         async with client.get(metrics_server / "ping") as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_node_metrics(
         self, client: aiohttp.ClientSession, metrics_server: URL
     ) -> None:
@@ -37,7 +35,6 @@ class TestMetrics:
 kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
             )
 
-    @pytest.mark.asyncio
     async def test_node_and_pod_metrics(
         self,
         client: aiohttp.ClientSession,
@@ -64,14 +61,12 @@ kube_node_price_per_hour\{node="minikube",currency="USD"\} 0(\.0+)?
 
 
 class TestPrometheusProxy:
-    @pytest.mark.asyncio
     async def test_ping(
         self, client: aiohttp.ClientSession, prometheus_proxy_server: URL
     ) -> None:
         async with client.get(prometheus_proxy_server / "api/v1/ping") as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_query(
         self,
         client: aiohttp.ClientSession,
@@ -86,7 +81,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_query_forbidden(
         self,
         client: aiohttp.ClientSession,
@@ -101,7 +95,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
-    @pytest.mark.asyncio
     async def test_query_range(
         self,
         client: aiohttp.ClientSession,
@@ -120,7 +113,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_query_forbidden_range(
         self,
         client: aiohttp.ClientSession,
@@ -139,7 +131,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
-    @pytest.mark.asyncio
     async def test_series(
         self,
         client: aiohttp.ClientSession,
@@ -154,7 +145,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_series_forbidden(
         self,
         client: aiohttp.ClientSession,
@@ -169,7 +159,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
-    @pytest.mark.asyncio
     async def test_label_values(
         self,
         client: aiohttp.ClientSession,
@@ -182,7 +171,6 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_label_values_forbidden(
         self,
         client: aiohttp.ClientSession,
@@ -197,14 +185,12 @@ class TestPrometheusProxy:
 
 
 class TestGrafanaProxy:
-    @pytest.mark.asyncio
     async def test_ping(
         self, client: aiohttp.ClientSession, grafana_proxy_server: URL
     ) -> None:
         async with client.get(grafana_proxy_server / "ping") as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_ping_includes_version(
         self, client: aiohttp.ClientSession, grafana_proxy_server: URL
     ) -> None:
@@ -212,7 +198,6 @@ class TestGrafanaProxy:
             assert response.status == HTTPOk.status_code
             assert "platform-reports" in response.headers["X-Service-Version"]
 
-    @pytest.mark.asyncio
     async def test_main(
         self,
         client: aiohttp.ClientSession,
@@ -224,7 +209,6 @@ class TestGrafanaProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_main_forbidden(
         self,
         client: aiohttp.ClientSession,
@@ -236,7 +220,6 @@ class TestGrafanaProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
-    @pytest.mark.asyncio
     async def test_dashboard(
         self,
         client: aiohttp.ClientSession,
@@ -249,7 +232,6 @@ class TestGrafanaProxy:
         ) as response:
             assert response.status == HTTPOk.status_code
 
-    @pytest.mark.asyncio
     async def test_dashboard_forbidden(
         self,
         client: aiohttp.ClientSession,

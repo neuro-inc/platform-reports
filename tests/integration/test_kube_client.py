@@ -5,27 +5,23 @@ from platform_reports.kube_client import KubeClient, PodPhase
 
 
 class TestKubeClient:
-    @pytest.mark.asyncio
     async def test_get_node(self, kube_client: KubeClient) -> None:
         node = await kube_client.get_node("minikube")
 
         assert node.metadata.name == "minikube"
         assert node.metadata.labels
 
-    @pytest.mark.asyncio
     async def test_get_unknown_node__raises_error(
         self, kube_client: KubeClient
     ) -> None:
         with pytest.raises(aiohttp.ClientError):
             await kube_client.get_node("unknown")
 
-    @pytest.mark.asyncio
     async def test_get_pods(self, kube_client: KubeClient) -> None:
         result = await kube_client.get_pods(namespace="kube-system")
 
         assert result
 
-    @pytest.mark.asyncio
     async def test_get_pods_with_label_selector(self, kube_client: KubeClient) -> None:
         pods = await kube_client.get_pods(
             namespace="kube-system", label_selector="k8s-app=kube-proxy"
@@ -38,7 +34,6 @@ class TestKubeClient:
                 "kube-proxy"
             ), f"Found pod {pod.metadata.name}"
 
-    @pytest.mark.asyncio
     async def test_get_pods_with_field_selector(self, kube_client: KubeClient) -> None:
         pods = await kube_client.get_pods(
             namespace="kube-system",
@@ -55,7 +50,6 @@ class TestKubeClient:
                 PodPhase.RUNNING,
             ), f"Pod {pod.metadata.name} is in {pod.status.phase.value} phase"
 
-    @pytest.mark.asyncio
     async def test_get_pods_in_unknown_namespace(self, kube_client: KubeClient) -> None:
         result = await kube_client.get_pods(namespace="unknown")
 

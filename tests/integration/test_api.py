@@ -7,7 +7,6 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import replace
 
 import aiohttp
-import pytest
 from aiohttp.web import HTTPForbidden, HTTPOk
 from yarl import URL
 

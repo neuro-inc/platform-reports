@@ -389,7 +389,7 @@ class GCPNodePriceCollector(Collector[Price]):
             len(prices_in_nanos) == expected_prices_count
         ), f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
         return Price(
-            value=sum(prices_in_nanos.values(), Decimal()) / 10 ** 9, currency="USD"
+            value=sum(prices_in_nanos.values(), Decimal()) / 10**9, currency="USD"
         )
 
     async def _get_service_skus(self) -> AsyncIterator[dict[str, Any]]:
@@ -432,7 +432,7 @@ class GCPNodePriceCollector(Collector[Price]):
         tiered_rate = next(iter(t for t in tiered_rates if t["startUsageAmount"] == 0))
         unit_price = tiered_rate["unitPrice"]
         # UnitPrice contains price in nanos which is 1 USD * 10^-9
-        return Decimal(str(unit_price["units"])) * 10 ** 9 + unit_price["nanos"]
+        return Decimal(str(unit_price["units"])) * 10**9 + unit_price["nanos"]
 
 
 class PodPriceCollector(Collector[Mapping[str, Price]]):

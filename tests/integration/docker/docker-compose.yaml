@@ -2,7 +2,7 @@ version: "3"
 services:
 
   platform-auth:
-    image: 771188043543.dkr.ecr.us-east-1.amazonaws.com/platformauthapi:latest
+    image: ghcr.io/neuro-inc/platformauthapi:latest
     environment:
       - NP_AUTH_API_PORT=8080
       - NP_JWT_SECRET=secret

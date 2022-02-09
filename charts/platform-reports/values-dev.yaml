@@ -4,7 +4,6 @@ cloudProvider:
 
 platform:
   authUrl: https://dev.neu.ro
-  ingressAuthUrl: https://dev.neu.ro
   configUrl: https://dev.neu.ro
   apiUrl: https://dev.neu.ro/api/v1
   accessTokenCookieName: dat
@@ -35,9 +34,16 @@ grafanaProxy:
 
   replicas: 2
   ingress:
-    extraAnnotations:
-      external-dns.platform.neuromation.io: "true"
     hosts: [metrics-dev.neu.ro]
+    annotations:
+      kubernetes.io/ingress.class: traefik
+      traefik.ingress.kubernetes.io/router.middlewares: platform-platform-ingress-auth@kubernetescrd
+      external-dns.platform.neuromation.io: "true"
+      # TODO: remove traefik v1 annotations
+      ingress.kubernetes.io/auth-trust-headers: "true"
+      ingress.kubernetes.io/auth-type: forward
+      ingress.kubernetes.io/auth-url: https://dev.neu.ro/oauth/authorize
+      traefik.frontend.rule.type: PathPrefix
 
 kube-prometheus-stack:
   prometheus:

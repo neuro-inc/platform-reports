@@ -34,6 +34,7 @@ grafanaProxy:
 
   replicas: 2
   ingress:
+    enabled: true
     hosts: [metrics-dev.neu.ro]
     annotations:
       kubernetes.io/ingress.class: traefik

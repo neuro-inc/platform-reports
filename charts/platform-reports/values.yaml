@@ -57,7 +57,9 @@ grafanaProxy:
     requests:
       cpu: 100m
       memory: 256Mi
-  ingress: {}
+  ingress:
+    enabled: false
+    # annotations:
 
 kube-prometheus-stack:
   nameOverride: prometheus

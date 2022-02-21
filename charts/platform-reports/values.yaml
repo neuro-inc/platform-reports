@@ -59,7 +59,9 @@ grafanaProxy:
       memory: 256Mi
   ingress:
     enabled: false
-    # annotations:
+    ingressClassName: ""
+    hosts: []
+    annotations: {}
 
 kube-prometheus-stack:
   nameOverride: prometheus

@@ -14,3 +14,6 @@ dependencies:
   - name: grafana
     version: "6.2.2"
     repository: "https://grafana.github.io/helm-charts"
+  - name: k8s-resources
+    version: "1.0.1"
+    repository: https://neuro-inc.github.io/helm-charts

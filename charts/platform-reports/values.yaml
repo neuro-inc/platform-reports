@@ -251,6 +251,7 @@ kube-prometheus-stack:
       patch:
         image:
           repository: jettech/kube-webhook-certgen
+      logLevel: error
 
     createCustomResource: false
     cleanupCustomResource: false
@@ -267,7 +268,6 @@ kube-prometheus-stack:
     prometheusSpec:
       image:
         repository: quay.io/prometheus/prometheus
-
       podMetadata:
         labels:
           service: prometheus
@@ -288,10 +288,12 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 10Gi
+      logLevel: error
       # thanos sidecar
       thanos:
         image: quay.io/thanos/thanos:v0.24.0
         version: v0.24.0
+        logLevel: error
 
   grafana:
     enabled: false
@@ -323,6 +325,7 @@ thanos:
             storage: 10Gi
     labels:
       service: thanos-store
+    logLevel: error
 
   # Compact service works with data in object storage
   compact:
@@ -349,14 +352,17 @@ thanos:
             storage: 10Gi
     labels:
       service: thanos-compact
+    logLevel: error
 
   query:
     labels:
       service: thanos-query
+    logLevel: error
 
   bucket:
     labels:
       service: thanos-bucket
+    logLevel: error
 
   rule:
     enabled: false
@@ -449,6 +455,9 @@ grafana:
       external_enabled: false
     dashboards:
       default_home_dashboard_path: /etc/grafana/dashboards/home.json
+    log:
+      mode: console
+      level: error
 
 zipkin: {}
 

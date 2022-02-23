@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1604234513479,
+    "iteration": 1645607698018,
     "links": [],
     "panels": [
         {
@@ -38,7 +38,7 @@
                 "content": "<div style=\"text-align: center; font-weight: bold\">${job_id}</div>",
                 "mode": "html"
             },
-            "pluginVersion": "7.1.0",
+            "pluginVersion": "7.3.5",
             "timeFrom": null,
             "timeShift": null,
             "title": "Job",
@@ -93,7 +93,7 @@
                 },
                 "textMode": "name"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
@@ -167,7 +167,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
@@ -239,7 +239,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
@@ -311,7 +311,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "avg(DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
@@ -342,7 +342,7 @@
                             "value": "null"
                         }
                     ],
-                    "max": 100,
+                    "max": 1,
                     "min": 0,
                     "thresholds": {
                         "mode": "absolute",
@@ -353,15 +353,15 @@
                             },
                             {
                                 "color": "light-orange",
-                                "value": 85
+                                "value": 0.85
                             },
                             {
                                 "color": "light-red",
-                                "value": 95
+                                "value": 0.95
                             }
                         ]
                     },
-                    "unit": "percent"
+                    "unit": "percentunit"
                 },
                 "overrides": []
             },
@@ -383,10 +383,10 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "avg(DCGM_FI_DEV_MEM_COPY_UTIL{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
+                    "expr": "1 / (1 + sum(DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}) / sum(DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}))",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -447,7 +447,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -512,7 +512,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
@@ -576,7 +576,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
@@ -631,7 +631,7 @@
                 },
                 "textMode": "name"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
@@ -705,7 +705,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -816,7 +816,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -940,7 +940,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1044,7 +1044,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "pointradius": 5,
             "points": false,
             "renderer": "flot",
@@ -1062,7 +1062,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max by(gpu) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
+                    "expr": "max (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
                     "format": "time_series",
                     "hide": false,
                     "instant": false,

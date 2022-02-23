@@ -386,7 +386,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "1 / (1 + sum(DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}) / sum(DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}))",
+                    "expr": "sum(DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}) / sum(DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"})",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",

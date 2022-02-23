@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 4,
-    "iteration": 1604240200347,
+    "iteration": 1645612311745,
     "links": [],
     "panels": [
         {
@@ -211,7 +211,7 @@
                     }
                 ]
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
@@ -386,7 +386,7 @@
                     }
                 ]
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_gpu_model) max by(pod,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range]))",
@@ -492,7 +492,7 @@
                 "alertThreshold": true
             },
             "percentage": false,
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "pointradius": 2,
             "points": false,
             "renderer": "flot",
@@ -599,7 +599,7 @@
                 },
                 "textMode": "value"
             },
-            "pluginVersion": "7.2.1",
+            "pluginVersion": "7.3.5",
             "targets": [
                 {
                     "expr": "count (max by(pod) (max_over_time(kube_pod_running{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range])))",
@@ -1228,7 +1228,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1294,12 +1294,14 @@
                     "dashLength": 10,
                     "dashes": false,
                     "datasource": "Prometheus",
+                    "decimals": 1,
                     "editable": true,
                     "error": false,
                     "fieldConfig": {
                         "defaults": {
                             "custom": {},
-                            "links": []
+                            "links": [],
+                            "unit": "percentunit"
                         },
                         "overrides": []
                     },
@@ -1316,13 +1318,14 @@
                     "id": 4,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
-                        "current": false,
-                        "max": false,
+                        "current": true,
+                        "max": true,
                         "min": false,
                         "show": true,
                         "total": false,
-                        "values": false
+                        "values": true
                     },
                     "lines": true,
                     "linewidth": 1,
@@ -1332,7 +1335,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1342,7 +1345,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "avg by (pod) (DCGM_FI_DEV_MEM_COPY_UTIL{job=\"nvidia-dcgm-exporter\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                            "expr": "sum by (pod) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"}) / sum by (pod) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -1371,14 +1374,16 @@
                     },
                     "yaxes": [
                         {
-                            "format": "percent",
+                            "decimals": 1,
+                            "format": "percentunit",
                             "label": "",
                             "logBase": 1,
-                            "max": "100",
+                            "max": "1",
                             "min": "0",
                             "show": true
                         },
                         {
+                            "decimals": null,
                             "format": "short",
                             "label": null,
                             "logBase": 1,
@@ -1850,9 +1855,10 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "",
-                    "value": ""
+                    "text": "atselousov",
+                    "value": "atselousov"
                 },
+                "error": null,
                 "hide": 2,
                 "label": "User Name",
                 "name": "user_name",

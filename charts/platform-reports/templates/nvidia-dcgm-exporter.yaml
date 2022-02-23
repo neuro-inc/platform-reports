@@ -1,93 +1,13 @@
-# https://github.com/NVIDIA/gpu-monitoring-tools/
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}
-  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
-    service: nvidia-dcgm-exporter
-spec:
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 100%
-  selector:
-    matchLabels:
-      app: {{ include "platformReports.name" . }}
-      release: {{ .Release.Name | quote }}
-      service: nvidia-dcgm-exporter
-  template:
-    metadata:
-      labels:
-        app: {{ include "platformReports.name" . }}
-        release: {{ .Release.Name | quote }}
-        service: nvidia-dcgm-exporter
-    spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: {{ .Values.nodePoolLabels.gpu }}
-                    operator: Exists
-      tolerations:
-        # Allow this pod to be rescheduled while the node is in "critical add-ons only" mode.
-        # This, along with the annotation above marks this pod as a critical add-on.
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - effect: NoSchedule
-          operator: Exists
-      containers:
-        - image: {{ .Values.nvidiaDCGMExporter.image.repository }}:{{ .Values.nvidiaDCGMExporter.image.tag }}
-          name: nvidia-dcgm-exporter
-          env:
-            - name: DCGM_EXPORTER_COLLECTORS
-              value: /etc/dcgm-exporter/custom/counters.csv
-            - name: DCGM_EXPORTER_LISTEN
-              value: ":9400"
-# Kubernetes exporter is available only if KubeletPodResources feature is enabled.
-# This feature is enabled by default starting from Kubernetes 1.15.
-{{- if semverCompare ">=1.15-0" .Capabilities.KubeVersion.Version }}
-            - name: DCGM_EXPORTER_KUBERNETES
-              value: "true"
-{{- end }}
-          ports:
-            - name: metrics
-              containerPort: 9400
-          securityContext:
-            runAsNonRoot: false
-            runAsUser: 0
-          volumeMounts:
-            - name: pod-gpu-resources
-              readOnly: true
-              mountPath: /var/lib/kubelet/pod-resources
-            - name: dcgm-counters
-              readOnly: true
-              mountPath: /etc/dcgm-exporter/custom
-      volumes:
-        - name: pod-gpu-resources
-          hostPath:
-            path: /var/lib/kubelet/pod-resources
-        - name: dcgm-counters
-          configMap:
-            name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}-counters
-      {{- if .Values.imagePullSecrets }}
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
-      {{- end }}
----
-kind: Service
+{{- if .Values.nvidiaDCGMExporter.enabled }}
 apiVersion: v1
+kind: Service
 metadata:
   name: {{ include "platformReports.nvidiaDCGMExporter.fullname" . }}
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     service: nvidia-dcgm-exporter
 spec:
-  selector:
-    app: {{ include "platformReports.name" . }}
-    release: {{ .Release.Name | quote }}
-    service: nvidia-dcgm-exporter
-  ports:
-    - name: metrics
-      port: 9400
+  selector: {{ toYaml .Values.nvidiaDCGMExporter.service.selector | nindent 4 }}
+  ports: {{ toYaml .Values.nvidiaDCGMExporter.service.ports | nindent 4 }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -110,3 +30,4 @@ spec:
         - sourceLabels:
             - __metrics_path__
           targetLabel: metrics_path
+{{- end }}

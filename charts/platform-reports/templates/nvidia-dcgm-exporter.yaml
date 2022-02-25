@@ -1,4 +1,7 @@
 {{- if .Values.nvidiaDCGMExporter.enabled }}
+{{- if hasKey .Values.nvidiaDCGMExporter.service.ports.metrics "name" }}
+{{- fail "Cannot override nvidia-dcgm-exporter metrics port name" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,7 +10,9 @@ metadata:
     service: nvidia-dcgm-exporter
 spec:
   selector: {{ toYaml .Values.nvidiaDCGMExporter.service.selector | nindent 4 }}
-  ports: {{ toYaml .Values.nvidiaDCGMExporter.service.ports | nindent 4 }}
+  ports:
+    - name: metrics
+{{ toYaml .Values.nvidiaDCGMExporter.service.ports.metrics | indent 6 }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor

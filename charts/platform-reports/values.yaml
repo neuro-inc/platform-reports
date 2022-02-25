@@ -35,10 +35,10 @@ nvidiaDCGMExporter:
       matchLabels:
         service: nvidia-dcgm-exporter
     ports:
-    - name: metrics
-      port: 9400
-      protocol: TCP
-      targetPort: metrics
+      metrics:
+        port: 9400
+        protocol: TCP
+        targetPort: metrics
 
 metricsExporter:
   port: 9500

@@ -14,9 +14,6 @@ platform:
         name: platformservices-secret
         key: cluster_token
 
-nvidiaDCGMExporter:
-  enabled: false
-
 metricsExporter:
   nameOverride: platform-metrics-exporter
   fullnameOverride: platform-metrics-exporter

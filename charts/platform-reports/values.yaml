@@ -24,22 +24,6 @@ imagePullSecrets: []
 
 secrets: []
 
-nvidiaDCGMExporter:
-  enabled: true
-
-  nameOverride: nvidia-dcgm-exporter
-  fullnameOverride: nvidia-dcgm-exporter
-
-  service:
-    selector:
-      matchLabels:
-        service: nvidia-dcgm-exporter
-    ports:
-      metrics:
-        port: 9400
-        protocol: TCP
-        targetPort: metrics
-
 metricsExporter:
   port: 9500
   resources:

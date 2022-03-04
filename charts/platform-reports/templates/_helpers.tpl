@@ -67,19 +67,6 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "platformReports.nvidiaDCGMExporter.fullname" -}}
-{{- if .Values.nvidiaDCGMExporter.fullnameOverride -}}
-{{- .Values.nvidiaDCGMExporter.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default "nvidia-dcgm-exporter" .Values.nvidiaDCGMExporter.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
 {{- define "platformReports.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" -}}
 {{- end -}}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import (
@@ -21,11 +22,12 @@ from aiobotocore.client import AioBaseClient
 from aiohttp import web
 from neuro_config_client import (
     Cluster,
+    ClusterStatus,
     ConfigClient,
     OrchestratorConfig,
     ResourcePoolType,
+    ResourcePreset,
 )
-from neuro_config_client.models import ResourcePreset
 from yarl import URL
 
 from platform_reports.kube_client import (
@@ -83,6 +85,8 @@ class TestConfigPriceCollector:
         result = mock.AsyncMock(spec=ConfigClient)
         result.get_cluster.return_value = Cluster(
             name="default",
+            status=ClusterStatus.DEPLOYING,
+            created_at=datetime.datetime(2022, 4, 6),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
                 job_internal_hostname_template="",
@@ -325,6 +329,8 @@ class TestGCPNodePriceCollector:
         result = mock.AsyncMock(spec=ConfigClient)
         result.get_cluster.return_value = Cluster(
             name="default",
+            status=ClusterStatus.DEPLOYED,
+            created_at=datetime.datetime(2022, 4, 6),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
                 job_internal_hostname_template="",
@@ -766,6 +772,8 @@ class TestPodPriceCollector:
             result = mock.AsyncMock(spec=ConfigClient)
             result.get_cluster.return_value = Cluster(
                 name="default",
+                status=ClusterStatus.DEPLOYED,
+                created_at=datetime.datetime(2022, 4, 6),
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
                     job_internal_hostname_template="",
@@ -940,6 +948,8 @@ class TestPodCreditsCollector:
             result = mock.AsyncMock(spec=ConfigClient)
             result.get_cluster.return_value = Cluster(
                 name="default",
+                status=ClusterStatus.DEPLOYED,
+                created_at=datetime.datetime(2022, 4, 6),
                 orchestrator=OrchestratorConfig(
                     job_hostname_template="",
                     job_internal_hostname_template="",

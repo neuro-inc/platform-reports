@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import aiohttp.web
 import pytest
 
@@ -9,6 +11,8 @@ def platform_config_app() -> aiohttp.web.Application:
         return aiohttp.web.json_response(
             {
                 "name": name,
+                "status": "deployed",
+                "created_at": datetime.now().isoformat(),
                 "orchestrator": {
                     "job_hostname_template": f"{{job_id}}.jobs.{name}.org.neu.ro",
                     "job_internal_hostname_template": "{job_id}.platform-jobs",

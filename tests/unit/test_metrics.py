@@ -67,7 +67,8 @@ class TestCollector:
     async def test_update(
         self, collector: Collector[Price], price_factory: mock.Mock
     ) -> None:
-        task = asyncio.create_task(await collector.start())
+        factory = await collector.start()
+        task: asyncio.Task[None] = asyncio.create_task(factory)  # type: ignore
 
         await asyncio.sleep(0.3)
 

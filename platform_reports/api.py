@@ -350,7 +350,7 @@ async def handle_exceptions(
 
 @asynccontextmanager
 async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
-    task = asyncio.create_task(coro)
+    task: asyncio.Task[None] = asyncio.create_task(coro)  # type: ignore
     try:
         yield
     finally:

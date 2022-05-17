@@ -8,7 +8,7 @@ import aiohttp
 import pytest
 
 from platform_reports.kube_client import (
-    EventHandler,
+    EventListener,
     KubeClient,
     Pod,
     PodPhase,
@@ -71,7 +71,7 @@ class TestKubeClient:
         assert result.items == []
 
 
-class MyPodEventHandler(EventHandler):
+class MyPodEventListener(EventListener):
     def __init__(self) -> None:
         self.pod_names: list[str] = []
         self._events: dict[str, asyncio.Event] = {}
@@ -97,34 +97,34 @@ class MyPodEventHandler(EventHandler):
 
 class TestPodWatcher:
     @pytest.fixture
-    def handler(self) -> MyPodEventHandler:
-        return MyPodEventHandler()
+    def listener(self) -> MyPodEventListener:
+        return MyPodEventListener()
 
     @pytest.fixture
     async def pod_watcher(
-        self, kube_client: KubeClient, handler: MyPodEventHandler
+        self, kube_client: KubeClient, listener: MyPodEventListener
     ) -> AsyncIterator[PodWatcher]:
         watcher = PodWatcher(kube_client)
-        watcher.subscribe(handler)
+        watcher.subscribe(listener)
         async with watcher:
             yield watcher
 
     @pytest.mark.usefixtures("pod_watcher")
     async def test_handle(
-        self, handler: MyPodEventHandler, pod_factory: PodFactory
+        self, listener: MyPodEventListener, pod_factory: PodFactory
     ) -> None:
-        assert len(handler.pod_names) > 0
+        assert len(listener.pod_names) > 0
 
         pod = await pod_factory(image="gcr.io/google_containers/pause:3.1")
 
-        await asyncio.wait_for(handler.wait_for_pod(pod.metadata.name), 5)
+        await asyncio.wait_for(listener.wait_for_pod(pod.metadata.name), 5)
 
-        assert pod.metadata.name in handler.pod_names
+        assert pod.metadata.name in listener.pod_names
 
     async def test_subscribe_after_start(
-        self, pod_watcher: PodWatcher, handler: MyPodEventHandler
+        self, pod_watcher: PodWatcher, listener: MyPodEventListener
     ) -> None:
         with pytest.raises(
             Exception, match="Subscription is not possible after watcher start"
         ):
-            pod_watcher.subscribe(handler)
+            pod_watcher.subscribe(listener)

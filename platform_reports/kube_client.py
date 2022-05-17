@@ -365,7 +365,7 @@ class KubeClient:
             yield event
 
 
-class EventHandler:
+class EventListener:
     @abc.abstractmethod
     async def init(self, resources: list[dict[str, Any]]) -> None:
         pass
@@ -378,13 +378,13 @@ class EventHandler:
 class Watcher(abc.ABC):
     def __init__(self, kube_client: KubeClient) -> None:
         self._kube_client = kube_client
-        self._handlers: list[EventHandler] = []
+        self._listeners: list[EventListener] = []
         self._watcher_task: asyncio.Task[None] | None = None
 
-    def subscribe(self, handler: EventHandler) -> None:
+    def subscribe(self, listener: EventListener) -> None:
         if self._watcher_task is not None:
             raise Exception("Subscription is not possible after watcher start")
-        self._handlers.append(handler)
+        self._listeners.append(listener)
 
     async def __aenter__(self) -> "Watcher":
         await self.start()
@@ -395,8 +395,8 @@ class Watcher(abc.ABC):
 
     async def start(self) -> None:
         result = await self.list()
-        for handler in self._handlers:
-            await handler.init(result.items)
+        for listener in self._listeners:
+            await listener.init(result.items)
         self._watcher_task = asyncio.create_task(self._run(result.resource_version))
 
     async def stop(self) -> None:
@@ -406,7 +406,7 @@ class Watcher(abc.ABC):
         with suppress(asyncio.CancelledError):
             await self._watcher_task
         self._watcher_task = None
-        self._handlers.clear()
+        self._listeners.clear()
 
     async def _run(self, resource_version: str) -> None:
         while True:
@@ -415,8 +415,8 @@ class Watcher(abc.ABC):
                     if isinstance(event, WatchBookmarkEvent):
                         resource_version = event.resource_version
                         continue
-                    for handler in self._handlers:
-                        await handler.handle(event)
+                    for listener in self._listeners:
+                        await listener.handle(event)
             except ResourceGoneException as exc:
                 logger.warning("Resource gone", exc_info=exc)
             except aiohttp.ClientError as exc:

@@ -8,6 +8,7 @@ from typing import Any, Coroutine, Sequence
 import aiohttp
 import pytest
 from neuro_auth_client import Cluster, Permission
+from neuro_config_client import ConfigClient
 from yarl import URL
 
 from platform_reports.api import (
@@ -241,3 +242,9 @@ async def grafana_proxy_server(
 async def client() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session
+
+
+@pytest.fixture
+async def config_client(platform_config_server: URL) -> AsyncIterator[ConfigClient]:
+    async with ConfigClient(platform_config_server) as client:
+        yield client

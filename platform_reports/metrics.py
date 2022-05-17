@@ -31,7 +31,7 @@ GOOGLE_COMPUTE_ENGINE_ID = "services/6F81-5844-456A"
 
 @dataclass(frozen=True)
 class Price:
-    currency: str = ""
+    currency: str | None = None
     value: Decimal = Decimal()
 
     def __str__(self) -> str:
@@ -461,7 +461,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
 
     async def get_latest_value(self) -> Mapping[str, Price]:
         # Calculate prices only for pods in Pending and Running phases
-        pods = await self._kube_client.get_pods(
+        pod_list = await self._kube_client.get_pods(
             namespace=self._jobs_namespace,
             label_selector=self._job_label,
             field_selector=",".join(
@@ -473,7 +473,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
                 ),
             ),
         )
-        if not pods:
+        if not pod_list.items:
             logger.info("Node doesn't have any pods in Running phase")
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
@@ -484,7 +484,7 @@ class PodPriceCollector(Collector[Mapping[str, Price]]):
             )
         logger.debug("Node resources: %s", node_resources)
         result: dict[str, Price] = {}
-        for pod in pods:
+        for pod in pod_list.items:
             pod_resources = self._get_pod_resources(pod)
             logger.debug("Pod %s resources: %s", pod.metadata.name, pod_resources)
             fraction = self._get_pod_resources_fraction(
@@ -566,7 +566,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
 
     async def get_latest_value(self) -> Mapping[str, Decimal]:
         # Calculate prices only for pods in Pending and Running phases
-        pods = await self._kube_client.get_pods(
+        pod_list = await self._kube_client.get_pods(
             namespace=self._jobs_namespace,
             label_selector=self._job_label,
             field_selector=",".join(
@@ -578,14 +578,14 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                 ),
             ),
         )
-        if not pods:
+        if not pod_list.items:
             logger.info("Node doesn't have any pods in Running phase")
             return {}
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.orchestrator is not None
         resource_presets = {p.name: p for p in cluster.orchestrator.resource_presets}
         result: dict[str, Decimal] = {}
-        for pod in pods:
+        for pod in pod_list.items:
             logger.debug("Checking pod %r credits per hour", pod.metadata.name)
             preset_name = pod.metadata.labels.get(self._preset_label)
             if not preset_name:

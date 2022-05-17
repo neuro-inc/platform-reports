@@ -35,6 +35,7 @@ from platform_reports.kube_client import (
     KubeClient,
     Metadata,
     Pod,
+    PodListResult,
     PodPhase,
     PodStatus,
     Resources,
@@ -800,7 +801,7 @@ class TestPodPriceCollector:
         def _create(**pod_resources: Resources) -> mock.AsyncMock:
             async def get_pods(
                 namespace: str = "", field_selector: str = "", label_selector: str = ""
-            ) -> Sequence[Pod]:
+            ) -> PodListResult:
                 assert namespace == "platform-jobs"
                 assert label_selector == "job"
                 assert field_selector == ",".join(
@@ -811,14 +812,19 @@ class TestPodPriceCollector:
                         "status.phase!=Unknown",
                     ),
                 )
-                return [
+                pods = [
                     Pod(
                         metadata=Metadata(name=name),
                         status=PodStatus(phase=PodPhase.RUNNING),
-                        containers=[Container(name=name, resource_requests=resources)],
+                        containers=[
+                            Container(
+                                name=name, image="ubuntu", resource_requests=resources
+                            )
+                        ],
                     )
                     for name, resources in pod_resources.items()
                 ]
+                return PodListResult(resource_version="1", items=pods)
 
             result = mock.AsyncMock(spec=KubeClient)
             result.get_pods.side_effect = get_pods
@@ -969,7 +975,7 @@ class TestPodCreditsCollector:
         def _create(**pod_labels: dict[str, str]) -> mock.AsyncMock:
             async def get_pods(
                 namespace: str = "", field_selector: str = "", label_selector: str = ""
-            ) -> Sequence[Pod]:
+            ) -> PodListResult:
                 assert namespace == "platform-jobs"
                 assert label_selector == "job"
                 assert field_selector == ",".join(
@@ -980,7 +986,7 @@ class TestPodCreditsCollector:
                         "status.phase!=Unknown",
                     ),
                 )
-                return [
+                pods = [
                     Pod(
                         metadata=Metadata(name=name, labels=labels),
                         status=PodStatus(phase=PodPhase.RUNNING),
@@ -988,6 +994,7 @@ class TestPodCreditsCollector:
                     )
                     for name, labels in pod_labels.items()
                 ]
+                return PodListResult(resource_version="1", items=pods)
 
             result = mock.AsyncMock(spec=KubeClient)
             result.get_pods.side_effect = get_pods

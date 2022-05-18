@@ -552,7 +552,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         jobs_namespace: str,
         job_label: str,
         preset_label: str,
-        interval_s: float = 60,
+        interval_s: float = 15,
     ) -> None:
         super().__init__({}, interval_s)
 

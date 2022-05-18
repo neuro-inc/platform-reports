@@ -10,14 +10,7 @@ from neuro_auth_client import AuthClient, Permission
 from neuro_sdk import Client as ApiClient, JobDescription as Job
 from yarl import URL
 
-from platform_reports.auth import (
-    JOB_DASHBOARD_ID,
-    JOBS_DASHBOARD_ID,
-    NODES_DASHBOARD_ID,
-    PRICES_DASHBOARD_ID,
-    USER_JOBS_DASHBOARD_ID,
-    AuthService,
-)
+from platform_reports.auth import AuthService, Dashboard
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
 
@@ -139,9 +132,7 @@ class TestAuthService:
     async def test_check_nodes_dashboard_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
-        await service.check_dashboard_permissions(
-            "user", NODES_DASHBOARD_ID, MultiDict()
-        )
+        await service.check_dashboard_permissions("user", Dashboard.NODES, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
@@ -151,9 +142,7 @@ class TestAuthService:
     async def test_check_jobs_dashboard_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
-        await service.check_dashboard_permissions(
-            "user", JOBS_DASHBOARD_ID, MultiDict()
-        )
+        await service.check_dashboard_permissions("user", Dashboard.JOBS, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="role://default/manager", action="read")]
@@ -162,7 +151,7 @@ class TestAuthService:
     async def test_check_job_dashboard_without_job_id_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
-        await service.check_dashboard_permissions("user", JOB_DASHBOARD_ID, MultiDict())
+        await service.check_dashboard_permissions("user", Dashboard.JOB, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/user", action="read")]
@@ -176,7 +165,7 @@ class TestAuthService:
     ) -> None:
         await service.check_dashboard_permissions(
             "user",
-            JOB_DASHBOARD_ID,
+            Dashboard.JOB,
             MultiDict({"var-job_id": JOB_ID}),
         )
 
@@ -190,7 +179,7 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", USER_JOBS_DASHBOARD_ID, MultiDict()
+            "user", Dashboard.USER_JOBS, MultiDict()
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -204,7 +193,7 @@ class TestAuthService:
         api_client: mock.AsyncMock,
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", USER_JOBS_DASHBOARD_ID, MultiDict({"var-user_name": "other_user"})
+            "user", Dashboard.USER_JOBS, MultiDict({"var-user_name": "other_user"})
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
@@ -214,9 +203,7 @@ class TestAuthService:
     async def test_check_prices_dashboard_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
-        await service.check_dashboard_permissions(
-            "user", PRICES_DASHBOARD_ID, MultiDict()
-        )
+        await service.check_dashboard_permissions("user", Dashboard.PRICES, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="role://default/manager", action="read")]

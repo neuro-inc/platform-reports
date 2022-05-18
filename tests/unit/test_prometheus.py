@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import replace
 
 import pytest
 
@@ -21,37 +20,6 @@ class TestDashboards:
         for key, exprs in dashboards_expressions.items():
             for expr in exprs:
                 parse_query(expr)
-
-
-class TestVector:
-    def test_labels(self) -> None:
-        metric = Metric(
-            name="container_cpu_usage_seconds_total",
-            label_matchers={"pod": LabelMatcher.equal(name="pod", value="job")},
-        )
-
-        assert metric.labels == ["pod"]
-
-        join = Join(
-            left=Metric(
-                name="container_cpu_usage_seconds_total",
-                label_matchers={"pod": LabelMatcher.equal(name="pod", value="job")},
-            ),
-            right=Metric(
-                name="kube_pod_labels",
-                label_matchers={
-                    "pod": LabelMatcher.equal(name="pod", value="job"),
-                    "user": LabelMatcher.equal(name="user", value="user"),
-                },
-            ),
-            operator="*",
-        )
-
-        assert sorted(join.labels) == []
-
-        assert replace(join, on=["pod"]).labels == ["pod"]
-
-        assert replace(join, ignoring=["user"]).labels == []
 
 
 class TestParseQueryMetrics:

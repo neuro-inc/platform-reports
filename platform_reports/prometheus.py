@@ -69,9 +69,7 @@ class LabelMatcher:
 
 
 class Vector(abc.ABC):
-    @abc.abstractproperty
-    def labels(self) -> Sequence[str]:
-        pass
+    pass
 
 
 @dataclass(frozen=True)
@@ -82,41 +80,11 @@ class Join(Vector):
     on: Sequence[str] = field(default_factory=list)
     ignoring: Sequence[str] = field(default_factory=list)
 
-    @property
-    def labels(self) -> Sequence[str]:
-        # If 'on' is used than left and right vectors must contain 'on' labels.
-        if self.on:
-            return self.on
-        # If 'on' is not used than the labels list cannot be determined for now
-        # because there are functions that change labels. If there is a request for
-        # more accurate labels list query functions should be analyzed
-        # by VectorTransformer.
-        return []
-
 
 @dataclass(frozen=True)
 class Metric(Vector):
     name: str
     label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
-
-    @property
-    def labels(self) -> Sequence[str]:
-        name_label = self.label_matchers.get("__name__")
-        labels = set(self.label_matchers.keys())
-        job_label = self.label_matchers.get("job")
-        if job_label and job_label.matches("kubelet"):
-            labels.add("pod")
-        if (
-            job_label
-            and job_label.matches("kube-state-metrics")
-            and (
-                self.name.startswith("kube_pod_")
-                or name_label
-                and name_label.matches("kube_pod_")
-            )
-        ):
-            labels.add("pod")
-        return list(labels)
 
 
 def parse_query(query: str) -> Vector | None:

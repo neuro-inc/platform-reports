@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import logging
 import re
 from collections.abc import Iterable, Sequence
@@ -13,21 +14,29 @@ from .prometheus import Join, LabelMatcherOperator, Metric, Vector, parse_query
 logger = logging.getLogger(__name__)
 
 
-NODES_DASHBOARD_ID = "nodes"
-JOBS_DASHBOARD_ID = "jobs"
-JOB_DASHBOARD_ID = "job"
-USER_JOBS_DASHBOARD_ID = "user_jobs"
-PRICES_DASHBOARD_ID = "prices"
-SERVICES_DASHBOARD_ID = "services"
-
-JOB_MATCHER = "job"
-POD_MATCHER = "pod"
-USER_LABEL_MATCHER = "label_platform_neuromation_io_user"
-SERVICE_LABEL_MATCHER = "label_service"
-
 PLATFORM_JOB_RE = re.compile(
     r"^job-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
+
+
+class Dashboard(str, enum.Enum):
+    NODES = "nodes"
+    JOBS = "jobs"
+    JOB = "job"
+    USER_JOBS = "user_jobs"
+    PRICES = "prices"
+    SERVICES = "services"
+
+
+class Matcher(str, enum.Enum):
+    JOB = "job"
+    POD = "pod"
+    USER_LABEL = "label_platform_neuromation_io_user"
+    SERVICE_LABEL = "label_service"
+
+    def in_metric(self, metric: Metric) -> bool:
+        f = metric.label_matchers.get(self)
+        return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
 
 
 def get_cluster_manager_permission(cluster_name: str) -> Permission:
@@ -64,11 +73,11 @@ class AuthService:
     async def check_dashboard_permissions(
         self, user_name: str, dashboard_id: str, params: MultiMapping[str]
     ) -> bool:
-        if dashboard_id == NODES_DASHBOARD_ID:
+        if dashboard_id == Dashboard.NODES:
             permissions = [get_cluster_manager_permission(self._cluster_name)]
-        elif dashboard_id == JOBS_DASHBOARD_ID:
+        elif dashboard_id == Dashboard.JOBS:
             permissions = [get_cluster_manager_permission(self._cluster_name)]
-        elif dashboard_id == JOB_DASHBOARD_ID:
+        elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
                 permissions_service = PermissionsService(
@@ -83,7 +92,7 @@ class AuthService:
                         uri=f"job://{self._cluster_name}/{user_name}", action="read"
                     ),
                 ]
-        elif dashboard_id == USER_JOBS_DASHBOARD_ID:
+        elif dashboard_id == Dashboard.USER_JOBS:
             dashboard_user_name = params.get("var-user_name")
             if dashboard_user_name:
                 permissions = [
@@ -100,9 +109,9 @@ class AuthService:
                         uri=f"job://{self._cluster_name}/{user_name}", action="read"
                     ),
                 ]
-        elif dashboard_id == PRICES_DASHBOARD_ID:
+        elif dashboard_id == Dashboard.PRICES:
             permissions = [get_cluster_manager_permission(self._cluster_name)]
-        elif dashboard_id == SERVICES_DASHBOARD_ID:
+        elif dashboard_id == Dashboard.SERVICES:
             permissions = [get_cluster_manager_permission(self._cluster_name)]
         else:
             return False
@@ -121,9 +130,7 @@ class AuthService:
                 return False
 
         permissions_service = PermissionsService(self._api_client, self._cluster_name)
-        permissions = await permissions_service.get_vector_permissions(
-            user_name, vectors
-        )
+        permissions = await permissions_service.get_vector_permissions(vectors)
         return await self.check_permissions(user_name, permissions)
 
     def _parse_queries(self, queries: Sequence[str]) -> Sequence[Vector]:
@@ -136,7 +143,7 @@ class AuthService:
 
     def _check_all_metrics_have_job_matcher(self, vector: Vector) -> bool:
         if isinstance(vector, Metric):
-            return JOB_MATCHER in vector.label_matchers
+            return Matcher.JOB.in_metric(vector)
         if isinstance(vector, Join):
             return self._check_all_metrics_have_job_matcher(
                 vector.left
@@ -151,13 +158,13 @@ class PermissionsService:
         self._job_permissions: dict[str, Permission] = {}
 
     async def get_vector_permissions(
-        self, user_name: str, vectors: Sequence[Vector]
+        self, vectors: Sequence[Vector]
     ) -> Sequence[Permission]:
         permissions: list[Permission] = []
         for vector in vectors:
             permissions.extend(
                 self._get_strongest_permissions(
-                    await self._get_vector_permissions(user_name, vector)
+                    await self._get_vector_permissions(vector)
                 )
             )
         result = self._get_strongest_permissions(permissions)
@@ -167,49 +174,45 @@ class PermissionsService:
             return [get_cluster_manager_permission(self._cluster_name)]
         return result
 
-    async def _get_vector_permissions(
-        self, user_name: str, vector: Vector
-    ) -> Sequence[Permission]:
+    async def _get_vector_permissions(self, vector: Vector) -> Sequence[Permission]:
         if isinstance(vector, Metric):
-            return await self._get_metric_permissions(user_name, vector)
+            return await self._get_metric_permissions(vector)
         if isinstance(vector, Join):
-            return await self._get_join_permissions(user_name, vector)
+            return await self._get_join_permissions(vector)
         return []
 
-    async def _get_metric_permissions(
-        self, user_name: str, metric: Metric
-    ) -> Sequence[Permission]:
+    async def _get_metric_permissions(self, metric: Metric) -> Sequence[Permission]:
         # Check permissions for all collector jobs which are configured in Prometheus
         return (
-            *self._get_node_exporter_permissions(user_name, [metric]),
-            *await self._get_kube_state_metrics_permissions(user_name, [metric]),
-            *await self._get_kubelet_permissions(user_name, [metric]),
-            *await self._get_nvidia_dcgm_exporter_permissions(user_name, [metric]),
-            *await self._get_neuro_metrics_exporter_permissions(user_name, [metric]),
+            *self._get_node_exporter_permissions([metric]),
+            *await self._get_kube_state_metrics_permissions([metric]),
+            *await self._get_kubelet_permissions([metric]),
+            *await self._get_nvidia_dcgm_exporter_permissions([metric]),
+            *await self._get_neuro_metrics_exporter_permissions([metric]),
         )
 
     def _get_node_exporter_permissions(
-        self, user_name: str, metrics: Sequence[Metric]
+        self, metrics: Sequence[Metric]
     ) -> list[Permission]:
         for metric in metrics:
-            if metric.label_matchers[JOB_MATCHER].matches("node-exporter"):
+            if metric.label_matchers[Matcher.JOB].matches("node-exporter"):
                 return [get_cluster_manager_permission(self._cluster_name)]
         return []
 
     async def _get_kube_state_metrics_permissions(
-        self, user_name: str, metrics: Sequence[Metric]
+        self, metrics: Sequence[Metric]
     ) -> list[Permission]:
         permissions: list[Permission] = []
         platform_job_ids: list[str] = []
 
         for metric in metrics:
-            if metric.label_matchers[JOB_MATCHER].matches("kube-state-metrics"):
-                if self._has_service_label_matcher(metric):
+            if metric.label_matchers[Matcher.JOB].matches("kube-state-metrics"):
+                if Matcher.SERVICE_LABEL.in_metric(metric):
                     return [get_cluster_manager_permission(self._cluster_name)]
                 elif self._has_platform_job_matcher(metric):
-                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
-                elif self._has_user_label_matcher(metric):
-                    user_name = metric.label_matchers[USER_LABEL_MATCHER].value
+                    platform_job_ids.append(metric.label_matchers[Matcher.POD].value)
+                elif Matcher.USER_LABEL.in_metric(metric):
+                    user_name = metric.label_matchers[Matcher.USER_LABEL].value
                     permissions.append(
                         Permission(
                             uri=f"job://{self._cluster_name}/{user_name}", action="read"
@@ -224,58 +227,56 @@ class PermissionsService:
         ]
 
     async def _get_kubelet_permissions(
-        self, user_name: str, metrics: Sequence[Metric]
+        self, metrics: Sequence[Metric]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
 
         for metric in metrics:
-            if metric.label_matchers[JOB_MATCHER].matches("kubelet"):
+            if metric.label_matchers[Matcher.JOB].matches("kubelet"):
                 if self._has_platform_job_matcher(metric):
-                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                    platform_job_ids.append(metric.label_matchers[Matcher.POD].value)
                 else:
                     return [get_cluster_manager_permission(self._cluster_name)]
 
         return await self.get_job_permissions(platform_job_ids)
 
     async def _get_nvidia_dcgm_exporter_permissions(
-        self, user_name: str, metrics: Sequence[Metric]
+        self, metrics: Sequence[Metric]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
 
         for metric in metrics:
-            if metric.label_matchers[JOB_MATCHER].matches("nvidia-dcgm-exporter"):
+            if metric.label_matchers[Matcher.JOB].matches("nvidia-dcgm-exporter"):
                 if self._has_platform_job_matcher(metric):
-                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                    platform_job_ids.append(metric.label_matchers[Matcher.POD].value)
                 else:
                     return [get_cluster_manager_permission(self._cluster_name)]
 
         return await self.get_job_permissions(platform_job_ids)
 
     async def _get_neuro_metrics_exporter_permissions(
-        self, user_name: str, metrics: Sequence[Metric]
+        self, metrics: Sequence[Metric]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
 
         for metric in metrics:
-            if metric.label_matchers[JOB_MATCHER].matches("neuro-metrics-exporter"):
+            if metric.label_matchers[Matcher.JOB].matches("neuro-metrics-exporter"):
                 if self._has_platform_job_matcher(metric):
-                    platform_job_ids.append(metric.label_matchers[POD_MATCHER].value)
+                    platform_job_ids.append(metric.label_matchers[Matcher.POD].value)
                 else:
                     return [get_cluster_manager_permission(self._cluster_name)]
 
         return await self.get_job_permissions(platform_job_ids)
 
-    async def _get_join_permissions(
-        self, user_name: str, join: Join
-    ) -> Sequence[Permission]:
-        left_permissions = await self._get_vector_permissions(user_name, join.left)
-        right_permissions = await self._get_vector_permissions(user_name, join.right)
+    async def _get_join_permissions(self, join: Join) -> Sequence[Permission]:
+        left_permissions = await self._get_vector_permissions(join.left)
+        right_permissions = await self._get_vector_permissions(join.right)
         permissions = (*left_permissions, *right_permissions)
 
         if "or" == join.operator:
             return self._get_strongest_permissions(permissions)
 
-        if "pod" in join.labels:
+        if "pod" in join.on:
             return self._get_weakest_permissions(permissions)
 
         return self._get_strongest_permissions(permissions)
@@ -316,19 +317,10 @@ class PermissionsService:
         return result
 
     def _has_platform_job_matcher(self, metric: Metric) -> bool:
-        f = metric.label_matchers.get(POD_MATCHER)
-        if not bool(f and f.operator == LabelMatcherOperator.EQ and f.value):
+        if not Matcher.POD.in_metric(metric):
             return False
-        pod = metric.label_matchers[POD_MATCHER].value
+        pod = metric.label_matchers[Matcher.POD].value
         return bool(PLATFORM_JOB_RE.match(pod))
-
-    def _has_user_label_matcher(self, metric: Metric) -> bool:
-        f = metric.label_matchers.get(USER_LABEL_MATCHER)
-        return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
-
-    def _has_service_label_matcher(self, metric: Metric) -> bool:
-        f = metric.label_matchers.get(SERVICE_LABEL_MATCHER)
-        return bool(f and f.operator == LabelMatcherOperator.EQ and f.value)
 
     async def get_job_permissions(
         self, job_ids: Sequence[str], action: str = "read"

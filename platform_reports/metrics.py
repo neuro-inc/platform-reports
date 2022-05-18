@@ -80,7 +80,7 @@ class Collector(Generic[_TValue]):
                     "Unexpected error ocurred during value update", exc_info=ex
                 )
 
-    async def __aenter__(self) -> "Collector[_TValue]":
+    async def __aenter__(self) -> Collector[_TValue]:
         return self
 
     async def __aexit__(
@@ -105,7 +105,6 @@ class ConfigPriceCollector(Collector[Price]):
         self._config_client = config_client
         self._cluster_name = cluster_name
         self._node_pool_name = node_pool_name
-        self._loop = asyncio.get_event_loop()
         self._client: Any = None
 
     async def get_latest_value(self) -> Price:

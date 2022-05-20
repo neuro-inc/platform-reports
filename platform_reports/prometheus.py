@@ -81,7 +81,7 @@ class Vector(abc.ABC):
 
 
 @dataclass(frozen=True)
-class Join(Vector):
+class VectorMatch(Vector):
     left: Vector
     right: Vector
     operator: str
@@ -90,7 +90,7 @@ class Join(Vector):
 
 
 @dataclass(frozen=True)
-class Metric(Vector):
+class InstantVector(Vector):
     name: str
     label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
 
@@ -151,42 +151,43 @@ class VectorTransformer(Transformer[Optional[Vector]]):
     def label_name_list(self, tree: Tree) -> Tree:
         return tree
 
-    def instant_selector_with_metric(self, children: list[str | Tree]) -> Vector:
+    def instant_query_with_metric(self, children: list[str | Tree]) -> Vector:
         label_matchers: list[Tree] = []
         if len(children) > 1:
             label_matchers = children[1].children  # type: ignore
-        return Metric(
+        return InstantVector(
             name=children[0].value,  # type: ignore
             label_matchers=self._get_label_matchers(label_matchers),
         )
 
-    def instant_selector_without_metric(self, children: list[str | Tree]) -> Vector:
+    def instant_query_without_metric(self, children: list[str | Tree]) -> Vector:
         label_matchers: list[Tree] = []
         if children:
             label_matchers = children[0].children  # type: ignore
-        return Metric(name="", label_matchers=self._get_label_matchers(label_matchers))
+        return InstantVector(
+            name="", label_matchers=self._get_label_matchers(label_matchers)
+        )
 
-    def or_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def or_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def and_unless_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def and_unless_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def comparison_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def comparison_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def sum_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def sum_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def product_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def product_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def power_join(self, children: list[str | Tree]) -> Vector | None:
-        return self._get_join(children)
+    def power_match(self, children: list[str | Tree]) -> Vector | None:
+        return self._get_vector_match(children)
 
-    def _get_label_matchers(
-        self, label_matchers: list[Tree]
-    ) -> dict[str, LabelMatcher]:
+    @classmethod
+    def _get_label_matchers(cls, label_matchers: list[Tree]) -> dict[str, LabelMatcher]:
         result: dict[str, LabelMatcher] = {}
         for label_matcher in label_matchers:
             name = label_matcher.children[0].value  # type: ignore
@@ -199,7 +200,8 @@ class VectorTransformer(Transformer[Optional[Vector]]):
             )
         return result
 
-    def _get_join(self, children: list[str | Tree]) -> Vector | None:
+    @classmethod
+    def _get_vector_match(cls, children: list[str | Tree]) -> Vector | None:
         vectors: list[Vector] = []
         for child in children:
             if isinstance(child, Vector):
@@ -214,33 +216,36 @@ class VectorTransformer(Transformer[Optional[Vector]]):
         if len(children) > 3:
             grouping = children[2]  # type: ignore
         assert not grouping or isinstance(grouping, Tree)
-        return Join(
+        return VectorMatch(
             left=vectors[0],
             right=vectors[1],
             operator=children[1].value,  # type: ignore
-            on=self._get_on_labels(grouping),
-            ignoring=self._get_ignoring_labels(grouping),
+            on=cls._get_on_labels(grouping),
+            ignoring=cls._get_ignoring_labels(grouping),
         )
 
-    def _get_on_labels(self, grouping: Tree | None) -> Sequence[str]:
+    @classmethod
+    def _get_on_labels(cls, grouping: Tree | None) -> Sequence[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "on":  # type: ignore
-            return self._get_labels(
+            return cls._get_labels(
                 grouping.children[0].children[1].children  # type: ignore
             )
         return []
 
-    def _get_ignoring_labels(self, grouping: Tree | None) -> Sequence[str]:
+    @classmethod
+    def _get_ignoring_labels(cls, grouping: Tree | None) -> Sequence[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "ignoring":  # type: ignore
-            return self._get_labels(
+            return cls._get_labels(
                 grouping.children[0].children[1].children  # type: ignore
             )
         return []
 
-    def _get_labels(self, labels: list[str | Tree]) -> Sequence[str]:
+    @classmethod
+    def _get_labels(cls, labels: list[str | Tree]) -> Sequence[str]:
         result: list[str] = []
         for label_name in labels:
             result.append(label_name.value)  # type: ignore

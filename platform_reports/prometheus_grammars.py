@@ -1,72 +1,69 @@
 PROMQL = """
-start: vector_expression
+start: query
 
 // Binary operations are defined separately in order to support precedence
 
-?vector_expression\
-    : or_join
-    | matrix_selector
-    | subquery_selector
+?query\
+    : or_match
+    | matrix
+    | subquery
     | offset
 
-?or_join\
-    : and_unless_join
-    | or_join OR grouping? and_unless_join
+?or_match\
+    : and_unless_match
+    | or_match OR grouping? and_unless_match
 
-?and_unless_join\
-    : comparison_join
-    | and_unless_join (AND | UNLESS) grouping? comparison_join
+?and_unless_match\
+    : comparison_match
+    | and_unless_match (AND | UNLESS) grouping? comparison_match
 
-?comparison_join\
-    : sum_join
-    | comparison_join /==|!=|>=|<=|>|</ BOOL? grouping? sum_join
+?comparison_match\
+    : sum_match
+    | comparison_match /==|!=|>=|<=|>|</ BOOL? grouping? sum_match
 
-?sum_join\
-    : product_join
-    | sum_join /\\+|-/ grouping? product_join
+?sum_match\
+    : product_match
+    | sum_match /\\+|-/ grouping? product_match
 
-?product_join\
+?product_match\
     : unary
-    | product_join /\\*|\\/|%/ grouping? unary
+    | product_match /\\*|\\/|%/ grouping? unary
 
 ?unary\
-    : power_join
-    | /\\+|-/ power_join
+    : power_match
+    | /\\+|-/ power_match
 
-?power_join\
+?power_match\
     : atom
-    | atom /\\^/ grouping? power_join
+    | atom /\\^/ grouping? power_match
 
 ?atom\
-    : vector
-    | "(" vector_expression ")"
-
-?vector\
     : function
     | aggregation
-    | instant_selector
+    | instant_query
     | NUMBER
     | STRING
+    | "(" query ")"
 
 // Selectors
 
-instant_selector\
-    : METRIC_NAME ("{" label_matcher_list? "}")? -> instant_selector_with_metric
-    | "{" label_matcher_list "}" -> instant_selector_without_metric
+instant_query\
+    : METRIC_NAME ("{" label_matcher_list? "}")? -> instant_query_with_metric
+    | "{" label_matcher_list "}" -> instant_query_without_metric
 
 label_matcher_list: label_matcher ("," label_matcher)*
 label_matcher: label_name /=~|=|!=|!~/ STRING
 
-matrix_selector: vector_expression "[" DURATION "]"
+matrix: query "[" DURATION "]"
 
-subquery_selector: vector_expression "[" DURATION ":" DURATION? "]"
+subquery: query "[" DURATION ":" DURATION? "]"
 
-offset: vector_expression OFFSET DURATION
+offset: query OFFSET DURATION
 
 // Function
 
 function: function_name parameter_list
-parameter_list: "(" (vector_expression ("," vector_expression)*)? ")"
+parameter_list: "(" (query ("," query)*)? ")"
 ?function_name\
     : ABS
     | ABSENT

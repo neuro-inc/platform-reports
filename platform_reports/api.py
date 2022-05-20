@@ -187,7 +187,7 @@ class PrometheusProxyHandler:
         else:
             # Potentially user can request any data in prometheus.
             # We need to check the maximum set of permissions which are required
-            # to access any data inside in prometheus.
+            # to access any data in prometheus.
             if not await self._auth_service.check_permissions(
                 user_name,
                 [

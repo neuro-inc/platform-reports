@@ -30,6 +30,10 @@ class LabelMatcherOperator(enum.Enum):
     RE = "=~"
     NRE = "!~"
 
+    @property
+    def is_eq(self) -> bool:
+        return self == self.EQ
+
 
 @dataclass(frozen=True)
 class LabelMatcher:
@@ -39,6 +43,10 @@ class LabelMatcher:
 
     def __repr__(self) -> str:
         return repr(f"{self.name}{self.operator.value}{self.value}")
+
+    @property
+    def is_eq(self) -> bool:
+        return self.operator.is_eq
 
     def matches(self, label_value: str) -> bool:
         if self.operator == LabelMatcherOperator.EQ:
@@ -85,6 +93,13 @@ class Join(Vector):
 class Metric(Vector):
     name: str
     label_matchers: Mapping[str, LabelMatcher] = field(default_factory=dict)
+
+    def is_from_job(self, job: str) -> bool:
+        return self.label_matchers["job"].matches(job)
+
+    def get_eq_label_matcher(self, name: str) -> LabelMatcher | None:
+        matcher = self.label_matchers.get(name)
+        return matcher if matcher and matcher.is_eq else None
 
 
 def parse_query(query: str) -> Vector | None:

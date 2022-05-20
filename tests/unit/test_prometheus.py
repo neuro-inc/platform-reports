@@ -5,10 +5,10 @@ from collections.abc import Sequence
 import pytest
 
 from platform_reports.prometheus import (
-    Join,
+    InstantVector,
     LabelMatcher,
-    Metric,
     PromQLException,
+    VectorMatch,
     parse_query,
 )
 
@@ -22,22 +22,22 @@ class TestDashboards:
                 parse_query(expr)
 
 
-class TestParseQueryMetrics:
+class TestParseQueries:
     def test_raises_if_invalid_syntax(self) -> None:
         with pytest.raises(PromQLException):
             parse_query("1_invalid_metric_name")
 
-    def test_without_metric(self) -> None:
+    def test_scalars(self) -> None:
         result = parse_query("1 * 1")
         assert result is None
 
-    def test_metric(self) -> None:
+    def test_instant_vector(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
     def test_metric_without_name(self) -> None:
         result = parse_query("{__name__='container_cpu_usage_seconds_total'}")
-        assert result == Metric(
+        assert result == InstantVector(
             name="",
             label_matchers={
                 "__name__": LabelMatcher.equal(
@@ -46,30 +46,30 @@ class TestParseQueryMetrics:
             },
         )
 
-    def test_metric_with_keyword_label_matcher(self) -> None:
+    def test_instant_vector_with_keyword_label_matcher(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total{and='value'}")
-        assert result == Metric(
+        assert result == InstantVector(
             name="container_cpu_usage_seconds_total",
             label_matchers={"and": LabelMatcher.equal(name="and", value="value")},
         )
 
-    def test_metric_with_empty_label_matchers(self) -> None:
+    def test_instant_vector_with_empty_label_matchers(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total{}")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metric_with_number(self) -> None:
+    def test_instant_vector_with_number(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total * 1")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metric_with_single_quoted_string(self) -> None:
+    def test_instant_vector_with_single_quoted_string(self) -> None:
         result = parse_query("count_values('\\t version \\t', build_version)")
-        assert result == Metric(name="build_version")
+        assert result == InstantVector(name="build_version")
 
-    def test_metric_with_double_quoted_string(self) -> None:
+    def test_instant_vector_with_double_quoted_string(self) -> None:
         result = parse_query('count_values("\\t version \\t", build_version)')
-        assert result == Metric(name="build_version")
+        assert result == InstantVector(name="build_version")
 
-    def test_metric_with_single_double_quoted_label_matchers(self) -> None:
+    def test_instant_vector_with_single_double_quoted_label_matchers(self) -> None:
         result = parse_query(
             """
             container_cpu_usage_seconds_total {
@@ -77,7 +77,7 @@ class TestParseQueryMetrics:
             }
             """
         )
-        assert result == Metric(
+        assert result == InstantVector(
             name="container_cpu_usage_seconds_total",
             label_matchers={
                 "job": LabelMatcher.regex(name="job", value="\\t kubelet \\t"),
@@ -85,9 +85,9 @@ class TestParseQueryMetrics:
             },
         )
 
-    def test_metric_with_empty_label_matcher_values(self) -> None:
+    def test_instant_vector_with_empty_label_matcher_values(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total{pod!='',image!=\"\"}")
-        assert result == Metric(
+        assert result == InstantVector(
             name="container_cpu_usage_seconds_total",
             label_matchers={
                 "pod": LabelMatcher.not_equal(name="pod", value=""),
@@ -95,34 +95,34 @@ class TestParseQueryMetrics:
             },
         )
 
-    def test_metric_with_interval(self) -> None:
+    def test_range_vector_with_interval(self) -> None:
         result = parse_query("irate(container_cpu_usage_seconds_total[5m])")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metric_with_subquery(self) -> None:
+    def test_instant_vector_with_subquery(self) -> None:
         result = parse_query("irate(container_cpu_usage_seconds_total[5m:])")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("irate(container_cpu_usage_seconds_total[5m:1m])")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("irate(container_cpu_usage_seconds_total[5m])[30m:1m]")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metric_with_offset(self) -> None:
+    def test_instant_vector_with_offset(self) -> None:
         result = parse_query("container_cpu_usage_seconds_total offset 5m")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("container_cpu_usage_seconds_total[5m] offset 5m")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("container_cpu_usage_seconds_total[5m:1m] offset 5m")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("irate(container_cpu_usage_seconds_total[5m]) offset 30m")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metric_with_aggregation(self) -> None:
+    def test_instant_vector_with_aggregation(self) -> None:
         result = parse_query(
             """
             sum by (pod) (
@@ -130,7 +130,7 @@ class TestParseQueryMetrics:
             )
             """
         )
-        assert result == Metric(
+        assert result == InstantVector(
             name="container_cpu_usage_seconds_total",
             label_matchers={"job": LabelMatcher.equal(name="job", value="kubelet")},
         )
@@ -138,12 +138,12 @@ class TestParseQueryMetrics:
         result = parse_query(
             "sum(irate(container_cpu_usage_seconds_total[5m])) by (pod)"
         )
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
         result = parse_query("sum(irate(container_cpu_usage_seconds_total[5m]))")
-        assert result == Metric(name="container_cpu_usage_seconds_total")
+        assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
-    def test_metrics_one_to_many_join(self) -> None:
+    def test_one_to_many_match(self) -> None:
         result = parse_query(
             """
             sum by (pod) (
@@ -153,12 +153,12 @@ class TestParseQueryMetrics:
             sum by (pod) (container_memory_usage_bytes{job="kubelet"})
             """
         )
-        assert result == Join(
-            left=Metric(
+        assert result == VectorMatch(
+            left=InstantVector(
                 name="container_cpu_usage_seconds_total",
                 label_matchers={"job": LabelMatcher.equal(name="job", value="kubelet")},
             ),
-            right=Metric(
+            right=InstantVector(
                 name="container_memory_usage_bytes",
                 label_matchers={"job": LabelMatcher.equal(name="job", value="kubelet")},
             ),
@@ -173,14 +173,14 @@ class TestParseQueryMetrics:
             sum by (pod) (container_memory_usage_bytes)
             """
         )
-        assert result == Join(
-            left=Metric(name="container_cpu_usage_seconds_total"),
-            right=Metric(name="container_memory_usage_bytes"),
+        assert result == VectorMatch(
+            left=InstantVector(name="container_cpu_usage_seconds_total"),
+            right=InstantVector(name="container_memory_usage_bytes"),
             operator="+",
             on=["pod"],
         )
 
-    def test_metrics_join_with_on(self) -> None:
+    def test_match_with_on(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
@@ -188,14 +188,14 @@ class TestParseQueryMetrics:
             sum by (pod) (container_memory_usage_bytes)
             """
         )
-        assert result == Join(
-            left=Metric(name="container_cpu_usage_seconds_total"),
-            right=Metric(name="container_memory_usage_bytes"),
+        assert result == VectorMatch(
+            left=InstantVector(name="container_cpu_usage_seconds_total"),
+            right=InstantVector(name="container_memory_usage_bytes"),
             operator="+",
             on=["pod"],
         )
 
-    def test_metrics_join_with_ignoring(self) -> None:
+    def test_match_with_ignoring(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
@@ -203,14 +203,14 @@ class TestParseQueryMetrics:
             sum by (pod) (container_memory_usage_bytes)
             """
         )
-        assert result == Join(
-            left=Metric(name="container_cpu_usage_seconds_total"),
-            right=Metric(name="container_memory_usage_bytes"),
+        assert result == VectorMatch(
+            left=InstantVector(name="container_cpu_usage_seconds_total"),
+            right=InstantVector(name="container_memory_usage_bytes"),
             operator="+",
             ignoring=["pod"],
         )
 
-    def test_metrics_join_is_left_associative(self) -> None:
+    def test_match_is_left_associative(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
@@ -220,17 +220,17 @@ class TestParseQueryMetrics:
             sum by (pod) (container_memory_usage_bytes)
             """
         )
-        assert result == Join(
-            left=Join(
-                left=Metric(name="container_cpu_usage_seconds_total"),
-                right=Metric(name="container_memory_usage_bytes"),
+        assert result == VectorMatch(
+            left=VectorMatch(
+                left=InstantVector(name="container_cpu_usage_seconds_total"),
+                right=InstantVector(name="container_memory_usage_bytes"),
                 operator="-",
             ),
-            right=Metric(name="container_memory_usage_bytes"),
+            right=InstantVector(name="container_memory_usage_bytes"),
             operator="-",
         )
 
-    def test_metrics_join_with_parens(self) -> None:
+    def test_match_with_parens(self) -> None:
         result = parse_query(
             """
             sum by (pod) (irate(container_cpu_usage_seconds_total[5m]))
@@ -242,11 +242,11 @@ class TestParseQueryMetrics:
             )
             """
         )
-        assert result == Join(
-            left=Metric(name="container_cpu_usage_seconds_total"),
-            right=Join(
-                left=Metric(name="container_memory_usage_bytes"),
-                right=Metric(name="container_memory_usage_bytes"),
+        assert result == VectorMatch(
+            left=InstantVector(name="container_cpu_usage_seconds_total"),
+            right=VectorMatch(
+                left=InstantVector(name="container_memory_usage_bytes"),
+                right=InstantVector(name="container_memory_usage_bytes"),
                 operator="-",
                 ignoring=["pod"],
             ),

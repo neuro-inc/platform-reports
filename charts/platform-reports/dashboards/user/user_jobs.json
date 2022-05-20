@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 4,
-    "iteration": 1645612311745,
+    "iteration": 1653077870266,
     "links": [],
     "panels": [
         {
@@ -30,7 +30,7 @@
             },
             "id": 20,
             "panels": [],
-            "title": "Jobs",
+            "title": "Running Jobs",
             "type": "row"
         },
         {
@@ -191,11 +191,32 @@
                                 "value": "dateTimeAsIsoNoDateIfToday"
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Organization"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "no_org"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 10,
+                "h": 14,
                 "w": 24,
                 "x": 0,
                 "y": 1
@@ -232,7 +253,7 @@
                     "refId": "B"
                 },
                 {
-                    "expr": "1000 * kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                    "expr": "1000 * kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_gpu_model) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -251,7 +272,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Running Jobs",
+            "title": "",
             "transformations": [
                 {
                     "id": "seriesToColumns",
@@ -263,7 +284,10 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "Time": true,
+                            "Time 1": true,
+                            "Time 2": true,
+                            "Time 3": true,
+                            "Time 4": true,
                             "Value #C": false,
                             "__name__": true,
                             "container": true,
@@ -290,15 +314,20 @@
                             "uid": true
                         },
                         "indexByName": {
-                            "Time": 8,
-                            "Value #A": 6,
-                            "Value #B": 7,
-                            "Value #C": 5,
-                            "Value #D": 2,
-                            "label_platform_neuromation_io_gpu_model": 3,
-                            "label_platform_neuromation_io_user": 0,
-                            "node": 4,
-                            "pod": 1
+                            "Time 1": 7,
+                            "Time 2": 8,
+                            "Time 3": 9,
+                            "Time 4": 10,
+                            "Value #A": 5,
+                            "Value #B": 6,
+                            "Value #C": 4,
+                            "Value #D": 3,
+                            "job": 11,
+                            "label_platform_neuromation_io_gpu_model": 2,
+                            "label_platform_neuromation_io_org": 0,
+                            "pod": 1,
+                            "prometheus": 12,
+                            "prometheus_replica": 13
                         },
                         "renameByName": {
                             "Value #A": "CPU Usage",
@@ -306,6 +335,7 @@
                             "Value #C": "Start Time",
                             "Value #D": "GPU",
                             "label_platform_neuromation_io_gpu_model": "GPU Model",
+                            "label_platform_neuromation_io_org": "Organization",
                             "node": "Node",
                             "pod": "Job"
                         }
@@ -315,314 +345,13 @@
             "type": "table"
         },
         {
-            "datasource": null,
-            "fieldConfig": {
-                "defaults": {
-                    "custom": {
-                        "align": null,
-                        "filterable": false
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Start Time"
-                        },
-                        "properties": [
-                            {
-                                "id": "unit",
-                                "value": "dateTimeAsIsoNoDateIfToday"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Duration"
-                        },
-                        "properties": [
-                            {
-                                "id": "unit",
-                                "value": "dtdhms"
-                            },
-                            {
-                                "id": "noValue",
-                                "value": "00:00:00"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 9,
-                "w": 24,
-                "x": 0,
-                "y": 11
-            },
-            "id": 32,
-            "interval": "",
-            "options": {
-                "frameIndex": 0,
-                "showHeader": true,
-                "sortBy": [
-                    {
-                        "desc": true,
-                        "displayName": "Start Time"
-                    }
-                ]
-            },
-            "pluginVersion": "7.3.5",
-            "targets": [
-                {
-                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_gpu_model) max by(pod,label_platform_neuromation_io_gpu_model) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range]))",
-                    "format": "table",
-                    "hide": false,
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "A"
-                },
-                {
-                    "expr": "max by (pod) (max_over_time(kube_pod_running_scheduled_duration{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range]))",
-                    "format": "table",
-                    "hide": false,
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "B"
-                },
-                {
-                    "expr": "max_over_time(DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range]))",
-                    "format": "table",
-                    "hide": false,
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "C"
-                }
-            ],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "All Jobs",
-            "transformations": [
-                {
-                    "id": "seriesToColumns",
-                    "options": {
-                        "byField": "pod"
-                    }
-                },
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "Time": true
-                        },
-                        "indexByName": {
-                            "Time": 1,
-                            "Value #A": 4,
-                            "Value #B": 5,
-                            "Value #C": 2,
-                            "label_platform_neuromation_io_gpu_model": 3,
-                            "pod": 0
-                        },
-                        "renameByName": {
-                            "Value #A": "Start Time",
-                            "Value #B": "Duration",
-                            "Value #C": "GPU",
-                            "label_platform_neuromation_io_gpu_model": "GPU Model",
-                            "pod": "Job"
-                        }
-                    }
-                }
-            ],
-            "type": "table"
-        },
-        {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
-            "datasource": null,
-            "decimals": 0,
-            "fieldConfig": {
-                "defaults": {
-                    "custom": {}
-                },
-                "overrides": []
-            },
-            "fill": 2,
-            "fillGradient": 0,
-            "gridPos": {
-                "h": 10,
-                "w": 12,
-                "x": 0,
-                "y": 20
-            },
-            "hiddenSeries": false,
-            "id": 25,
-            "legend": {
-                "alignAsTable": true,
-                "avg": false,
-                "current": true,
-                "max": true,
-                "min": false,
-                "show": true,
-                "total": false,
-                "values": true
-            },
-            "lines": true,
-            "linewidth": 1,
-            "nullPointMode": "null as zero",
-            "options": {
-                "alertThreshold": true
-            },
-            "percentage": false,
-            "pluginVersion": "7.3.5",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
-            "targets": [
-                {
-                    "expr": "count (kube_pod_running{job=\"kube-state-metrics\",pod=~\"^job-.+\"} * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"})",
-                    "instant": false,
-                    "interval": "",
-                    "legendFormat": "Amount",
-                    "refId": "A"
-                }
-            ],
-            "thresholds": [],
-            "timeFrom": null,
-            "timeRegions": [],
-            "timeShift": null,
-            "title": "Number of Jobs",
-            "tooltip": {
-                "shared": true,
-                "sort": 2,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "buckets": null,
-                "mode": "time",
-                "name": null,
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "decimals": 0,
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": "0",
-                    "show": true
-                },
-                {
-                    "format": "short",
-                    "label": null,
-                    "logBase": 1,
-                    "max": null,
-                    "min": null,
-                    "show": true
-                }
-            ],
-            "yaxis": {
-                "align": false,
-                "alignLevel": null
-            }
-        },
-        {
-            "datasource": null,
-            "fieldConfig": {
-                "defaults": {
-                    "custom": {},
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "0",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "rgb(70, 76, 84)",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 5,
-                "w": 6,
-                "x": 12,
-                "y": 20
-            },
-            "id": 38,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "value"
-            },
-            "pluginVersion": "7.3.5",
-            "targets": [
-                {
-                    "expr": "count (max by(pod) (max_over_time(kube_pod_running{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) max by(pod) (max_over_time(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}[$__range])))",
-                    "format": "table",
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "A"
-                }
-            ],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "Total Number of Jobs",
-            "type": "stat"
-        },
-        {
             "collapsed": true,
             "datasource": null,
             "gridPos": {
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 30
+                "y": 15
             },
             "id": 36,
             "panels": [
@@ -648,7 +377,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 31
+                        "y": 16
                     },
                     "hiddenSeries": false,
                     "id": 1,
@@ -671,7 +400,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -754,7 +483,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 31
+                        "y": 16
                     },
                     "hiddenSeries": false,
                     "id": 34,
@@ -777,7 +506,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -860,7 +589,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 39
+                        "y": 24
                     },
                     "hiddenSeries": false,
                     "id": 40,
@@ -883,7 +612,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -946,7 +675,7 @@
                     }
                 }
             ],
-            "title": "Resource Consumption",
+            "title": "CPU / Memory / GPU Total",
             "type": "row"
         },
         {
@@ -956,7 +685,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 31
+                "y": 16
             },
             "id": 14,
             "panels": [
@@ -982,12 +711,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 32
+                        "y": 17
                     },
                     "hiddenSeries": false,
                     "id": 33,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "max": false,
@@ -1004,7 +734,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1014,7 +744,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                            "expr": "sum by (pod) (irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum by (pod) (container_spec_cpu_quota{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                             "format": "time_series",
                             "hide": false,
                             "interval": "",
@@ -1087,12 +817,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 32
+                        "y": 17
                     },
                     "hiddenSeries": false,
                     "id": 2,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "max": false,
@@ -1109,7 +840,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1119,7 +850,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (container_memory_working_set_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) / sum by (pod) (container_spec_memory_limit_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                            "expr": "sum by (pod) (container_memory_working_set_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) / sum by (pod) (container_spec_memory_limit_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * 100 * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -1180,7 +911,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 32
+                "y": 17
             },
             "id": 12,
             "panels": [
@@ -1206,12 +937,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 33
+                        "y": 18
                     },
                     "hiddenSeries": false,
                     "id": 3,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "max": false,
@@ -1312,7 +1044,7 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 33
+                        "y": 18
                     },
                     "hiddenSeries": false,
                     "id": 4,
@@ -1408,7 +1140,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 33
+                "y": 18
             },
             "id": 10,
             "panels": [
@@ -1434,12 +1166,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 34
+                        "y": 19
                     },
                     "hiddenSeries": false,
                     "id": 5,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "hideEmpty": false,
@@ -1458,7 +1191,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1540,12 +1273,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 34
+                        "y": 19
                     },
                     "hiddenSeries": false,
                     "id": 6,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "hideEmpty": false,
@@ -1564,7 +1298,7 @@
                         "alertThreshold": true
                     },
                     "percentage": false,
-                    "pluginVersion": "7.2.1",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1574,7 +1308,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=~\"^job-.+\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"} * 8",
+                            "expr": "sum by (pod) (irate(container_network_transmit_bytes_total{job=\"kubelet\",pod=~\"^job-.+\"}[$__rate_interval])) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"} * 8",
                             "format": "time_series",
                             "instant": false,
                             "interval": "",
@@ -1636,7 +1370,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 34
+                "y": 19
             },
             "id": 16,
             "panels": [
@@ -1662,12 +1396,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 0,
-                        "y": 5
+                        "y": 20
                     },
                     "hiddenSeries": false,
                     "id": 7,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "max": false,
@@ -1680,8 +1415,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1691,7 +1429,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=~\"^job-.+\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                            "expr": "sum by (pod) (irate(container_fs_reads_bytes_total{job=\"kubelet\",pod=~\"^job-.+\"}[$__rate_interval])) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                             "interval": "",
                             "intervalFactor": 1,
                             "legendFormat": "{{pod}}",
@@ -1762,12 +1500,13 @@
                         "h": 8,
                         "w": 12,
                         "x": 12,
-                        "y": 5
+                        "y": 20
                     },
                     "hiddenSeries": false,
                     "id": 8,
                     "isNew": true,
                     "legend": {
+                        "alignAsTable": true,
                         "avg": false,
                         "current": false,
                         "max": false,
@@ -1780,8 +1519,11 @@
                     "linewidth": 1,
                     "links": [],
                     "nullPointMode": "null as zero",
+                    "options": {
+                        "alertThreshold": true
+                    },
                     "percentage": false,
-                    "pluginVersion": "7.1.0",
+                    "pluginVersion": "7.3.5",
                     "pointradius": 5,
                     "points": false,
                     "renderer": "flot",
@@ -1791,7 +1533,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\"}[$__rate_interval])) * on(pod) group_left(label_platform_neuromation_io_user) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
+                            "expr": "sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\",pod=~\"^job-.+\"}[$__rate_interval])) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_user=\"$user_name\"}",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,
@@ -1855,8 +1597,8 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "atselousov",
-                    "value": "atselousov"
+                    "text": "",
+                    "value": ""
                 },
                 "error": null,
                 "hide": 2,
@@ -1906,5 +1648,5 @@
     "timezone": "browser",
     "title": "Jobs",
     "uid": "user_jobs",
-    "version": 1
+    "version": 2
 }

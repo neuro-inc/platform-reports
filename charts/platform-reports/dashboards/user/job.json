@@ -16,7 +16,7 @@
     "gnetId": null,
     "graphTooltip": 1,
     "id": 1,
-    "iteration": 1645607698018,
+    "iteration": 1653309215737,
     "links": [],
     "panels": [
         {
@@ -49,16 +49,7 @@
             "fieldConfig": {
                 "defaults": {
                     "custom": {},
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "N/A",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
+                    "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
@@ -78,7 +69,7 @@
                 "x": 6,
                 "y": 0
             },
-            "id": 12,
+            "id": 33,
             "options": {
                 "colorMode": "value",
                 "graphMode": "none",
@@ -96,17 +87,17 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
+                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"}",
                     "format": "time_series",
-                    "instant": false,
+                    "instant": true,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_user}}",
+                    "legendFormat": "{{label_platform_neuromation_io_preset}}",
                     "refId": "A"
                 }
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "User",
+            "title": "Preset",
             "type": "stat"
         },
         {
@@ -403,16 +394,7 @@
             "fieldConfig": {
                 "defaults": {
                     "custom": {},
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "N/A",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
+                    "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
@@ -428,11 +410,11 @@
             },
             "gridPos": {
                 "h": 2,
-                "w": 3,
+                "w": 6,
                 "x": 0,
                 "y": 2
             },
-            "id": 10,
+            "id": 12,
             "options": {
                 "colorMode": "value",
                 "graphMode": "none",
@@ -445,150 +427,22 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "value"
+                "textMode": "name"
             },
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
+                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_org!=\"no_org\"}",
+                    "format": "time_series",
                     "instant": true,
                     "interval": "",
-                    "legendFormat": "",
+                    "legendFormat": "{{label_platform_neuromation_io_org}}",
                     "refId": "A"
                 }
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "CPU Cores",
-            "type": "stat"
-        },
-        {
-            "datasource": null,
-            "fieldConfig": {
-                "defaults": {
-                    "custom": {},
-                    "decimals": 0,
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "N/A",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "rgb(70, 76, 84)",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 3,
-                "x": 3,
-                "y": 2
-            },
-            "id": 11,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "value"
-            },
-            "pluginVersion": "7.3.5",
-            "targets": [
-                {
-                    "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "A"
-                }
-            ],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "Memory",
-            "type": "stat"
-        },
-        {
-            "datasource": null,
-            "fieldConfig": {
-                "defaults": {
-                    "custom": {},
-                    "mappings": [
-                        {
-                            "from": "",
-                            "id": 0,
-                            "text": "0",
-                            "to": "",
-                            "type": 1,
-                            "value": "null"
-                        }
-                    ],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "rgb(70, 76, 84)",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "none"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 2,
-                "x": 6,
-                "y": 2
-            },
-            "id": 33,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "value"
-            },
-            "pluginVersion": "7.3.5",
-            "targets": [
-                {
-                    "expr": "DCGM_FI_DEV_COUNT_POD{job=\"nvidia-dcgm-exporter\",pod=\"$job_id\"}",
-                    "instant": true,
-                    "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
-                    "refId": "A"
-                }
-            ],
-            "timeFrom": null,
-            "timeShift": null,
-            "title": "GPU",
+            "title": "Organization",
             "type": "stat"
         },
         {
@@ -612,11 +466,11 @@
             },
             "gridPos": {
                 "h": 2,
-                "w": 4,
-                "x": 8,
+                "w": 6,
+                "x": 6,
                 "y": 2
             },
-            "id": 19,
+            "id": 34,
             "options": {
                 "colorMode": "value",
                 "graphMode": "none",
@@ -634,16 +488,17 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_gpu_model!=\"\"}",
-                    "instant": true,
+                    "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
+                    "format": "time_series",
+                    "instant": false,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_gpu_model}}",
+                    "legendFormat": "{{label_platform_neuromation_io_user}}",
                     "refId": "A"
                 }
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Model",
+            "title": "User",
             "type": "stat"
         },
         {
@@ -1561,7 +1416,7 @@
             "type": "row"
         }
     ],
-    "refresh": "10s",
+    "refresh": "15s",
     "schemaVersion": 26,
     "style": "light",
     "tags": [],
@@ -1595,7 +1450,7 @@
     },
     "timepicker": {
         "refresh_intervals": [
-            "10s",
+            "15s",
             "30s",
             "1m",
             "5m",
@@ -1620,5 +1475,5 @@
     "timezone": "browser",
     "title": "Job",
     "uid": "job",
-    "version": 1
+    "version": 2
 }

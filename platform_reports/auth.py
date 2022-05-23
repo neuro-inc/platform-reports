@@ -22,13 +22,14 @@ PLATFORM_JOB_RE = re.compile(
 class Dashboard(str, enum.Enum):
     NODES = "nodes"
     SERVICES = "services"
+    PRICES = "prices"
     JOB = "job"
     JOBS = "jobs"
     USER_JOBS = "user_jobs"
     ORG_JOBS = "org_jobs"
-    PRICES = "prices"
-    USER_PRICES = "user_prices"
-    ORG_PRICES = "org_prices"
+    CREDITS = "credits"
+    USER_CREDITS = "user_credits"
+    ORG_CREDITS = "org_credits"
 
 
 class Matcher(str, enum.Enum):
@@ -75,6 +76,8 @@ class AuthService:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.SERVICES:
             permissions = [permissions_service.get_cluster_manager_permission()]
+        elif dashboard_id == Dashboard.PRICES:
+            permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
@@ -93,19 +96,19 @@ class AuthService:
                 permissions_service.get_job_permission(user_name=dashboard_user_name)
             ]
         elif dashboard_id == Dashboard.ORG_JOBS:
-            dashboard_org_name = params.get("var-org_name", user_name)
+            dashboard_org_name = params.get("var-org_name")
             permissions = [
                 permissions_service.get_job_permission(org_name=dashboard_org_name)
             ]
-        elif dashboard_id == Dashboard.PRICES:
+        elif dashboard_id == Dashboard.CREDITS:
             permissions = [permissions_service.get_job_permission()]
-        elif dashboard_id == Dashboard.USER_PRICES:
+        elif dashboard_id == Dashboard.USER_CREDITS:
             dashboard_user_name = params.get("var-user_name", user_name)
             permissions = [
                 permissions_service.get_job_permission(user_name=dashboard_user_name)
             ]
-        elif dashboard_id == Dashboard.ORG_PRICES:
-            dashboard_org_name = params.get("var-org_name", user_name)
+        elif dashboard_id == Dashboard.ORG_CREDITS:
+            dashboard_org_name = params.get("var-org_name")
             permissions = [
                 permissions_service.get_job_permission(org_name=dashboard_org_name)
             ]
@@ -345,7 +348,7 @@ class PermissionsService:
         self, *, org_name: str | None = None, user_name: str | None = None
     ) -> Permission:
         uri = f"job://{self._cluster_name}"
-        if org_name:
+        if org_name and org_name != "no_org":
             uri = f"{uri}/{org_name}"
         if user_name:
             uri = f"{uri}/{user_name}"

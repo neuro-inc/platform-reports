@@ -12,12 +12,9 @@ function minikube::install {
 
 function minikube::start {
     minikube config set WantUpdateNotification false
-    minikube start \
-        --extra-config=kubelet.hostname-override=minikube \
-        --wait=all \
-        --wait-timeout=5m
+    minikube start --wait=all --wait-timeout=5m
     kubectl config use-context minikube
-    kubectl label node minikube \
+    kubectl label node $(hostname) \
         topology.kubernetes.io/zone=minikube-zone \
         node.kubernetes.io/instance-type=minikube \
         platform.neuromation.io/nodepool=minikube-node-pool

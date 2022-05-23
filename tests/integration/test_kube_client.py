@@ -1,14 +1,14 @@
 import aiohttp
 import pytest
 
-from platform_reports.kube_client import KubeClient, PodPhase
+from platform_reports.kube_client import KubeClient, Node, PodPhase
 
 
 class TestKubeClient:
-    async def test_get_node(self, kube_client: KubeClient) -> None:
-        node = await kube_client.get_node("minikube")
+    async def test_get_node(self, kube_client: KubeClient, kube_node: Node) -> None:
+        node = await kube_client.get_node(kube_node.metadata.name)
 
-        assert node.metadata.name == "minikube"
+        assert node.metadata.name == kube_node.metadata.name
         assert node.metadata.labels
 
     async def test_get_unknown_node__raises_error(
@@ -34,11 +34,14 @@ class TestKubeClient:
                 "kube-proxy"
             ), f"Found pod {pod.metadata.name}"
 
-    async def test_get_pods_with_field_selector(self, kube_client: KubeClient) -> None:
+    async def test_get_pods_with_field_selector(
+        self, kube_client: KubeClient, kube_node: Node
+    ) -> None:
         pods = await kube_client.get_pods(
             namespace="kube-system",
             field_selector=(
-                "spec.nodeName=minikube,status.phase!=Failed,status.phase!=Succeeded"
+                f"spec.nodeName={kube_node.metadata.name},"
+                "status.phase!=Failed,status.phase!=Succeeded"
             ),
         )
 

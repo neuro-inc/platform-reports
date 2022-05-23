@@ -11,6 +11,7 @@ from aiohttp.web import HTTPForbidden, HTTPOk
 from yarl import URL
 
 from platform_reports.config import MetricsConfig
+from platform_reports.kube_client import Node
 
 
 class TestMetrics:
@@ -21,17 +22,17 @@ class TestMetrics:
             assert response.status == HTTPOk.status_code
 
     async def test_node_metrics(
-        self, client: aiohttp.ClientSession, metrics_server: URL
+        self, client: aiohttp.ClientSession, metrics_server: URL, kube_node: Node
     ) -> None:
         async with client.get(metrics_server / "metrics") as response:
             text = await response.text()
             assert response.status == HTTPOk.status_code, text
             assert (
                 text
-                == """\
+                == f"""\
 # HELP kube_node_price_per_hour The price of the node per hour.
 # TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
+kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0.0"""
             )
 
     async def test_node_and_pod_metrics(
@@ -41,6 +42,7 @@ kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
             [MetricsConfig], AbstractAsyncContextManager[URL]
         ],
         metrics_config: MetricsConfig,
+        kube_node: Node,
     ) -> None:
         metrics_config = replace(metrics_config, job_label="")
         async with metrics_server_factory(metrics_config) as server:
@@ -48,13 +50,13 @@ kube_node_price_per_hour{node="minikube",currency="USD"} 0.0"""
                 text = await response.text()
                 assert response.status == HTTPOk.status_code, text
                 assert re.search(
-                    r"""\# HELP kube_node_price_per_hour The price of the node per hour\.
+                    rf"""# HELP kube_node_price_per_hour The price of the node per hour\.
 \# TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour\{node="minikube",currency="USD"\} 0(\.0+)?
+kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0(\.0+)?
 
 \# HELP kube_pod_credits_per_hour The credits of the pod per hour\.
 \# TYPE kube_pod_credits_per_hour gauge
-(kube_pod_credits_per_hour\{pod=".+"\} 0(\.0+)?\s*)+""",
+(kube_pod_credits_per_hour{{pod=".+"}} 0(\.0+)?\s*)+""",
                     text,
                 ), text
 

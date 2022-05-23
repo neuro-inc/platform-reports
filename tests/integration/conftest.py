@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ from platform_reports.config import (
     PrometheusProxyConfig,
     ServerConfig,
 )
+from platform_reports.kube_client import Node
 
 
 @dataclass(frozen=True)
@@ -51,6 +53,11 @@ async def create_local_app_server(
 UserFactory = Callable[
     [str, Sequence[Cluster], Sequence[Permission]], Coroutine[Any, Any, None]
 ]
+
+
+@pytest.fixture(scope="session")
+def event_loop() -> asyncio.AbstractEventLoop:
+    return asyncio.get_event_loop()
 
 
 @pytest.fixture
@@ -146,14 +153,16 @@ def platform_config_config(
 
 @pytest.fixture
 def metrics_config(
-    platform_config_config: PlatformServiceConfig, kube_config: KubeConfig
+    platform_config_config: PlatformServiceConfig,
+    kube_config: KubeConfig,
+    kube_node: Node,
 ) -> MetricsConfig:
     return MetricsConfig(
         server=ServerConfig(port=9500),
         platform_config=platform_config_config,
         kube=kube_config,
         cluster_name="default",
-        node_name="minikube",
+        node_name=kube_node.metadata.name,
     )
 
 

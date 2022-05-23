@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import socket
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,7 @@ import yaml
 from yarl import URL
 
 from platform_reports.config import KubeClientAuthType, KubeConfig
-from platform_reports.kube_client import KubeClient
+from platform_reports.kube_client import KubeClient, Node
 
 
 @pytest.fixture(scope="session")
@@ -59,7 +60,15 @@ def kube_config(
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def kube_client(kube_config: KubeConfig) -> AsyncIterator[KubeClient]:
     async with KubeClient(kube_config) as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+async def kube_node(kube_client: KubeClient) -> Node:
+    try:
+        return await kube_client.get_node("minikube")
+    except Exception:
+        return await kube_client.get_node(socket.gethostname())

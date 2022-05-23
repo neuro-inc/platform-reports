@@ -4,13 +4,15 @@ set -o verbose
 set -o errexit
 
 function minikube::install {
+    sudo apt-get update
+    sudo apt-get install -y conntrack
     curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
     sudo install minikube-linux-amd64 /usr/local/bin/minikube
 }
 
 function minikube::start {
     minikube config set WantUpdateNotification false
-    minikube start --kubernetes-version=v1.16.15 --wait=all --wait-timeout=5m
+    minikube start --extra-config=kubeadm.node-name=minikube --wait=all --wait-timeout=5m
     kubectl config use-context minikube
     kubectl label node minikube \
         topology.kubernetes.io/zone=minikube-zone \

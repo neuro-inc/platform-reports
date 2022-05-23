@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: [master]
-    tags: [v*.*, v*.*.*]
+    tags: ['v*']
   pull_request:
     branches: [master]
   pull_request_target:
@@ -13,63 +13,43 @@ on:
 
 jobs:
   test:
-    name: Run tests
-    runs-on: ubuntu-latest
     if: |
-      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
-      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
-    env:
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      AWS_REGION: us-east-1
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name != 'pull_request_target' && !endsWith(github.actor, '[bot]')) ||
+      (github.event_name == 'pull_request_target' && endsWith(github.actor, '[bot]'))
+    name: All checks are passed
+    uses: ./.github/workflows/test.yaml
+
+  approve:
+    name: Approve bot PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    needs: test
     steps:
-    - name: Checkout commit
+    - name: Checkout
       uses: actions/checkout@v3
+    - id: generate_token
+      uses: tibdex/github-app-token@v1
       with:
-        ref: ${{ github.event.pull_request.head.sha }}
-        fetch-depth: 0
-    - name: Install python
-      uses: actions/setup-python@v3
+        app_id: ${{ secrets.BOT_APP_ID }}
+        private_key: ${{ secrets.BOT_PRIVATE_KEY }}
+    - name: metadata
+      id: metadata
+      if: github.actor == 'dependabot[bot]'
+      uses: dependabot/fetch-metadata@v1.3.0
       with:
-        python-version: 3.9.9
-    - name: Cache packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-py-3.9.9-${{ hashFiles('pyproject.toml', 'setup.cfg')
-          }}
-    - name: Install dependencies
-      run: make setup
-    - name: Lint
-      run: |
-        echo "::add-matcher::.github/actionlint-matcher.json"
-        make lint
-    - name: Run unit tests
-      run: make test_unit
-    - name: Login to ghcr.io
-      uses: docker/login-action@v2.0.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
-    - name: Start minikube
-      run: |
-        ./minikube.sh install
-        ./minikube.sh start
-    - name: Run integration tests
-      run: make test_integration
-    - name: Build image
-      run: make docker_build
-    - name: Upload image artifact
-      uses: neuro-inc/upload-image-action@v21.9.2
-      with:
-        image: platform-reports
-        token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ steps.generate_token.outputs.token }}
+    - name: Enable auto-merge for bot PRs
+      run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
 
   release:
     name: Create release
     needs: test
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    uses: neuro-inc/reuse/.github/workflows/release-service.yaml@v0.0.28
+    uses: neuro-inc/reuse/.github/workflows/release-service.yaml@v0.0.27
     with:
       image: platform-reports
       helm_charts: platform-reports
@@ -77,7 +57,7 @@ jobs:
   deploy_dev:
     name: Deploy on dev
     needs: release
-    uses: neuro-inc/reuse/.github/workflows/deploy-dev.yaml@v0.0.28
+    uses: neuro-inc/reuse/.github/workflows/deploy-dev.yaml@v0.0.27
     with:
       helm_charts: platform-reports
       version: ${{ needs.release.outputs.version }}

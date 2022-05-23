@@ -197,7 +197,7 @@ class TestAuthService:
             "user", [Permission(uri="job://default/other_user", action="read")]
         )
 
-    async def test_check_org_jobs_dashboard_permissions(
+    async def test_check_org_jobs_dashboard_with_org_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
@@ -208,46 +208,79 @@ class TestAuthService:
             "user", [Permission(uri="job://default/org", action="read")]
         )
 
+    async def test_check_org_jobs_dashboard_without_org_name_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", Dashboard.ORG_JOBS, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
     async def test_check_prices_dashboard_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions("user", Dashboard.PRICES, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default", action="read")]
+            "user", [Permission(uri="role://default/manager", action="read")]
         )
 
-    async def test_check_user_prices_dashboard_with_user_name_permissions(
+    async def test_check_credits_dashboard_with_user_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_PRICES, MultiDict({"var-user_name": "other_user"})
+            "user", Dashboard.CREDITS, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
+        )
+
+    async def test_check_user_credits_dashboard_with_user_name_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", Dashboard.USER_CREDITS, MultiDict({"var-user_name": "other_user"})
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/other_user", action="read")]
         )
 
-    async def test_check_user_prices_dashboard_without_user_name_permissions(
+    async def test_check_user_credits_dashboard_without_user_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_PRICES, MultiDict()
+            "user", Dashboard.USER_CREDITS, MultiDict()
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/user", action="read")]
         )
 
-    async def test_check_org_prices_dashboard_permissions(
+    async def test_check_org_credits_with_org_name_dashboard_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.ORG_PRICES, MultiDict({"var-org_name": "org"})
+            "user", Dashboard.ORG_CREDITS, MultiDict({"var-org_name": "org"})
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/org", action="read")]
+        )
+
+    async def test_check_org_credits_without_org_name_dashboard_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", Dashboard.ORG_CREDITS, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
         )
 
     async def test_check_node_exporter_query_permissions(
@@ -626,6 +659,27 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="job://default/org", action="read")]
+        )
+
+    async def test_check_join_for_no_org_jobs_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{
+                    job='kube-state-metrics',
+                    label_platform_neuromation_io_org='no_org'
+                }
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user", [Permission(uri="job://default", action="read")]
         )
 
     async def test_check_join_for_org_user_jobs_permissions(

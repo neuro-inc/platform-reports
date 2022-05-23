@@ -170,7 +170,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "CPU Usage",
+            "title": "CPU",
             "type": "gauge"
         },
         {
@@ -242,7 +242,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "Memory Usage",
+            "title": "Memory",
             "type": "gauge"
         },
         {
@@ -314,7 +314,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Usage",
+            "title": "GPU",
             "type": "gauge"
         },
         {
@@ -386,7 +386,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "GPU Memory Usage",
+            "title": "GPU Memory",
             "type": "gauge"
         },
         {
@@ -589,7 +589,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "CPU Usage",
+            "title": "CPU",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,
@@ -699,7 +699,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Memory Usage",
+            "title": "Memory",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,
@@ -817,7 +817,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "GPU Usage",
+            "title": "GPU",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,
@@ -930,7 +930,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "GPU Memory Usage",
+            "title": "GPU Memory",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,

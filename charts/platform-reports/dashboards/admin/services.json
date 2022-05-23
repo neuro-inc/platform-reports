@@ -108,7 +108,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "CPU Usage",
+            "title": "CPU",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,
@@ -231,7 +231,7 @@
             "timeFrom": null,
             "timeRegions": [],
             "timeShift": null,
-            "title": "Memory Usage",
+            "title": "Memory",
             "tooltip": {
                 "msResolution": true,
                 "shared": true,

@@ -13,7 +13,6 @@ function minikube::install {
 function minikube::start {
     minikube config set WantUpdateNotification false
     minikube start \
-        --extra-config=kubeadm.node-name=minikube \
         --extra-config=kubelet.hostname-override=minikube \
         --wait=all \
         --wait-timeout=5m

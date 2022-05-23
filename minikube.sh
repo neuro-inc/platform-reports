@@ -12,7 +12,7 @@ function minikube::install {
 
 function minikube::start {
     minikube config set WantUpdateNotification false
-    minikube start --wait=true --wait-timeout=5m
+    minikube start --wait=all --wait-timeout=5m
     kubectl config use-context minikube
     kubectl label node $(hostname) \
         topology.kubernetes.io/zone=minikube-zone \

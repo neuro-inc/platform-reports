@@ -34,11 +34,14 @@ class TestKubeClient:
                 "kube-proxy"
             ), f"Found pod {pod.metadata.name}"
 
-    async def test_get_pods_with_field_selector(self, kube_client: KubeClient) -> None:
+    async def test_get_pods_with_field_selector(
+        self, kube_client: KubeClient, kube_node: Node
+    ) -> None:
         pods = await kube_client.get_pods(
             namespace="kube-system",
             field_selector=(
-                "spec.nodeName=minikube,status.phase!=Failed,status.phase!=Succeeded"
+                f"spec.nodeName={kube_node.metadata.name},"
+                "status.phase!=Failed,status.phase!=Succeeded"
             ),
         )
 

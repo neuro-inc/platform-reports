@@ -33,7 +33,7 @@
             "10s"
         ]
     },
-    "timezone": "",
+    "timezone": "browser",
     "title": "Nodes",
     "uid": "nodes",
     "version": 0

@@ -264,7 +264,7 @@
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "",
+            "title": " ",
             "transformations": [
                 {
                     "id": "seriesToColumns",

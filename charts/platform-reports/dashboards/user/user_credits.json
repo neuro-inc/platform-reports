@@ -15,8 +15,8 @@
     "editable": true,
     "gnetId": null,
     "graphTooltip": 1,
-    "id": 5,
-    "iteration": 1604609990159,
+    "id": 10,
+    "iteration": 1653377267407,
     "links": [],
     "panels": [
         {
@@ -28,11 +28,12 @@
                 "y": 0
             },
             "id": 27,
-            "title": "Nodes",
+            "title": "Jobs",
             "type": "row"
         },
         {
             "datasource": null,
+            "description": "",
             "fieldConfig": {
                 "defaults": {
                     "custom": {
@@ -58,32 +59,62 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Price"
+                            "options": "Credits"
                         },
                         "properties": [
                             {
-                                "id": "decimals",
-                                "value": 1
+                                "id": "unit",
+                                "value": "none"
                             },
                             {
-                                "id": "unit",
-                                "value": "currencyUSD"
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "0",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Up Time"
+                            "options": "Start Time"
                         },
                         "properties": [
                             {
                                 "id": "unit",
-                                "value": "dtdhms"
-                            },
+                                "value": "dateTimeAsIsoNoDateIfToday"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Organization"
+                        },
+                        "properties": [
                             {
-                                "id": "noValue",
-                                "value": "00:00:00"
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "no_org"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -95,25 +126,21 @@
                 "x": 0,
                 "y": 1
             },
-            "id": 22,
+            "id": 19,
             "options": {
                 "frameIndex": 0,
                 "showHeader": true,
                 "sortBy": [
                     {
-                        "desc": false,
-                        "displayName": "Node Pool"
-                    },
-                    {
-                        "desc": false,
-                        "displayName": "Node"
+                        "desc": true,
+                        "displayName": "Start Time"
                     }
                 ]
             },
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "15 * sum by(label_platform_neuromation_io_nodepool,node) (count_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -122,7 +149,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "(15 / 3600) * sum by(node) (sum_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"})",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -138,30 +165,34 @@
                 {
                     "id": "seriesToColumns",
                     "options": {
-                        "byField": "node"
+                        "byField": "pod"
                     }
                 },
                 {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "Time": true,
                             "Time 1": true,
-                            "Time 2": true
+                            "Time 2": true,
+                            "job": true,
+                            "prometheus": true,
+                            "prometheus_replica": true
                         },
                         "indexByName": {
-                            "Time 1": 4,
-                            "Time 2": 5,
-                            "Value #A": 2,
-                            "Value #B": 3,
-                            "label_platform_neuromation_io_nodepool": 0,
-                            "node": 1
+                            "Time 1": 5,
+                            "Time 2": 6,
+                            "Value #A": 3,
+                            "Value #B": 4,
+                            "label_platform_neuromation_io_org": 0,
+                            "label_platform_neuromation_io_preset": 2,
+                            "pod": 1
                         },
                         "renameByName": {
-                            "Value #A": "Up Time",
-                            "Value #B": "Price",
-                            "label_platform_neuromation_io_nodepool": "Node Pool",
-                            "node": "Node"
+                            "Value #A": "Start Time",
+                            "Value #B": "Credits",
+                            "label_platform_neuromation_io_org": "Organization",
+                            "label_platform_neuromation_io_preset": "Preset",
+                            "pod": "Job"
                         }
                     }
                 }
@@ -175,9 +206,9 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 14
+                "y": 10
             },
-            "id": 25,
+            "id": 29,
             "panels": [
                 {
                     "datasource": null,
@@ -206,7 +237,7 @@
                             {
                                 "matcher": {
                                     "id": "byName",
-                                    "options": "Price"
+                                    "options": "Credits"
                                 },
                                 "properties": [
                                     {
@@ -215,23 +246,41 @@
                                     },
                                     {
                                         "id": "unit",
-                                        "value": "currencyUSD"
+                                        "value": "none"
+                                    },
+                                    {
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "0",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "null"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
                             {
                                 "matcher": {
                                     "id": "byName",
-                                    "options": "Up Time"
+                                    "options": "Organization"
                                 },
                                 "properties": [
                                     {
-                                        "id": "unit",
-                                        "value": "dtdhms"
-                                    },
-                                    {
-                                        "id": "noValue",
-                                        "value": "00:00:00"
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "no_org"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -250,29 +299,24 @@
                         "sortBy": [
                             {
                                 "desc": false,
-                                "displayName": "Node Pool"
+                                "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Preset"
                             }
                         ]
                     },
                     "pluginVersion": "7.3.5",
                     "targets": [
                         {
-                            "expr": "15 * sum by(label_platform_neuromation_io_nodepool) (count_over_time(kube_node_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                            "expr": "15 / 3600 * sum by(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"})",
                             "format": "table",
                             "hide": false,
                             "instant": true,
                             "interval": "",
                             "legendFormat": "",
                             "refId": "A"
-                        },
-                        {
-                            "expr": "(15 / 3600) * sum by(label_platform_neuromation_io_nodepool) (sum_over_time(kube_node_price_per_hour{job=\"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
-                            "format": "table",
-                            "hide": false,
-                            "instant": true,
-                            "interval": "",
-                            "legendFormat": "",
-                            "refId": "B"
                         }
                     ],
                     "timeFrom": null,
@@ -280,30 +324,21 @@
                     "title": " ",
                     "transformations": [
                         {
-                            "id": "seriesToColumns",
-                            "options": {
-                                "byField": "label_platform_neuromation_io_nodepool"
-                            }
-                        },
-                        {
                             "id": "organize",
                             "options": {
                                 "excludeByName": {
-                                    "Time": true,
-                                    "Time 1": true,
-                                    "Time 2": true
+                                    "Time": true
                                 },
                                 "indexByName": {
-                                    "Time 1": 3,
-                                    "Time 2": 4,
-                                    "Value #A": 1,
-                                    "Value #B": 2,
-                                    "label_platform_neuromation_io_nodepool": 0
+                                    "Time": 3,
+                                    "Value": 2,
+                                    "label_platform_neuromation_io_org": 0,
+                                    "label_platform_neuromation_io_preset": 1
                                 },
                                 "renameByName": {
-                                    "Value #A": "Up Time",
-                                    "Value #B": "Price",
-                                    "label_platform_neuromation_io_nodepool": "Node Pool"
+                                    "Value": "Credits",
+                                    "label_platform_neuromation_io_org": "Organization",
+                                    "label_platform_neuromation_io_preset": "Preset"
                                 }
                             }
                         }
@@ -311,7 +346,7 @@
                     "type": "table"
                 }
             ],
-            "title": "Node Pools",
+            "title": "Organizations",
             "type": "row"
         }
     ],
@@ -320,7 +355,56 @@
     "style": "light",
     "tags": [],
     "templating": {
-        "list": []
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "",
+                    "value": ""
+                },
+                "error": null,
+                "hide": 2,
+                "label": "User",
+                "name": "user_name",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "",
+                        "value": ""
+                    }
+                ],
+                "query": "",
+                "skipUrlSync": false,
+                "type": "constant"
+            },
+            {
+                "allValue": ".*",
+                "current": {
+                    "selected": false,
+                    "text": "All",
+                    "value": "$__all"
+                },
+                "datasource": "Prometheus",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org!=\"no_org\"},label_platform_neuromation_io_org)",
+                "error": null,
+                "hide": 0,
+                "includeAll": true,
+                "label": "Organization",
+                "multi": false,
+                "name": "org_name",
+                "options": [],
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org!=\"no_org\"},label_platform_neuromation_io_org)",
+                "refresh": 2,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 1,
+                "tagValuesQuery": "",
+                "tags": [],
+                "tagsQuery": "",
+                "type": "query",
+                "useTags": false
+            }
+        ]
     },
     "time": {
         "from": "now-1h",
@@ -351,7 +435,7 @@
         ]
     },
     "timezone": "browser",
-    "title": "Prices",
-    "uid": "prices",
+    "title": "Credits",
+    "uid": "user_credits",
     "version": 1
 }

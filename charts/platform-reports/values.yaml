@@ -1,3 +1,7 @@
+global:
+  rbac:
+    pspEnabled: false
+
 nodePoolLabels:
   job: platform.neuromation.io/job
   gpu: platform.neuromation.io/accelerator
@@ -162,6 +166,9 @@ kube-prometheus-stack:
       verticalpodautoscalers: false
       volumeattachments: false
 
+    podSecurityPolicy:
+      enabled: false
+
   kubelet:
     enabled: true
 
@@ -197,6 +204,9 @@ kube-prometheus-stack:
     securityContext:
       runAsUser: 0
       runAsNonRoot: false
+
+    rbac:
+      pspEnabled: false
 
     extraHostVolumeMounts:
       - name: system-dbus-socket
@@ -255,8 +265,12 @@ kube-prometheus-stack:
       selfMonitor: false
 
   prometheus:
+    podSecurityPolicy:
+      enabled: false
+
     serviceMonitor:
       selfMonitor: false
+
     prometheusSpec:
       image:
         repository: quay.io/prometheus/prometheus
@@ -379,6 +393,9 @@ grafana:
 
   ingress:
     enabled: false
+
+  rbac:
+    pspEnabled: false
 
   initChownData:
     image:

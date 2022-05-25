@@ -64,7 +64,9 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: NP_CONFIG_URL
               value: {{ .Values.platform.configUrl | quote }}
-            - name: NP_CONFIG_TOKEN
+            - name: NP_API_URL
+              value: {{ .Values.platform.apiUrl | quote }}
+            - name: NP_TOKEN
 {{- if .Values.platform.token }}
 {{ toYaml .Values.platform.token | indent 14 }}
 {{- end }}
@@ -156,7 +158,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ include "platformReports.metricsExporter.fullname" . }}
+  name: neuro-metrics-exporter # name is fixed as it is used grafana dashboards
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     service: platform-metrics-exporter
 spec:

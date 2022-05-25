@@ -6,7 +6,7 @@ import logging
 import re
 from collections.abc import AsyncIterator, Awaitable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
@@ -19,6 +19,7 @@ from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
 from neuro_config_client import ConfigClient
 from neuro_logging import new_trace_cm, trace_cm
+from neuro_sdk import Client as ApiClient, JobDescription, ResourceNotFound
 from yarl import URL
 
 from .kube_client import KubeClient
@@ -92,22 +93,45 @@ class Collector(Generic[_TValue]):
         pass
 
 
-class ConfigPriceCollector(Collector[Price]):
+class _NodePriceCollector(Collector[Price]):
+    def __init__(
+        self, node_created_at: datetime, initial_value: Price, interval_s: float = 3600
+    ) -> None:
+        super().__init__(initial_value, interval_s)
+
+        self._node_created_at = node_created_at
+
+    async def get_latest_value(self) -> Price:
+        node_up_time = datetime.now(timezone.utc) - self._node_created_at
+        price_per_hour = await self.get_price_per_hour()
+        return Price(
+            currency=price_per_hour.currency,
+            value=round(
+                price_per_hour.value * int(node_up_time.total_seconds()) / 3600, 2
+            ),
+        )
+
+    async def get_price_per_hour(self) -> Price:
+        return Price()
+
+
+class ConfigPriceCollector(_NodePriceCollector):
     def __init__(
         self,
         config_client: ConfigClient,
         cluster_name: str,
+        node_created_at: datetime,
         node_pool_name: str,
         interval_s: float = 60,
     ) -> None:
-        super().__init__(Price(), interval_s)
+        super().__init__(node_created_at, Price(), interval_s)
 
         self._config_client = config_client
         self._cluster_name = cluster_name
         self._node_pool_name = node_pool_name
         self._client: Any = None
 
-    async def get_latest_value(self) -> Price:
+    async def get_price_per_hour(self) -> Price:
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.orchestrator is not None
         for resource_pool in cluster.orchestrator.resource_pool_types:
@@ -119,18 +143,19 @@ class ConfigPriceCollector(Collector[Price]):
         return Price()
 
 
-class AWSNodePriceCollector(Collector[Price]):
+class AWSNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
         pricing_client: AioBaseClient,
         ec2_client: AioBaseClient,
+        node_created_at: datetime,
         region: str,
         instance_type: str,
         zone: str,
         is_spot: bool,
         interval_s: float = 3600,
     ) -> None:
-        super().__init__(Price(), interval_s)
+        super().__init__(node_created_at, Price(), interval_s)
 
         self._pricing_client = pricing_client
         self._ec2_client = ec2_client
@@ -167,7 +192,7 @@ class AWSNodePriceCollector(Collector[Price]):
         result["ap-northeast-3"] = "Asia Pacific (Osaka-Local)"
         return result
 
-    async def get_latest_value(self) -> Price:
+    async def get_price_per_hour(self) -> Price:
         if self._is_spot:
             return await self._get_latest_spot_price()
         return await self._get_latest_on_demand_price()
@@ -227,17 +252,18 @@ class AWSNodePriceCollector(Collector[Price]):
         return Price(currency="USD", value=Decimal(str(history[0]["SpotPrice"])))
 
 
-class AzureNodePriceCollector(Collector[Price]):
+class AzureNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
         prices_client: aiohttp.ClientSession,
         prices_url: URL,
+        node_created_at: datetime,
         region: str,
         instance_type: str,
         is_spot: bool,
         interval_s: float = 3600,
     ) -> None:
-        super().__init__(Price(), interval_s)
+        super().__init__(node_created_at, Price(), interval_s)
 
         self._prices_client = prices_client
         self._prices_url = prices_url
@@ -255,7 +281,7 @@ class AzureNodePriceCollector(Collector[Price]):
                 self._instance_type = f"Standard_{match.group(1)}_{match.group(2)}"
                 self._sku_name = f"{match.group(1)} {match.group(2)}"
 
-    async def get_latest_value(self) -> Price:
+    async def get_price_per_hour(self) -> Price:
         response = await self._prices_client.get(
             (self._prices_url / "api/retail/prices").with_query(
                 {
@@ -290,19 +316,20 @@ class AzureNodePriceCollector(Collector[Price]):
         )
 
 
-class GCPNodePriceCollector(Collector[Price]):
+class GCPNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
         config_client: ConfigClient,
         service_account_path: Path,
-        cluster_name: str,
+        node_created_at: datetime,
         node_pool_name: str,
+        cluster_name: str,
         region: str,
         instance_type: str,
         is_preemptible: bool,
         interval_s: float = 3600,
     ) -> None:
-        super().__init__(Price(), interval_s)
+        super().__init__(node_created_at, Price(), interval_s)
 
         self._config_client = config_client
         self._service_account_path = service_account_path
@@ -331,7 +358,7 @@ class GCPNodePriceCollector(Collector[Price]):
     def _get_usage_type(self, is_preemptible: bool) -> str:
         return "preemptible" if is_preemptible else "ondemand"
 
-    async def get_latest_value(self) -> Price:
+    async def get_price_per_hour(self) -> Price:
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
@@ -437,23 +464,19 @@ class GCPNodePriceCollector(Collector[Price]):
 class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
     def __init__(
         self,
-        config_client: ConfigClient,
         kube_client: KubeClient,
-        cluster_name: str,
+        api_client: ApiClient,
         node_name: str,
         jobs_namespace: str,
         job_label: str,
-        preset_label: str,
         interval_s: float = 15,
     ) -> None:
         super().__init__({}, interval_s)
 
         self._kube_client = kube_client
-        self._config_client = config_client
+        self._api_client = api_client
         self._jobs_namespace = jobs_namespace
         self._job_label = job_label
-        self._preset_label = preset_label
-        self._cluster_name = cluster_name
         self._node_name = node_name
 
     async def get_latest_value(self) -> Mapping[str, Decimal]:
@@ -473,26 +496,29 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         if not pods:
             logger.info("Node doesn't have any pods in Running phase")
             return {}
-        cluster = await self._config_client.get_cluster(self._cluster_name)
-        assert cluster.orchestrator is not None
-        resource_presets = {p.name: p for p in cluster.orchestrator.resource_presets}
         result: dict[str, Decimal] = {}
         for pod in pods:
-            logger.debug("Checking pod %r credits per hour", pod.metadata.name)
-            preset_name = pod.metadata.labels.get(self._preset_label)
-            if not preset_name:
-                logger.warning("Pod %r preset is not specified", pod.metadata.name)
-                result[pod.metadata.name] = Decimal()
+            pod_name = pod.metadata.name
+            logger.debug("Checking pod %r credits per hour", pod_name)
+            try:
+                job = await self._api_client.jobs.status(pod_name)
+            except ResourceNotFound:
+                logger.warning("Job %r not found", pod_name)
                 continue
-            if preset_name not in resource_presets:
-                logger.warning("Preset %r is unknown", preset_name)
-                result[pod.metadata.name] = Decimal()
+            if not self._should_collect(job):
+                logger.debug("Pod %r credits won't be collected", pod_name)
                 continue
-            pod_credits_per_hour = resource_presets[preset_name].credits_per_hour
-            logger.debug(
-                "Pod %r credits per hour: %s",
-                pod.metadata.name,
-                str(pod_credits_per_hour),
-            )
-            result[pod.metadata.name] = pod_credits_per_hour
+            logger.debug("Pod %r credits: %s", pod_name, job.total_price_credits)
+            result[pod_name] = job.total_price_credits
         return result
+
+    def _should_collect(self, job: JobDescription) -> bool:
+        finished_at = job.history.finished_at
+        if finished_at is None:
+            return True
+        # Pod credits should not be collected after job finished.
+        # Ensure metric is exported during two intervals after job finished
+        # to allow Prometheus to collect it.
+        return datetime.now(timezone.utc) - finished_at <= timedelta(
+            seconds=2 * self._interval_s
+        )

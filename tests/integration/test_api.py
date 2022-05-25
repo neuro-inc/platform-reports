@@ -51,12 +51,12 @@ kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0.0"
                 assert response.status == HTTPOk.status_code, text
                 assert re.search(
                     rf"""# HELP kube_node_price_per_hour The price of the node per hour\.
-\# TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0(\.0+)?
+\# TYPE kube_node_price_total gauge
+kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0(\.0+)?
 
-\# HELP kube_pod_credits_per_hour The credits of the pod per hour\.
-\# TYPE kube_pod_credits_per_hour gauge
-(kube_pod_credits_per_hour{{pod=".+"}} 0(\.0+)?\s*)+""",
+\# HELP kube_pod_credits_total The credits of the pod per hour\.
+\# TYPE kube_pod_credits_total gauge
+(kube_pod_credits_total{{pod=".+"}} 0(\.0+)?\s*)+""",
                     text,
                 ), text
 

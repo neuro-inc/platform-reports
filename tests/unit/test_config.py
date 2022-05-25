@@ -21,7 +21,8 @@ class TestEnvironConfigFactory:
     def test_create_metrics_defaults(self) -> None:
         env = {
             "NP_CONFIG_URL": "http://dev.neu.ro",
-            "NP_CONFIG_TOKEN": "token",
+            "NP_API_URL": "http://dev.neu.ro/api/v1",
+            "NP_TOKEN": "token",
             "NP_CLUSTER_NAME": "default",
             "NP_NODE_NAME": "node",
             "NP_KUBE_URL": "https://kubernetes.default.svc",
@@ -33,6 +34,9 @@ class TestEnvironConfigFactory:
             server=ServerConfig(),
             platform_config=PlatformServiceConfig(
                 url=URL("http://dev.neu.ro"), token="token"
+            ),
+            platform_api=PlatformServiceConfig(
+                url=URL("http://dev.neu.ro/api/v1"), token="token"
             ),
             kube=KubeConfig(
                 url=URL("https://kubernetes.default.svc"),
@@ -48,7 +52,8 @@ class TestEnvironConfigFactory:
             "NP_METRICS_API_HOST": "metrics",
             "NP_METRICS_API_PORT": "9500",
             "NP_CONFIG_URL": "http://dev.neu.ro",
-            "NP_CONFIG_TOKEN": "token",
+            "NP_API_URL": "http://dev.neu.ro/api/v1",
+            "NP_TOKEN": "token",
             "NP_CLUSTER_NAME": "default",
             "NP_NODE_NAME": "node",
             "NP_CLOUD_PROVIDER": "aws",
@@ -59,7 +64,6 @@ class TestEnvironConfigFactory:
             "NP_NODE_POOL_LABEL": "node-pool",
             "NP_NODE_PREEMPTIBLE_LABEL": "preemptible",
             "NP_JOB_LABEL": "job",
-            "NP_PRESET_LABEL": "preset",
             "NP_ZIPKIN_URL": "https://zipkin:9411",
             "NP_SENTRY_DSN": "https://sentry",
             "NP_SENTRY_CLUSTER_NAME": "test",
@@ -72,6 +76,9 @@ class TestEnvironConfigFactory:
             server=ServerConfig(scheme="http", host="metrics", port=9500),
             platform_config=PlatformServiceConfig(
                 url=URL("http://dev.neu.ro"), token="token"
+            ),
+            platform_api=PlatformServiceConfig(
+                url=URL("http://dev.neu.ro/api/v1"), token="token"
             ),
             kube=KubeConfig(
                 url=URL("https://kubernetes.default.svc"),
@@ -87,7 +94,6 @@ class TestEnvironConfigFactory:
             node_pool_label="node-pool",
             node_preemptible_label="preemptible",
             job_label="job",
-            preset_label="preset",
             zipkin=ZipkinConfig(
                 url=URL("https://zipkin:9411"), app_name="platform-metrics-exporter"
             ),
@@ -105,7 +111,7 @@ class TestEnvironConfigFactory:
             "NP_PROMETHEUS_HOST": "prometheus",
             "NP_PROMETHEUS_PORT": "9090",
             "NP_AUTH_URL": "-",
-            "NP_AUTH_TOKEN": "token",
+            "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
         }
 
@@ -133,7 +139,7 @@ class TestEnvironConfigFactory:
             "NP_PROMETHEUS_HOST": "prometheus",
             "NP_PROMETHEUS_PORT": "9090",
             "NP_AUTH_URL": "https://dev.neu.ro",
-            "NP_AUTH_TOKEN": "token",
+            "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
             "NP_ZIPKIN_URL": "https://zipkin:9411",
             "NP_SENTRY_DSN": "https://sentry",
@@ -172,7 +178,7 @@ class TestEnvironConfigFactory:
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
             "NP_AUTH_URL": "-",
-            "NP_AUTH_TOKEN": "token",
+            "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
         }
 
@@ -200,7 +206,7 @@ class TestEnvironConfigFactory:
             "NP_GRAFANA_HOST": "grafana",
             "NP_GRAFANA_PORT": "3000",
             "NP_AUTH_URL": "https://dev.neu.ro",
-            "NP_AUTH_TOKEN": "token",
+            "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
             "NP_ZIPKIN_URL": "https://zipkin:9411",
             "NP_SENTRY_DSN": "https://sentry",

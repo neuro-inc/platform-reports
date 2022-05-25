@@ -52,11 +52,11 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
                 assert re.search(
                     rf"""# HELP kube_node_price_total The total price of the node\.
 \# TYPE kube_node_price_total counter
-kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0(\.0+)?
+kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
 
 \# HELP kube_pod_credits_total The total credits of the pod\.
 \# TYPE kube_pod_credits_total counter
-(kube_pod_credits_total{{pod=".+"}} 0(\.0+)?\s*)+""",
+(kube_pod_credits_total{{pod=".+"}} 10\s*)+""",
                     text,
                 ), text
 

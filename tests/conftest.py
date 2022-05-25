@@ -38,12 +38,12 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
 
 
 @pytest.fixture(scope="session")
-def admin_dashboards_expressions(
+def cluster_dashboards_expressions(
     dashboards_expressions: dict[str, Sequence[str]]
 ) -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():
-        if key.startswith("admin/"):
+        if key.startswith("cluster/"):
             result[key] = exprs
     return result
 

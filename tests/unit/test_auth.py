@@ -59,11 +59,11 @@ class TestDashboards:
     ) -> AuthService:
         return AuthService(auth_client, api_client, "default")
 
-    async def test_admin_dashboards_permissions(
+    async def test_cluster_dashboards_permissions(
         self,
         auth_service: AuthService,
         auth_client: mock.AsyncMock,
-        admin_dashboards_expressions: dict[str, Sequence[str]],
+        cluster_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
             user_name: str, permissions: Sequence[Permission]
@@ -73,7 +73,7 @@ class TestDashboards:
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for key, exprs in admin_dashboards_expressions.items():
+        for key, exprs in cluster_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 

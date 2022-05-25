@@ -32,7 +32,7 @@ class TestMetrics:
                 == f"""\
 # HELP kube_node_price_total The total price of the node.
 # TYPE kube_node_price_total counter
-kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 10.00"""
+kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
             )
 
     async def test_node_and_pod_metrics(
@@ -52,7 +52,7 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 10.00""
                 assert re.search(
                     rf"""# HELP kube_node_price_total The total price of the node\.
 \# TYPE kube_node_price_total counter
-kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 10\.00
+kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
 
 \# HELP kube_pod_credits_total The total credits of the pod\.
 \# TYPE kube_pod_credits_total counter

@@ -59,7 +59,6 @@ from .metrics import (
     ConfigPriceCollector,
     GCPNodePriceCollector,
     PodCreditsCollector,
-    PodPriceCollector,
     Price,
 )
 
@@ -90,10 +89,6 @@ class MetricsHandler:
         return self._app["node_price_collector"]
 
     @property
-    def _pod_price_collector(self) -> Collector[Mapping[str, Price]]:
-        return self._app["pod_price_collector"]
-
-    @property
     def _pod_credits_collector(self) -> Collector[Mapping[str, Decimal]]:
         return self._app["pod_credits_collector"]
 
@@ -117,23 +112,6 @@ class MetricsHandler:
             # TYPE kube_node_price_per_hour gauge
             kube_node_price_per_hour{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
         )
-
-    def _get_pod_prices_per_hour_text(self) -> str:
-        pod_prices_per_hour = self._pod_price_collector.current_value
-        if not pod_prices_per_hour:
-            return ""
-        metrics: list[str] = [
-            dedent(
-                """\
-                # HELP kube_pod_price_per_hour The price of the pod per hour.
-                # TYPE kube_pod_price_per_hour gauge"""
-            )
-        ]
-        for name, price in pod_prices_per_hour.items():
-            metrics.append(
-                f'kube_pod_price_per_hour{{pod="{name}",currency="{price.currency}"}} {price.value}'  # noqa: E501
-            )
-        return "\n".join(metrics)
 
     def _get_pod_credits_per_hour_text(self) -> str:
         pod_credits_per_hour = self._pod_credits_collector.current_value
@@ -502,20 +480,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     )
                 )
             app["node_price_collector"] = node_price_collector
-
-            pod_price_collector = await exit_stack.enter_async_context(
-                PodPriceCollector(
-                    config_client=config_client,
-                    kube_client=kube_client,
-                    node_price_collector=node_price_collector,
-                    cluster_name=config.cluster_name,
-                    node_name=config.node_name,
-                    node_pool_name=node_pool_name,
-                    jobs_namespace=config.jobs_namespace,
-                    job_label=config.job_label,
-                )
-            )
-            app["pod_price_collector"] = pod_price_collector
 
             pod_credits_collector = await exit_stack.enter_async_context(
                 PodCreditsCollector(

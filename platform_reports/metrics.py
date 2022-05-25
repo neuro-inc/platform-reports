@@ -17,11 +17,11 @@ import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import Cluster, ConfigClient
+from neuro_config_client import ConfigClient
 from neuro_logging import new_trace_cm, trace_cm
 from yarl import URL
 
-from .kube_client import KubeClient, Pod, Resources
+from .kube_client import KubeClient
 
 logger = logging.getLogger(__name__)
 
@@ -432,113 +432,6 @@ class GCPNodePriceCollector(Collector[Price]):
         unit_price = tiered_rate["unitPrice"]
         # UnitPrice contains price in nanos which is 1 USD * 10^-9
         return Decimal(str(unit_price["units"])) * 10**9 + unit_price["nanos"]
-
-
-class PodPriceCollector(Collector[Mapping[str, Price]]):
-    def __init__(
-        self,
-        config_client: ConfigClient,
-        kube_client: KubeClient,
-        node_price_collector: Collector[Price],
-        cluster_name: str,
-        node_name: str,
-        node_pool_name: str,
-        jobs_namespace: str,
-        job_label: str,
-        interval_s: float = 60,
-    ) -> None:
-        super().__init__({}, interval_s)
-
-        self._kube_client = kube_client
-        self._config_client = config_client
-        self._node_price_collector = node_price_collector
-        self._jobs_namespace = jobs_namespace
-        self._job_label = job_label
-        self._cluster_name = cluster_name
-        self._node_pool_name = node_pool_name
-        self._node_name = node_name
-
-    async def get_latest_value(self) -> Mapping[str, Price]:
-        # Calculate prices only for pods in Pending and Running phases
-        pods = await self._kube_client.get_pods(
-            namespace=self._jobs_namespace,
-            label_selector=self._job_label,
-            field_selector=",".join(
-                (
-                    f"spec.nodeName={self._node_name}",
-                    "status.phase!=Failed",
-                    "status.phase!=Succeeded",
-                    "status.phase!=Unknown",
-                ),
-            ),
-        )
-        if not pods:
-            logger.info("Node doesn't have any pods in Running phase")
-            return {}
-        cluster = await self._config_client.get_cluster(self._cluster_name)
-        node_resources = self._get_node_resources(cluster)
-        if node_resources == Resources():
-            logger.warning(
-                "Node resources are not detected, check service configuration"
-            )
-        logger.debug("Node resources: %s", node_resources)
-        result: dict[str, Price] = {}
-        for pod in pods:
-            pod_resources = self._get_pod_resources(pod)
-            logger.debug("Pod %s resources: %s", pod.metadata.name, pod_resources)
-            fraction = self._get_pod_resources_fraction(
-                node_resources=node_resources, pod_resources=pod_resources
-            )
-            logger.debug("Pod %s fraction: %s", pod.metadata.name, fraction)
-            node_price_per_hour = self._node_price_collector.current_value
-            pod_price_per_hour = node_price_per_hour.value * fraction
-            logger.debug(
-                "Pod %s price per hour: %s", pod.metadata.name, pod_price_per_hour
-            )
-            result[pod.metadata.name] = Price(
-                currency=node_price_per_hour.currency,
-                value=pod_price_per_hour,
-            )
-        return result
-
-    def _get_node_resources(self, cluster: Cluster) -> Resources:
-        assert cluster.orchestrator is not None
-        resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
-        if self._node_pool_name not in resource_pools:
-            return Resources()
-        resource_pool = resource_pools[self._node_pool_name]
-        return Resources(
-            cpu_m=int(resource_pool.cpu * 1000),
-            memory_mb=resource_pool.memory_mb,
-            gpu=resource_pool.gpu or 0,
-        )
-
-    def _get_pod_resources(self, pod: Pod) -> Resources:
-        cpu_m = 0
-        memory_mb = 0
-        gpu = 0
-        for container in pod.containers:
-            cpu_m += container.resource_requests.cpu_m
-            memory_mb += container.resource_requests.memory_mb
-            gpu += container.resource_requests.gpu
-        return Resources(cpu_m=cpu_m, memory_mb=memory_mb, gpu=gpu)
-
-    def _get_pod_resources_fraction(
-        self, node_resources: Resources, pod_resources: Resources
-    ) -> Decimal:
-        cpu_fraction = Decimal()
-        if node_resources.cpu_m and pod_resources.cpu_m:
-            cpu_fraction = Decimal(pod_resources.cpu_m) / node_resources.cpu_m
-        memory_fraction = Decimal()
-        if node_resources.memory_mb and pod_resources.memory_mb:
-            memory_fraction = (
-                Decimal(pod_resources.memory_mb) / node_resources.memory_mb
-            )
-        gpu_fraction = Decimal()
-        if node_resources.gpu and pod_resources.gpu:
-            gpu_fraction = Decimal(pod_resources.gpu) / node_resources.gpu
-        max_fraction = max(cpu_fraction, memory_fraction, gpu_fraction)
-        return min(Decimal(1), max_fraction)
 
 
 class PodCreditsCollector(Collector[Mapping[str, Decimal]]):

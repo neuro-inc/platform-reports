@@ -30,15 +30,7 @@ from neuro_config_client import (
 )
 from yarl import URL
 
-from platform_reports.kube_client import (
-    Container,
-    KubeClient,
-    Metadata,
-    Pod,
-    PodPhase,
-    PodStatus,
-    Resources,
-)
+from platform_reports.kube_client import KubeClient, Metadata, Pod, PodPhase, PodStatus
 from platform_reports.metrics import (
     AWSNodePriceCollector,
     AzureNodePriceCollector,
@@ -46,7 +38,6 @@ from platform_reports.metrics import (
     ConfigPriceCollector,
     GCPNodePriceCollector,
     PodCreditsCollector,
-    PodPriceCollector,
     Price,
 )
 
@@ -766,182 +757,6 @@ class TestAzureNodePriceCollector:
         assert result == Price(value=Decimal("0.9"), currency="USD")
 
 
-class TestPodPriceCollector:
-    @pytest.fixture
-    def config_client_factory(self) -> Callable[..., mock.AsyncMock]:
-        def _create(node_resources: Resources) -> mock.AsyncMock:
-            result = mock.AsyncMock(spec=ConfigClient)
-            result.get_cluster.return_value = Cluster(
-                name="default",
-                status=ClusterStatus.DEPLOYED,
-                created_at=datetime.now(),
-                orchestrator=OrchestratorConfig(
-                    job_hostname_template="",
-                    job_internal_hostname_template="",
-                    job_fallback_hostname="",
-                    job_schedule_timeout_s=30,
-                    job_schedule_scale_up_timeout_s=30,
-                    resource_pool_types=[
-                        ResourcePoolType(
-                            name="minikube-node-pool",
-                            cpu=node_resources.cpu_m / 1000,
-                            memory_mb=node_resources.memory_mb,
-                            gpu=node_resources.gpu or None,
-                        )
-                    ],
-                ),
-            )
-            return result
-
-        return _create
-
-    @pytest.fixture
-    def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
-        def _create(**pod_resources: Resources) -> mock.AsyncMock:
-            async def get_pods(
-                namespace: str = "", field_selector: str = "", label_selector: str = ""
-            ) -> Sequence[Pod]:
-                assert namespace == "platform-jobs"
-                assert label_selector == "job"
-                assert field_selector == ",".join(
-                    (
-                        "spec.nodeName=minikube",
-                        "status.phase!=Failed",
-                        "status.phase!=Succeeded",
-                        "status.phase!=Unknown",
-                    ),
-                )
-                return [
-                    Pod(
-                        metadata=Metadata(name=name),
-                        status=PodStatus(phase=PodPhase.RUNNING),
-                        containers=[Container(name=name, resource_requests=resources)],
-                    )
-                    for name, resources in pod_resources.items()
-                ]
-
-            result = mock.AsyncMock(spec=KubeClient)
-            result.get_pods.side_effect = get_pods
-            return result
-
-        return _create
-
-    @pytest.fixture
-    def node_price_collector(self) -> mock.AsyncMock:
-        result = mock.Mock(spec=Collector[Price])
-        type(result).current_value = mock.PropertyMock(
-            return_value=Price(value=Decimal("1.0"), currency="USD")
-        )
-        return result
-
-    @pytest.fixture
-    def collector_factory(
-        self,
-        config_client_factory: Callable[..., ConfigClient],
-        kube_client_factory: Callable[..., KubeClient],
-        node_price_collector: Collector[Price],
-    ) -> Callable[..., PodPriceCollector]:
-        def _create(node: Resources, **pod_resources: Resources) -> PodPriceCollector:
-            config_client = config_client_factory(node)
-            kube_client = kube_client_factory(**pod_resources)
-            return PodPriceCollector(
-                config_client=config_client,
-                kube_client=kube_client,
-                node_price_collector=node_price_collector,
-                cluster_name="default",
-                node_name="minikube",
-                node_pool_name="minikube-node-pool",
-                jobs_namespace="platform-jobs",
-                job_label="job",
-            )
-
-        return _create
-
-    async def test_get_latest_price_per_hour(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096),
-            job=Resources(cpu_m=100, memory_mb=100),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {"job": Price(value=Decimal("0.1"), currency="USD")}
-
-    async def test_get_latest_price_per_hour_high_cpu(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096),
-            job=Resources(cpu_m=1000, memory_mb=100),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {"job": Price(value=Decimal(1), currency="USD")}
-
-    async def test_get_latest_price_per_hour_high_memory(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096),
-            job=Resources(cpu_m=100, memory_mb=4096),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {"job": Price(value=Decimal(1), currency="USD")}
-
-    async def test_get_latest_price_per_hour_gpu(
-        self,
-        collector_factory: Callable[..., PodPriceCollector],
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096, gpu=4),
-            job=Resources(cpu_m=100, memory_mb=100, gpu=3),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {"job": Price(value=Decimal("0.75"), currency="USD")}
-
-    async def test_get_latest_price_per_memory_overused(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096),
-            job=Resources(cpu_m=100, memory_mb=5000),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {"job": Price(value=Decimal(1), currency="USD")}
-
-    async def test_get_latest_price_per_hour_multiple_pods(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(cpu_m=1000, memory_mb=4096),
-            job1=Resources(cpu_m=100, memory_mb=100),
-            job2=Resources(cpu_m=200, memory_mb=100),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {
-            "job1": Price(value=Decimal("0.1"), currency="USD"),
-            "job2": Price(value=Decimal("0.2"), currency="USD"),
-        }
-
-    async def test_get_latest_price_per_hour_zero_node_resources(
-        self, collector_factory: Callable[..., PodPriceCollector]
-    ) -> None:
-        collector = collector_factory(
-            node=Resources(),
-            job1=Resources(cpu_m=100, memory_mb=100),
-        )
-        result = await collector.get_latest_value()
-
-        assert result == {
-            "job1": Price(value=Decimal(), currency="USD"),
-        }
-
-
 class TestPodCreditsCollector:
     @pytest.fixture
     def config_client_factory(self) -> Callable[..., mock.AsyncMock]:
@@ -1020,7 +835,7 @@ class TestPodCreditsCollector:
         return _create
 
     async def test_get_latest_value(
-        self, collector_factory: Callable[..., PodPriceCollector]
+        self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
         collector = collector_factory(
             [
@@ -1035,7 +850,7 @@ class TestPodCreditsCollector:
         assert result == {"job": Decimal(10)}
 
     async def test_get_latest_value_multiple_pods(
-        self, collector_factory: Callable[..., PodPriceCollector]
+        self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
         collector = collector_factory(
             [
@@ -1057,7 +872,7 @@ class TestPodCreditsCollector:
         }
 
     async def test_get_latest_value_no_pods(
-        self, collector_factory: Callable[..., PodPriceCollector]
+        self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
         collector = collector_factory()
         result = await collector.get_latest_value()
@@ -1065,7 +880,7 @@ class TestPodCreditsCollector:
         assert result == {}
 
     async def test_get_latest_value_job_without_preset(
-        self, collector_factory: Callable[..., PodPriceCollector]
+        self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
         collector = collector_factory(
             [

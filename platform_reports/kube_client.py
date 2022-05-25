@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import enum
-import functools
 import logging
 import ssl
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Awaitable, Callable, TypeVar, cast
+from typing import Any
 
 import aiohttp
 from neuro_logging import trace
@@ -17,20 +16,6 @@ from yarl import URL
 from .config import KubeClientAuthType, KubeConfig
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T", bound=Callable[..., Awaitable[Any]])
-
-
-def reconnect(func: T) -> T:
-    @functools.wraps(func)
-    async def new_func(*args: Any, **kwargs: Any) -> Any:
-        try:
-            return await func(*args, **kwargs)
-        except aiohttp.ClientConnectionError as ex:
-            logger.warning("Connection error to Kubernetes API", exc_info=ex)
-            return await func(*args, **kwargs)
-
-    return cast(T, new_func)
 
 
 @dataclass(frozen=True)
@@ -198,7 +183,6 @@ class KubeClient:
         return self._config.url / "api/v1/pods"
 
     @trace
-    @reconnect
     async def get_node(self, name: str) -> Node:
         assert self._client
         async with self._client.get(
@@ -210,7 +194,6 @@ class KubeClient:
             return Node.from_payload(payload)
 
     @trace
-    @reconnect
     async def get_pods(
         self, namespace: str = "", field_selector: str = "", label_selector: str = ""
     ) -> Sequence[Pod]:

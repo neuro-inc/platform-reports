@@ -154,12 +154,14 @@ def platform_config_config(
 @pytest.fixture
 def metrics_config(
     platform_config_config: PlatformServiceConfig,
+    platform_api_config: PlatformServiceConfig,
     kube_config: KubeConfig,
     kube_node: Node,
 ) -> MetricsConfig:
     return MetricsConfig(
         server=ServerConfig(port=9500),
         platform_config=platform_config_config,
+        platform_api=platform_api_config,
         kube=kube_config,
         cluster_name="default",
         node_name=kube_node.metadata.name,

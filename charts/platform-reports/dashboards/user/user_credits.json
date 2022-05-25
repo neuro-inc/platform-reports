@@ -140,7 +140,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range])) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"}",
+                    "expr": "1000 * max by(pod,label_platform_neuromation_io_org,label_platform_neuromation_io_preset) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range]) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"})",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -149,7 +149,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"})",
+                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range])) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,

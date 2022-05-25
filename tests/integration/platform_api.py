@@ -45,6 +45,10 @@ def platform_api_app() -> aiohttp.web.Application:
                 },
                 "is_preemptible": False,
                 "uri": f"job://default/user/{job_id}",
+                "total_price_credits": "10",
+                "price_credits_per_hour": "10",
+                "pass_config": False,
+                "scheduler_enabled": False,
             }
         )
 

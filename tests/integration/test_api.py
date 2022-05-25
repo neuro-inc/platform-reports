@@ -30,9 +30,9 @@ class TestMetrics:
             assert (
                 text
                 == f"""\
-# HELP kube_node_price_per_hour The price of the node per hour.
-# TYPE kube_node_price_per_hour gauge
-kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0.0"""
+# HELP kube_node_price_total The total price of the node.
+# TYPE kube_node_price_total counter
+kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.0"""
             )
 
     async def test_node_and_pod_metrics(
@@ -50,12 +50,12 @@ kube_node_price_per_hour{{node="{kube_node.metadata.name}",currency="USD"}} 0.0"
                 text = await response.text()
                 assert response.status == HTTPOk.status_code, text
                 assert re.search(
-                    rf"""# HELP kube_node_price_per_hour The price of the node per hour\.
-\# TYPE kube_node_price_total gauge
+                    rf"""# HELP kube_node_price_total The total price of the node\.
+\# TYPE kube_node_price_total counter
 kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0(\.0+)?
 
-\# HELP kube_pod_credits_total The credits of the pod per hour\.
-\# TYPE kube_pod_credits_total gauge
+\# HELP kube_pod_credits_total The total credits of the pod\.
+\# TYPE kube_pod_credits_total counter
 (kube_pod_credits_total{{pod=".+"}} 0(\.0+)?\s*)+""",
                     text,
                 ), text

@@ -109,7 +109,7 @@ class MetricsHandler:
         return dedent(
             f"""\
             # HELP kube_node_price_total The total price of the node.
-            # TYPE kube_node_price_total gauge
+            # TYPE kube_node_price_total counter
             kube_node_price_total{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
         )
 

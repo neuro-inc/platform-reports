@@ -1,0 +1,607 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": "-- Grafana --",
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 1,
+    "id": 8,
+    "iteration": 1653340792226,
+    "links": [],
+    "panels": [
+        {
+            "collapsed": false,
+            "datasource": null,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 32,
+            "panels": [],
+            "title": "Jobs",
+            "type": "row"
+        },
+        {
+            "datasource": null,
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": null,
+                        "filterable": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Credits"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "none"
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "0",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "null"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Start Time"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "dateTimeAsIsoNoDateIfToday"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Organization"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "from": "",
+                                        "id": 1,
+                                        "text": "",
+                                        "to": "",
+                                        "type": 1,
+                                        "value": "no_org"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 14,
+                "w": 24,
+                "x": 0,
+                "y": 1
+            },
+            "id": 19,
+            "options": {
+                "frameIndex": 0,
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "Start Time"
+                    }
+                ]
+            },
+            "pluginVersion": "7.3.5",
+            "targets": [
+                {
+                    "expr": "1000 * max by(pod) (max_over_time(kube_pod_running_scheduled_time{job=\"kube-state-metrics\",pod=~\"^job-.+\"}[$__range]) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                    "format": "table",
+                    "hide": false,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                },
+                {
+                    "expr": "(15 / 3600) * sum by(pod) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                    "format": "table",
+                    "hide": false,
+                    "instant": true,
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "B"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": " ",
+            "transformations": [
+                {
+                    "id": "seriesToColumns",
+                    "options": {
+                        "byField": "pod"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time 1": true,
+                            "Time 2": true,
+                            "job": true,
+                            "prometheus": true,
+                            "prometheus_replica": true
+                        },
+                        "indexByName": {
+                            "Time 1": 6,
+                            "Time 2": 7,
+                            "Value #A": 4,
+                            "Value #B": 5,
+                            "label_platform_neuromation_io_org": 0,
+                            "label_platform_neuromation_io_preset": 3,
+                            "label_platform_neuromation_io_user": 1,
+                            "pod": 2
+                        },
+                        "renameByName": {
+                            "Value #A": "Start Time",
+                            "Value #B": "Credits",
+                            "label_platform_neuromation_io_org": "Organization",
+                            "label_platform_neuromation_io_preset": "Preset",
+                            "label_platform_neuromation_io_user": "User",
+                            "pod": "Job"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        },
+        {
+            "collapsed": true,
+            "datasource": null,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 15
+            },
+            "id": 30,
+            "panels": [
+                {
+                    "datasource": null,
+                    "fieldConfig": {
+                        "defaults": {
+                            "custom": {
+                                "align": null,
+                                "filterable": false
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green",
+                                        "value": null
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": [
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "Credits"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "decimals",
+                                        "value": 1
+                                    },
+                                    {
+                                        "id": "unit",
+                                        "value": "none"
+                                    },
+                                    {
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "0",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "null"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "Organization"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "no_org"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "gridPos": {
+                        "h": 14,
+                        "w": 24,
+                        "x": 0,
+                        "y": 2
+                    },
+                    "id": 23,
+                    "options": {
+                        "frameIndex": 0,
+                        "showHeader": true,
+                        "sortBy": [
+                            {
+                                "desc": false,
+                                "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "User"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Preset"
+                            }
+                        ]
+                    },
+                    "pluginVersion": "7.3.5",
+                    "targets": [
+                        {
+                            "expr": "15 / 3600 * sum by(label_platform_neuromation_io_org,label_platform_neuromation_io_user,label_platform_neuromation_io_preset) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                            "format": "table",
+                            "hide": false,
+                            "instant": true,
+                            "interval": "",
+                            "legendFormat": "",
+                            "refId": "A"
+                        }
+                    ],
+                    "timeFrom": null,
+                    "timeShift": null,
+                    "title": " ",
+                    "transformations": [
+                        {
+                            "id": "organize",
+                            "options": {
+                                "excludeByName": {
+                                    "Time": true
+                                },
+                                "indexByName": {
+                                    "Time": 4,
+                                    "Value": 3,
+                                    "label_platform_neuromation_io_org": 0,
+                                    "label_platform_neuromation_io_preset": 2,
+                                    "label_platform_neuromation_io_user": 1
+                                },
+                                "renameByName": {
+                                    "Value": "Credits",
+                                    "label_platform_neuromation_io_org": "Organization",
+                                    "label_platform_neuromation_io_preset": "Preset",
+                                    "label_platform_neuromation_io_user": "User"
+                                }
+                            }
+                        }
+                    ],
+                    "type": "table"
+                }
+            ],
+            "title": "Users",
+            "type": "row"
+        },
+        {
+            "collapsed": true,
+            "datasource": null,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 16
+            },
+            "id": 34,
+            "panels": [
+                {
+                    "datasource": null,
+                    "fieldConfig": {
+                        "defaults": {
+                            "custom": {
+                                "align": null,
+                                "filterable": false
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green",
+                                        "value": null
+                                    },
+                                    {
+                                        "color": "red",
+                                        "value": 80
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": [
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "Credits"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "decimals",
+                                        "value": 1
+                                    },
+                                    {
+                                        "id": "unit",
+                                        "value": "none"
+                                    },
+                                    {
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "0",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "null"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "Organization"
+                                },
+                                "properties": [
+                                    {
+                                        "id": "mappings",
+                                        "value": [
+                                            {
+                                                "from": "",
+                                                "id": 1,
+                                                "text": "",
+                                                "to": "",
+                                                "type": 1,
+                                                "value": "no_org"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "gridPos": {
+                        "h": 14,
+                        "w": 24,
+                        "x": 0,
+                        "y": 3
+                    },
+                    "id": 28,
+                    "options": {
+                        "frameIndex": 0,
+                        "showHeader": true,
+                        "sortBy": [
+                            {
+                                "desc": false,
+                                "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Preset"
+                            }
+                        ]
+                    },
+                    "pluginVersion": "7.3.5",
+                    "targets": [
+                        {
+                            "expr": "15 / 3600 * sum by(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) (sum_over_time(kube_pod_credits_per_hour{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"}[$__range]) * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                            "format": "table",
+                            "hide": false,
+                            "instant": true,
+                            "interval": "",
+                            "legendFormat": "",
+                            "refId": "A"
+                        }
+                    ],
+                    "timeFrom": null,
+                    "timeShift": null,
+                    "title": " ",
+                    "transformations": [
+                        {
+                            "id": "organize",
+                            "options": {
+                                "excludeByName": {
+                                    "Time": true
+                                },
+                                "indexByName": {
+                                    "Time": 3,
+                                    "Value": 2,
+                                    "label_platform_neuromation_io_org": 0,
+                                    "label_platform_neuromation_io_preset": 1
+                                },
+                                "renameByName": {
+                                    "Value": "Credits",
+                                    "label_platform_neuromation_io_org": "Organization",
+                                    "label_platform_neuromation_io_preset": "Preset"
+                                }
+                            }
+                        }
+                    ],
+                    "type": "table"
+                }
+            ],
+            "title": "Organizations",
+            "type": "row"
+        }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 26,
+    "style": "light",
+    "tags": [],
+    "templating": {
+        "list": [
+            {
+                "allValue": ".*",
+                "current": {
+                    "selected": false,
+                    "text": "All",
+                    "value": "$__all"
+                },
+                "datasource": "Prometheus",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org!=\"no_org\"},label_platform_neuromation_io_org)",
+                "error": null,
+                "hide": 0,
+                "includeAll": true,
+                "label": "Organization",
+                "multi": false,
+                "name": "org_name",
+                "options": [],
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org!=\"no_org\"},label_platform_neuromation_io_org)",
+                "refresh": 2,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 1,
+                "tagValuesQuery": "",
+                "tags": [],
+                "tagsQuery": "",
+                "type": "query",
+                "useTags": false
+            },
+            {
+                "allValue": ".*",
+                "current": {
+                    "selected": false,
+                    "text": "All",
+                    "value": "$__all"
+                },
+                "datasource": "Prometheus",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "error": null,
+                "hide": 0,
+                "includeAll": true,
+                "label": "User",
+                "multi": false,
+                "name": "user_name",
+                "options": [],
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "refresh": 2,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 1,
+                "tagValuesQuery": "",
+                "tags": [],
+                "tagsQuery": "",
+                "type": "query",
+                "useTags": false
+            }
+        ]
+    },
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "15s",
+            "30s",
+            "1m",
+            "5m",
+            "15m",
+            "30m",
+            "1h",
+            "2h",
+            "1d"
+        ],
+        "time_options": [
+            "5m",
+            "15m",
+            "1h",
+            "6h",
+            "12h",
+            "24h",
+            "2d",
+            "7d",
+            "30d"
+        ]
+    },
+    "timezone": "browser",
+    "title": "Credits",
+    "uid": "credits",
+    "version": 1
+}

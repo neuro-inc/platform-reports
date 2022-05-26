@@ -175,7 +175,7 @@ class TestAWSNodePriceCollector:
 
         return _create
 
-    async def test_get_latest_price_per_hour(
+    async def test_get_latest_value(
         self,
         collector_factory: Callable[
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
@@ -225,7 +225,7 @@ class TestAWSNodePriceCollector:
         )
         assert result == Price(currency="USD", value=Decimal(1))
 
-    async def test_get_latest_price_per_hour_with_multiple_prices(
+    async def test_get_latest_value_with_multiple_prices(
         self,
         collector_factory: Callable[
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
@@ -254,7 +254,7 @@ class TestAWSNodePriceCollector:
 
         assert result == Price()
 
-    async def test_get_latest_price_per_hour_with_unsupported_currency(
+    async def test_get_latest_value_with_unsupported_currency(
         self,
         collector_factory: Callable[
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
@@ -286,7 +286,7 @@ class TestAWSNodePriceCollector:
 
         assert result == Price()
 
-    async def test_get_latest_spot_price_per_hour(
+    async def test_get_latest_spot_value(
         self,
         collector_factory: Callable[
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
@@ -309,7 +309,7 @@ class TestAWSNodePriceCollector:
             StartTime=mock.ANY,
         )
 
-    async def test_get_latest_spot_price_per_hour_no_history(
+    async def test_get_latest_spot_value_no_history(
         self,
         collector_factory: Callable[
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
@@ -557,7 +557,7 @@ class TestGCPNodePriceCollector:
 
         return _create
 
-    async def test_get_latest_price_per_hour_cpu_instance(
+    async def test_get_latest_value_cpu_instance(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -565,7 +565,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("4.73"), currency="USD")
 
-    async def test_get_latest_price_per_hour_cpu_instance_preemptible(
+    async def test_get_latest_value_cpu_instance_preemptible(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -573,7 +573,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal(1), currency="USD")
 
-    async def test_get_latest_price_per_hour_gpu_instance(
+    async def test_get_latest_value_gpu_instance(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -581,7 +581,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("22.73"), currency="USD")
 
-    async def test_get_latest_price_per_hour_gpu_instance_preemptible(
+    async def test_get_latest_value_gpu_instance_preemptible(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -589,7 +589,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("6.4"), currency="USD")
 
-    async def test_get_latest_price_per_hour_unknown_instance_type(
+    async def test_get_latest_value_unknown_instance_type(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -597,7 +597,7 @@ class TestGCPNodePriceCollector:
             with pytest.raises(AssertionError, match=r"Found prices only for: \[\]"):
                 await collector.get_latest_value()
 
-    async def test_get_latest_price_per_hour_unknown_gpu(
+    async def test_get_latest_value_unknown_gpu(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
@@ -648,7 +648,7 @@ class TestAzureNodePriceCollector:
 
         return _create
 
-    async def test_get_latest_price_per_hour(
+    async def test_get_latest_value(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],
@@ -672,7 +672,7 @@ class TestAzureNodePriceCollector:
 
         assert result == Price(value=Decimal(9), currency="USD")
 
-    async def test_get_latest_price_per_hour_general_purpose_instance(
+    async def test_get_latest_value_general_purpose_instance(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],
@@ -696,7 +696,7 @@ class TestAzureNodePriceCollector:
 
         assert result == Price(value=Decimal("0.96"), currency="USD")
 
-    async def test_get_latest_price_per_hour_multiple_prices(
+    async def test_get_latest_value_multiple_prices(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],
@@ -714,7 +714,7 @@ class TestAzureNodePriceCollector:
 
         assert result == Price()
 
-    async def test_get_latest_price_per_hour_filters_windows_os(
+    async def test_get_latest_value_filters_windows_os(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],
@@ -736,7 +736,7 @@ class TestAzureNodePriceCollector:
 
         assert result == Price(value=Decimal(9), currency="USD")
 
-    async def test_get_latest_price_per_hour_unknown_instance_type(
+    async def test_get_latest_value_unknown_instance_type(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],
@@ -747,7 +747,7 @@ class TestAzureNodePriceCollector:
 
         assert result == Price()
 
-    async def test_get_latest_spot_price_per_hour(
+    async def test_get_latest_spot_value(
         self,
         prices_client_factory: Callable[..., Awaitable[aiohttp.ClientSession]],
         collector_factory: Callable[..., AzureNodePriceCollector],

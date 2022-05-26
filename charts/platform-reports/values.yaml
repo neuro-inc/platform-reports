@@ -21,8 +21,8 @@ platformJobs:
   label: platform.neuromation.io/job
 
 image:
-  repository: "ghcr.io/neuro-inc/platform-reports"
-  tag: "22.5.3"
+  repository: "$IMAGE_REPO"
+  tag: "$IMAGE_TAG"
 
 imagePullSecrets: []
 

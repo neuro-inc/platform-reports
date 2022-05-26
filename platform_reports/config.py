@@ -74,6 +74,7 @@ class MetricsConfig:
     server: ServerConfig
     kube: KubeConfig
     platform_config: PlatformServiceConfig
+    platform_api: PlatformServiceConfig
     cluster_name: str
     node_name: str
     cloud_provider: str = ""
@@ -84,7 +85,6 @@ class MetricsConfig:
     node_pool_label: str = "platform.neuromation.io/nodepool"
     node_preemptible_label: str = "platform.neuromation.io/preemptible"
     job_label: str = "platform.neuromation.io/job"
-    preset_label: str = "platform.neuromation.io/preset"
 
     zipkin: ZipkinConfig | None = None
     sentry: SentryConfig | None = None
@@ -143,6 +143,7 @@ class EnvironConfigFactory:
             ),
             kube=self.create_kube(),
             platform_config=self._create_platform_config(),
+            platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             node_name=self._environ["NP_NODE_NAME"],
             cloud_provider=self._environ.get(
@@ -165,9 +166,6 @@ class EnvironConfigFactory:
                 "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
             ),
             job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
-            preset_label=self._environ.get(
-                "NP_PRESET_LABEL", MetricsConfig.preset_label
-            ),
             zipkin=self.create_zipkin(default_app_name="platform-metrics-exporter"),
             sentry=self.create_sentry(default_app_name="platform-metrics-exporter"),
         )
@@ -223,18 +221,17 @@ class EnvironConfigFactory:
 
     def _create_platform_auth(self) -> PlatformAuthConfig:
         return PlatformAuthConfig(
-            url=self._get_url("NP_AUTH_URL"), token=self._environ["NP_AUTH_TOKEN"]
+            url=self._get_url("NP_AUTH_URL"), token=self._environ["NP_TOKEN"]
         )
 
     def _create_platform_api(self) -> PlatformServiceConfig:
         return PlatformServiceConfig(
-            url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_AUTH_TOKEN"]
+            url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_TOKEN"]
         )
 
     def _create_platform_config(self) -> PlatformServiceConfig:
         return PlatformServiceConfig(
-            url=URL(self._environ["NP_CONFIG_URL"]),
-            token=self._environ["NP_CONFIG_TOKEN"],
+            url=URL(self._environ["NP_CONFIG_URL"]), token=self._environ["NP_TOKEN"]
         )
 
     def create_kube(self) -> KubeConfig:

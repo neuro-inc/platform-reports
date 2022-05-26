@@ -42,14 +42,14 @@ spec:
               value: {{ .Values.prometheusProxy.prometheus.port | quote }}
             - name: NP_AUTH_URL
               value: {{ .Values.platform.authUrl | quote }}
-            - name: NP_AUTH_TOKEN
+            - name: NP_API_URL
+              value: {{ .Values.platform.apiUrl | quote }}
+            - name: NP_TOKEN
 {{- if .Values.platform.token }}
 {{ toYaml .Values.platform.token | indent 14 }}
 {{- end }}
             - name: NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES
               value: {{ .Values.platform.accessTokenCookieNames }}
-            - name: NP_API_URL
-              value: {{ .Values.platform.apiUrl | quote }}
             {{- if .Values.zipkin }}
             - name: NP_ZIPKIN_URL
               value: {{ .Values.zipkin.url }}

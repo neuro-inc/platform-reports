@@ -5,11 +5,13 @@ import logging
 import ssl
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Any
 
 import aiohttp
+from dateutil.parser import parse
 from neuro_logging import trace
 from yarl import URL
 
@@ -21,11 +23,16 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class Metadata:
     name: str
+    created_at: datetime
     labels: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> Metadata:
-        return cls(name=payload["name"], labels=payload.get("labels", {}))
+        return cls(
+            name=payload["name"],
+            created_at=parse(payload["creationTimestamp"]),
+            labels=payload.get("labels", {}),
+        )
 
 
 @dataclass(frozen=True)

@@ -113,7 +113,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "15 * sum by(label_platform_neuromation_io_nodepool,node) (count_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                    "expr": "15 * sum by(node,label_platform_neuromation_io_nodepool) (count_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
                     "format": "table",
                     "hide": false,
                     "instant": true,
@@ -122,7 +122,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "(15 / 3600) * sum by(node) (sum_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range]) * on(node) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                    "expr": "(15 / 3600) * sum by(node) (sum_over_time(kube_node_price_per_hour{job= \"neuro-metrics-exporter\"}[$__range])) * on(node) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"}",
                     "format": "table",
                     "hide": false,
                     "instant": true,

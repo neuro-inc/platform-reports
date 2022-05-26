@@ -97,37 +97,35 @@ class MetricsHandler:
         return self._app["config"]
 
     async def handle(self, request: Request) -> Response:
-        text = [self._get_node_price_per_hour_text()]
-        pod_credits_per_hour_text = self._get_pod_credits_per_hour_text()
-        if pod_credits_per_hour_text:
-            text.append(pod_credits_per_hour_text)
+        text = [self._get_node_price_total_text()]
+        pod_credits_text = self._get_pod_credits_total_text()
+        if pod_credits_text:
+            text.append(pod_credits_text)
         return Response(text="\n\n".join(text))
 
-    def _get_node_price_per_hour_text(self) -> str:
+    def _get_node_price_total_text(self) -> str:
         node = self._config.node_name
         price = self._node_price_collector.current_value
         return dedent(
             f"""\
-            # HELP kube_node_price_per_hour The price of the node per hour.
-            # TYPE kube_node_price_per_hour gauge
-            kube_node_price_per_hour{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
+            # HELP kube_node_price_total The total price of the node.
+            # TYPE kube_node_price_total counter
+            kube_node_price_total{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
         )
 
-    def _get_pod_credits_per_hour_text(self) -> str:
+    def _get_pod_credits_total_text(self) -> str:
         pod_credits_per_hour = self._pod_credits_collector.current_value
         if not pod_credits_per_hour:
             return ""
         metrics: list[str] = [
             dedent(
                 """\
-                # HELP kube_pod_credits_per_hour The credits of the pod per hour.
-                # TYPE kube_pod_credits_per_hour gauge"""
+                # HELP kube_pod_credits_total The total credits of the pod.
+                # TYPE kube_pod_credits_total counter"""
             )
         ]
         for name, credits_per_hour in pod_credits_per_hour.items():
-            metrics.append(
-                f'kube_pod_credits_per_hour{{pod="{name}"}} {credits_per_hour}'
-            )
+            metrics.append(f'kube_pod_credits_total{{pod="{name}"}} {credits_per_hour}')
         return "\n".join(metrics)
 
 
@@ -381,6 +379,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
+            logger.info("Initializing Config client")
             config_client = await exit_stack.enter_async_context(
                 ConfigClient(
                     config.platform_config.url,
@@ -389,6 +388,12 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 )
             )
 
+            logger.info("Initializing Api client")
+            api_client = await exit_stack.enter_async_context(
+                create_api_client(config.platform_api, trace_configs)
+            )
+
+            logger.info("Initializing Kube client")
             kube_client = await exit_stack.enter_async_context(
                 KubeClient(config.kube, trace_configs=make_logging_trace_configs())
             )
@@ -436,6 +441,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     AWSNodePriceCollector(
                         pricing_client=pricing_client,
                         ec2_client=ec2_client,
+                        node_created_at=node.metadata.created_at,
                         region=config.region,
                         zone=zone,
                         instance_type=instance_type,
@@ -452,6 +458,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         service_account_path=config.gcp_service_account_key_path,
                         cluster_name=config.cluster_name,
                         node_pool_name=node_pool_name,
+                        node_created_at=node.metadata.created_at,
                         region=config.region,
                         instance_type=instance_type,
                         is_preemptible=is_preemptible,
@@ -466,6 +473,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     AzureNodePriceCollector(
                         prices_client=prices_client,
                         prices_url=config.azure_prices_url,
+                        node_created_at=node.metadata.created_at,
                         region=config.region,
                         instance_type=instance_type,
                         is_spot=is_preemptible,
@@ -476,6 +484,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     ConfigPriceCollector(
                         config_client=config_client,
                         cluster_name=config.cluster_name,
+                        node_created_at=node.metadata.created_at,
                         node_pool_name=node_pool_name,
                     )
                 )
@@ -483,13 +492,11 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
             pod_credits_collector = await exit_stack.enter_async_context(
                 PodCreditsCollector(
-                    config_client=config_client,
                     kube_client=kube_client,
-                    cluster_name=config.cluster_name,
+                    api_client=api_client,
                     node_name=config.node_name,
                     jobs_namespace=config.jobs_namespace,
                     job_label=config.job_label,
-                    preset_label=config.preset_label,
                 )
             )
             app["pod_credits_collector"] = pod_credits_collector

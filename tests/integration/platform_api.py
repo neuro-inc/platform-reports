@@ -39,9 +39,16 @@ def platform_api_app() -> aiohttp.web.Application:
                 "cluster_name": "default",
                 "status": "running",
                 "history": {"status": "running"},
-                "container": {"image": "neuromation/base", "env": {}, "volumes": []},
+                "container": {
+                    "image": "neuromation/base",
+                    "resources": {"cpu": 0.1, "memory_mb": 128},
+                },
                 "is_preemptible": False,
                 "uri": f"job://default/user/{job_id}",
+                "total_price_credits": "10",
+                "price_credits_per_hour": "10",
+                "pass_config": False,
+                "scheduler_enabled": False,
             }
         )
 

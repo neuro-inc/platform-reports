@@ -122,7 +122,7 @@
                         "fields": {
                             "Value": {
                                 "aggregations": [
-                                    "range"
+                                    "diff"
                                 ],
                                 "operation": "aggregate"
                             },
@@ -146,13 +146,13 @@
                     "options": {
                         "excludeByName": {},
                         "indexByName": {
-                            "Value (range)": 3,
+                            "Value (diff)": 3,
                             "label_platform_neuromation_io_preset": 1,
                             "label_platform_neuromation_io_user": 0,
                             "pod": 2
                         },
                         "renameByName": {
-                            "Value (range)": "Credits",
+                            "Value (diff)": "Credits",
                             "label_platform_neuromation_io_preset": "Preset",
                             "label_platform_neuromation_io_user": "User",
                             "pod": "Job"
@@ -174,7 +174,7 @@
             "id": 29,
             "panels": [
                 {
-                    "datasource": null,
+                    "datasource": "-- Dashboard --",
                     "fieldConfig": {
                         "defaults": {
                             "custom": {
@@ -239,12 +239,7 @@
                     "pluginVersion": "7.3.5",
                     "targets": [
                         {
-                            "expr": "sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
-                            "format": "table",
-                            "hide": false,
-                            "instant": false,
-                            "interval": "",
-                            "legendFormat": "",
+                            "panelId": 19,
                             "refId": "A"
                         }
                     ],
@@ -258,7 +253,32 @@
                                 "fields": {
                                     "Value": {
                                         "aggregations": [
-                                            "range"
+                                            "diff"
+                                        ],
+                                        "operation": "aggregate"
+                                    },
+                                    "label_platform_neuromation_io_preset": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    },
+                                    "label_platform_neuromation_io_user": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    },
+                                    "pod": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": "groupBy",
+                            "options": {
+                                "fields": {
+                                    "Value (diff)": {
+                                        "aggregations": [
+                                            "sum"
                                         ],
                                         "operation": "aggregate"
                                     },
@@ -278,12 +298,12 @@
                             "options": {
                                 "excludeByName": {},
                                 "indexByName": {
-                                    "Value (range)": 2,
+                                    "Value (diff) (sum)": 2,
                                     "label_platform_neuromation_io_preset": 1,
                                     "label_platform_neuromation_io_user": 0
                                 },
                                 "renameByName": {
-                                    "Value (range)": "Credits",
+                                    "Value (diff) (sum)": "Credits",
                                     "label_platform_neuromation_io_preset": "Preset",
                                     "label_platform_neuromation_io_user": "User"
                                 }

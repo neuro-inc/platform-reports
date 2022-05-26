@@ -116,7 +116,7 @@
                         "fields": {
                             "Value": {
                                 "aggregations": [
-                                    "range"
+                                    "diff"
                                 ],
                                 "operation": "aggregate"
                             },
@@ -137,7 +137,7 @@
                         "excludeByName": {},
                         "indexByName": {},
                         "renameByName": {
-                            "Value (range)": "Price",
+                            "Value (diff)": "Price",
                             "label_platform_neuromation_io_nodepool": "Node Pool",
                             "node": "Node"
                         }
@@ -158,7 +158,7 @@
             "id": 25,
             "panels": [
                 {
-                    "datasource": null,
+                    "datasource": "-- Dashboard --",
                     "fieldConfig": {
                         "defaults": {
                             "custom": {
@@ -219,12 +219,7 @@
                     "pluginVersion": "7.3.5",
                     "targets": [
                         {
-                            "expr": "sum by(label_platform_neuromation_io_nodepool) (kube_node_price_total{job=\"neuro-metrics-exporter\"} * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
-                            "format": "table",
-                            "hide": false,
-                            "instant": false,
-                            "interval": "",
-                            "legendFormat": "",
+                            "panelId": 22,
                             "refId": "A"
                         }
                     ],
@@ -238,7 +233,28 @@
                                 "fields": {
                                     "Value": {
                                         "aggregations": [
-                                            "range"
+                                            "diff"
+                                        ],
+                                        "operation": "aggregate"
+                                    },
+                                    "label_platform_neuromation_io_nodepool": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    },
+                                    "node": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": "groupBy",
+                            "options": {
+                                "fields": {
+                                    "Value (diff)": {
+                                        "aggregations": [
+                                            "sum"
                                         ],
                                         "operation": "aggregate"
                                     },
@@ -255,7 +271,7 @@
                                 "excludeByName": {},
                                 "indexByName": {},
                                 "renameByName": {
-                                    "Value (range)": "Price",
+                                    "Value (diff) (sum)": "Price",
                                     "label_platform_neuromation_io_nodepool": "Node Pool"
                                 }
                             }

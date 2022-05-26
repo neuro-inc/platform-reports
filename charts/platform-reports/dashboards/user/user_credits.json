@@ -142,7 +142,7 @@
                         "fields": {
                             "Value": {
                                 "aggregations": [
-                                    "range"
+                                    "diff"
                                 ],
                                 "operation": "aggregate"
                             },
@@ -167,7 +167,7 @@
                         "excludeByName": {},
                         "indexByName": {},
                         "renameByName": {
-                            "Value (range)": "Credits",
+                            "Value (diff)": "Credits",
                             "label_platform_neuromation_io_org": "Organization",
                             "label_platform_neuromation_io_preset": "Preset",
                             "pod": "Job"
@@ -189,7 +189,7 @@
             "id": 29,
             "panels": [
                 {
-                    "datasource": null,
+                    "datasource": "-- Dashboard --",
                     "fieldConfig": {
                         "defaults": {
                             "custom": {
@@ -275,12 +275,7 @@
                     "pluginVersion": "7.3.5",
                     "targets": [
                         {
-                            "expr": "sum by(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_org,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=~\"^$org_name$\",label_platform_neuromation_io_user=\"$user_name\",label_platform_neuromation_io_preset!=\"\"})",
-                            "format": "table",
-                            "hide": false,
-                            "instant": false,
-                            "interval": "",
-                            "legendFormat": "",
+                            "panelId": 19,
                             "refId": "A"
                         }
                     ],
@@ -294,7 +289,32 @@
                                 "fields": {
                                     "Value": {
                                         "aggregations": [
-                                            "range"
+                                            "diff"
+                                        ],
+                                        "operation": "aggregate"
+                                    },
+                                    "label_platform_neuromation_io_org": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    },
+                                    "label_platform_neuromation_io_preset": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    },
+                                    "pod": {
+                                        "aggregations": [],
+                                        "operation": "groupby"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": "groupBy",
+                            "options": {
+                                "fields": {
+                                    "Value (diff)": {
+                                        "aggregations": [
+                                            "sum"
                                         ],
                                         "operation": "aggregate"
                                     },
@@ -315,7 +335,7 @@
                                 "excludeByName": {},
                                 "indexByName": {},
                                 "renameByName": {
-                                    "Value (range)": "Credits",
+                                    "Value (diff) (sum)": "Credits",
                                     "label_platform_neuromation_io_org": "Organization",
                                     "label_platform_neuromation_io_preset": "Preset"
                                 }

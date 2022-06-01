@@ -352,7 +352,7 @@
                     "value": "$__all"
                 },
                 "datasource": "Prometheus",
-                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\"},label_platform_neuromation_io_user)",
                 "error": null,
                 "hide": 0,
                 "includeAll": true,
@@ -360,7 +360,7 @@
                 "multi": false,
                 "name": "user_name",
                 "options": [],
-                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\"},label_platform_neuromation_io_user)",
                 "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,

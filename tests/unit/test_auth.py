@@ -65,6 +65,8 @@ class TestDashboards:
         auth_client: mock.AsyncMock,
         cluster_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
+        assert cluster_dashboards_expressions, "No cluster dashboards found"
+
         async def get_missing_permissions(
             _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
@@ -83,6 +85,8 @@ class TestDashboards:
         auth_client: mock.AsyncMock,
         user_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
+        assert user_dashboards_expressions, "No user dashboards found"
+
         async def get_missing_permissions(
             _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
@@ -91,7 +95,7 @@ class TestDashboards:
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for key, exprs in user_dashboards_expressions.items():
+        for _, exprs in user_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
@@ -101,6 +105,8 @@ class TestDashboards:
         auth_client: mock.AsyncMock,
         org_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
+        assert org_dashboards_expressions, "No org dashboards found"
+
         async def get_missing_permissions(
             _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:

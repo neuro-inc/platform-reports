@@ -66,14 +66,14 @@ class TestDashboards:
         cluster_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
-            user_name: str, permissions: Sequence[Permission]
+            _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
             assert all(p.uri in ("role://default/manager",) for p in permissions)
             return []
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for key, exprs in cluster_dashboards_expressions.items():
+        for _, exprs in cluster_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
@@ -84,7 +84,7 @@ class TestDashboards:
         user_dashboards_expressions: dict[str, Sequence[str]],
     ) -> None:
         async def get_missing_permissions(
-            user_name: str, permissions: Sequence[Permission]
+            _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
             assert all(p.uri.startswith("job://default/user") for p in permissions)
             return []
@@ -92,6 +92,24 @@ class TestDashboards:
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
         for key, exprs in user_dashboards_expressions.items():
+            await auth_service.check_query_permissions("user", exprs)
+            auth_client.reset_mock()
+
+    async def test_org_dashboards_permissions(
+        self,
+        auth_service: AuthService,
+        auth_client: mock.AsyncMock,
+        org_dashboards_expressions: dict[str, Sequence[str]],
+    ) -> None:
+        async def get_missing_permissions(
+            _: str, permissions: Sequence[Permission]
+        ) -> Sequence[Permission]:
+            assert all(p.uri.startswith("job://default/org") for p in permissions)
+            return []
+
+        auth_client.get_missing_permissions.side_effect = get_missing_permissions
+
+        for _, exprs in org_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 

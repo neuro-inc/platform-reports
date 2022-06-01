@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Sequence
+from itertools import chain
 from pathlib import Path
 
 import pytest
@@ -17,11 +19,15 @@ pytest_plugins = [
 @pytest.fixture(scope="session")
 def dashboards_expressions() -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
-    dashboards_path = Path("deploy/platform-reports/dashboards")
-    expr_regex = r'"expr": "((?:[^"\\]|\\.)+)"'
+    dashboards_path = Path("charts/platform-reports/dashboards")
+    expr_regex = re.compile(r'"expr": "((?:[^"\\]|\\.)+)"')
+    var_regex = re.compile(r'"query": "label_values\(((?:[^"\\]|\\.)+),[a-z_]+\)"')
     for path in dashboards_path.glob("**/*.json"):
         exprs: list[str] = []
-        for match in re.finditer(expr_regex, path.read_text()):
+        dashboard_json = path.read_text()
+        for match in chain(
+            expr_regex.finditer(dashboard_json), var_regex.finditer(dashboard_json)
+        ):
             exprs.append(
                 match.group(1)
                 .replace('\\"', '"')
@@ -29,6 +35,9 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
                 .replace("$__interval", "15s")
                 .replace("$__rate_interval", "1m")
                 .replace("$__from", "1604070620")
+                .replace("$user_name", "user")
+                .replace("$org_name", "org")
+                .replace("$job_id", f"job-{uuid.uuid4()}")
             )
         if not exprs:
             continue
@@ -55,5 +64,16 @@ def user_dashboards_expressions(
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():
         if key.startswith("user/"):
-            result[key] = [expr.replace("$user_name", "user") for expr in exprs]
+            result[key] = exprs
+    return result
+
+
+@pytest.fixture(scope="session")
+def org_dashboards_expressions(
+    dashboards_expressions: dict[str, Sequence[str]]
+) -> dict[str, Sequence[str]]:
+    result: dict[str, Sequence[str]] = {}
+    for key, exprs in dashboards_expressions.items():
+        if key.startswith("org/"):
+            result[key] = exprs
     return result

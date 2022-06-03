@@ -236,7 +236,8 @@ kube-prometheus-stack:
     admissionWebhooks:
       patch:
         image:
-          repository: jettech/kube-webhook-certgen
+          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+          tag: v1.1.1
       logLevel: error
 
     createCustomResource: false

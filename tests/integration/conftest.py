@@ -8,7 +8,7 @@ from typing import Any, Coroutine, Sequence
 
 import aiohttp
 import pytest
-from neuro_auth_client import Cluster, Permission
+from neuro_auth_client import Permission
 from yarl import URL
 
 from platform_reports.api import (
@@ -50,9 +50,7 @@ async def create_local_app_server(
         await runner.cleanup()
 
 
-UserFactory = Callable[
-    [str, Sequence[Cluster], Sequence[Permission]], Coroutine[Any, Any, None]
-]
+UserFactory = Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]]
 
 
 @pytest.fixture(scope="session")
@@ -64,7 +62,7 @@ def event_loop() -> asyncio.AbstractEventLoop:
 async def service_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
-    await user_factory("cluster", [], [Permission(uri="user://", action="read")])
+    await user_factory("cluster", [Permission(uri="user://", action="read")])
     return token_factory("cluster")
 
 
@@ -74,7 +72,6 @@ async def cluster_admin_token(
 ) -> str:
     await user_factory(
         "cluster-admin",
-        [Cluster(name="default")],
         [
             Permission(uri="role://default/manager", action="manage"),
             Permission(uri="job://default", action="manage"),
@@ -87,11 +84,7 @@ async def cluster_admin_token(
 async def regular_user_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
-    await user_factory(
-        "user",
-        [Cluster(name="default")],
-        [Permission(uri="job://default/user", action="manage")],
-    )
+    await user_factory("user", [Permission(uri="job://default/user", action="manage")])
     return token_factory("user")
 
 
@@ -100,9 +93,7 @@ async def other_cluster_user_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
     await user_factory(
-        "other-user",
-        [Cluster(name="neuro-public")],
-        [Permission(uri="job://neuro-public/other-user", action="manage")],
+        "other-user", [Permission(uri="job://neuro-public/other-user", action="manage")]
     )
     return token_factory("other-user")
 

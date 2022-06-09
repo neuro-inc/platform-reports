@@ -7,6 +7,7 @@ def platform_api_app() -> aiohttp.web.Application:
     async def _get_config(request: aiohttp.web.Request) -> aiohttp.web.Response:
         return aiohttp.web.json_response(
             {
+                "authorized": True,
                 "headless_callback_url": "headless_callback_url",
                 "admin_url": "admin_url",
                 "auth_url": "auth_url",

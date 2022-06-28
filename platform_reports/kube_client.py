@@ -6,6 +6,7 @@ import ssl
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
+from math import ceil
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -71,7 +72,7 @@ class Resources:
     def from_payload(cls, payload: dict[str, Any]) -> Resources:
         return cls(
             cpu_m=cls._parse_cpu_m(payload.get("cpu", "0")),
-            memory_mb=cls._parse_memory_mb(payload.get("memory", "0Mi")),
+            memory_mb=cls._parse_memory(payload.get("memory", "0Mi")),
             gpu=int(payload.get("nvidia.com/gpu", 0)),
         )
 
@@ -82,12 +83,25 @@ class Resources:
         return int(float(value) * 1000)
 
     @classmethod
-    def _parse_memory_mb(cls, value: str) -> int:
-        if value.endswith("Gi"):
-            return int(value[:-2]) * 1024
-        if value.endswith("Mi"):
-            return int(value[:-2])
-        raise ValueError("Memory unit is not supported")
+    def _parse_memory(cls, memory: str) -> int:
+        try:
+            memory_b = int(memory)
+        except ValueError:
+            if memory.endswith("Ki"):
+                memory_b = int(memory[:-2]) * 1024
+            elif memory.endswith("K"):
+                memory_b = int(memory[:-1]) * 1000
+            elif memory.endswith("Mi"):
+                return int(memory[:-2])
+            elif memory.endswith("M"):
+                memory_b = int(memory[:-1]) * 1000**2
+            elif memory.endswith("Gi"):
+                memory_b = int(memory[:-2]) * 1024**3
+            elif memory.endswith("G"):
+                memory_b = int(memory[:-1]) * 1000**3
+            else:
+                raise ValueError(f"{memory!r} memory format is not supported")
+        return ceil(memory_b / 1024**2)
 
 
 @dataclass(frozen=True)

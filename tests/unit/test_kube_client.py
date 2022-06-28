@@ -83,14 +83,29 @@ class TestResources:
         assert result == Resources(cpu_m=100)
 
     def test_from_payload_with_memory(self) -> None:
-        result = Resources.from_payload({"memory": "1Gi"})
-        assert result == Resources(memory_mb=1024)
+        resources = Resources.from_payload({"memory": "4294967296"})
+        assert resources == Resources(memory_mb=4096)
 
-        result = Resources.from_payload({"memory": "128Mi"})
-        assert result == Resources(memory_mb=128)
+        resources = Resources.from_payload({"memory": "4194304Ki"})
+        assert resources == Resources(memory_mb=4096)
 
-        with pytest.raises(ValueError, match="Memory unit is not supported"):
-            Resources.from_payload({"memory": "128"})
+        resources = Resources.from_payload({"memory": "4096Mi"})
+        assert resources == Resources(memory_mb=4096)
+
+        resources = Resources.from_payload({"memory": "4Gi"})
+        assert resources == Resources(memory_mb=4096)
+
+        resources = Resources.from_payload({"memory": "4000000K"})
+        assert resources == Resources(memory_mb=3815)
+
+        resources = Resources.from_payload({"memory": "4000M"})
+        assert resources == Resources(memory_mb=3815)
+
+        resources = Resources.from_payload({"memory": "4G"})
+        assert resources == Resources(memory_mb=3815)
+
+        with pytest.raises(ValueError, match="'4Ti' memory format is not supported"):
+            Resources.from_payload({"memory": "4Ti"})
 
     def test_from_payload_with_gpu(self) -> None:
         assert Resources.from_payload({"nvidia.com/gpu": 1}) == Resources(gpu=1)

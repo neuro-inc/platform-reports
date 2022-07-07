@@ -94,7 +94,7 @@ class TestConfigPriceCollector:
                     ResourcePoolType(
                         name="node-pool",
                         cpu=8,
-                        memory_mb=52 * 1024,
+                        memory=52 * 1024**3,
                         price=Decimal("0.9"),
                         currency="USD",
                     ),
@@ -339,18 +339,18 @@ class TestGCPNodePriceCollector:
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
                 resource_pool_types=[
-                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory_mb=52 * 1024),
+                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory=52 * 1024**3),
                     ResourcePoolType(
                         name="n1-highmem-8-4xk80",
                         cpu=8,
-                        memory_mb=52 * 1024,
+                        memory=52 * 1024**3,
                         gpu=4,
                         gpu_model="nvidia-tesla-k80",
                     ),
                     ResourcePoolType(
                         name="n1-highmem-8-1xv100",
                         cpu=8,
-                        memory_mb=52 * 1024,
+                        memory=52 * 1024**3,
                         gpu=1,
                         # not registered in google service skus fixture
                         gpu_model="nvidia-tesla-v100",

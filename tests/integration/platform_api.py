@@ -42,7 +42,7 @@ def platform_api_app() -> aiohttp.web.Application:
                 "history": {"status": "running"},
                 "container": {
                     "image": "neuromation/base",
-                    "resources": {"cpu": 0.1, "memory_mb": 128},
+                    "resources": {"cpu": 0.1, "memory": 128 * 1024**2},
                 },
                 "is_preemptible": False,
                 "uri": f"job://default/user/{job_id}",

@@ -367,16 +367,16 @@ class GCPNodePriceCollector(_NodePriceCollector):
         resource_pool = resource_pools[self._node_pool_name]
         return await self._get_instance_price_per_hour(
             resource_pool.cpu,
-            resource_pool.memory_mb,
+            resource_pool.memory,
             resource_pool.gpu or 0,
             resource_pool.gpu_model or "",
         )
 
     async def _get_instance_price_per_hour(
-        self, cpu: float, memory_mb: int, gpu: int, gpu_model: str
+        self, cpu: float, memory: int, gpu: int, gpu_model: str
     ) -> Price:
         prices_in_nanos: dict[str, Decimal] = {}
-        expected_prices_count = bool(cpu) + bool(memory_mb) + bool(gpu)
+        expected_prices_count = bool(cpu) + bool(memory) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
         async for sku in self._get_service_skus():
             # The only reliable way to match instance type with sku is through
@@ -397,7 +397,7 @@ class GCPNodePriceCollector(_NodePriceCollector):
                     prices_in_nanos["cpu"] = price_in_nanos * Decimal(str(cpu))
                 if "ram" in sku_description_words:
                     assert "ram" not in prices_in_nanos
-                    prices_in_nanos["ram"] = price_in_nanos * memory_mb / 1024
+                    prices_in_nanos["ram"] = price_in_nanos * memory / 1024**3
 
             # Calculate price for the attached GPU
             if (

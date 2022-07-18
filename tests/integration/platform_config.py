@@ -27,7 +27,8 @@ def platform_config_app() -> aiohttp.web.Application:
                             "min_size": 1,
                             "max_size": 1,
                             "cpu": 1,
-                            "memory_mb": 4096 * 1024**2,
+                            "memory": 4096 * 2**20,
+                            "memory_mb": 4096,
                             "price": "0.0",
                             "currency": "USD",
                         }

@@ -5,7 +5,7 @@ repos:
   - id: check-merge-conflict
     exclude: "rst$"
 - repo: https://github.com/asottile/yesqa
-  rev: v1.3.0
+  rev: v1.4.0
   hooks:
   - id: yesqa
 - repo: https://github.com/sondrelg/pep585-upgrade
@@ -26,7 +26,7 @@ repos:
     - markdown
     - rst
 - repo: https://github.com/PyCQA/flake8
-  rev: 5.0.2
+  rev: 5.0.4
   hooks:
   - id: flake8
 - repo: https://github.com/pre-commit/pre-commit-hooks

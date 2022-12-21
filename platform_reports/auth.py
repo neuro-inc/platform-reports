@@ -337,7 +337,7 @@ class PermissionsService:
 
     def _get_platform_job_matcher(self, vector: InstantVector) -> LabelMatcher | None:
         matcher = vector.get_eq_label_matcher(Matcher.POD)
-        if matcher is not None and bool(PLATFORM_JOB_RE.match(matcher.value)):
+        if matcher is not None and PLATFORM_JOB_RE.match(matcher.value):
             return matcher
         return None
 

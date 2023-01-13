@@ -42,6 +42,12 @@ class Price:
         return f"{self.value!r} {self.currency}" if self.currency else f"{self.value!r}"
 
 
+@dataclass(frozen=True)
+class CPUPowerConsuption:
+    min_consumption: Decimal = Decimal()
+    max_consumption: Decimal = Decimal()
+
+
 _TValue = TypeVar("_TValue")
 
 
@@ -522,3 +528,33 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         return datetime.now(timezone.utc) - finished_at <= timedelta(
             seconds=2 * self._interval_s
         )
+
+
+class NodeCPUPowerCollector(Collector[CPUPowerConsuption]):
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        cluster_name: str,
+        node_pool_name: str,
+        interval_s: float = 3600,
+    ) -> None:
+        super().__init__(CPUPowerConsuption(), interval_s)
+
+        self._config_client = config_client
+        self._cluster_name = cluster_name
+        self._node_pool_name = node_pool_name
+
+    async def get_latest_value(self) -> CPUPowerConsuption:
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+        assert cluster.orchestrator is not None
+        for resource_pool in cluster.orchestrator.resource_pool_types:
+            if resource_pool.name == self._node_pool_name:
+                return CPUPowerConsuption(
+                    min_consumption=resource_pool.cpu_min_watts,
+                    max_consumption=resource_pool.cpu_max_watts,
+                )
+        logger.warning(
+            f"Node pool '{self._node_pool_name}' was "
+            f"in cluster '{self._cluster_name}."
+        )
+        return CPUPowerConsuption()

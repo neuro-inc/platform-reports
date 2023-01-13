@@ -42,6 +42,7 @@ from platform_reports.metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    NodeCPUPowerCollector,
     PodCreditsCollector,
     Price,
 )
@@ -949,3 +950,47 @@ class TestPodCreditsCollector:
         result = await collector.get_latest_value()
 
         assert result == {}
+
+
+class TestNodeCPUPowerCollector:
+    @pytest.fixture
+    def config_client(self) -> mock.AsyncMock:
+        result = mock.AsyncMock(spec=ConfigClient)
+        result.get_cluster.return_value = Cluster(
+            name="default",
+            status=ClusterStatus.DEPLOYED,
+            created_at=datetime.now(),
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="",
+                job_internal_hostname_template="",
+                job_fallback_hostname="",
+                job_schedule_timeout_s=30,
+                job_schedule_scale_up_timeout_s=30,
+                resource_pool_types=[
+                    ResourcePoolType(
+                        name="node-pool",
+                        cpu_min_watts=Decimal(10),
+                        cpu_max_watts=Decimal(100),
+                    ),
+                ],
+            ),
+        )
+        return result
+
+    @pytest.fixture
+    def cpu_power_collector(
+        self,
+        config_client: NodeCPUPowerCollector,
+    ) -> Callable[..., NodeCPUPowerCollector]:
+        return NodeCPUPowerCollector(
+            config_client=config_client,
+            cluster_name="default",
+            node_pool_name="node-pool",
+        )
+
+    async def test_get_latest_value(
+        self, cpu_power_collector: NodeCPUPowerCollector
+    ) -> None:
+        value = await cpu_power_collector.get_latest_value()
+        assert value.min_consumption == Decimal(10)
+        assert value.max_consumption == Decimal(100)

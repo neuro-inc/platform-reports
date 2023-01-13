@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import replace
+from textwrap import dedent
 
 import aiohttp
 from aiohttp.web import HTTPForbidden, HTTPOk
@@ -57,6 +58,31 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
 \# HELP kube_pod_credits_total The total credits of the pod\.
 \# TYPE kube_pod_credits_total counter
 (kube_pod_credits_total{{pod=".+"}} 10\s*)+""",
+                    text,
+                ), text
+
+    async def test_node_cpu_power_metrics(
+        self,
+        client: aiohttp.ClientSession,
+        metrics_server_factory: Callable[
+            [MetricsConfig], AbstractAsyncContextManager[URL]
+        ],
+        metrics_config: MetricsConfig,
+        kube_node: Node,
+    ) -> None:
+        async with metrics_server_factory(metrics_config) as server:
+            async with client.get(server / "metrics") as response:
+                text = await response.text()
+                assert response.status == HTTPOk.status_code, text
+                assert re.search(
+                    dedent(
+                        rf"""# HELP cpu_min_watts The CPU power consumption while IDLEing in watts
+                        # TYPE cpu_min_watts gauge
+                        cpu_min_watts={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*
+                        # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
+                        # TYPE cpu_max_watts gauge
+                        cpu_max_watts={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*"""  # noqa: E501
+                    ),
                     text,
                 ), text
 

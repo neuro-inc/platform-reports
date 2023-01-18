@@ -1,6 +1,9 @@
 cloudProvider:
-  type: aws
-  region: us-east-1
+  type: gcp
+  region: us-central1
+  serviceAccountSecret:
+    name: gcp-key
+    key: key_json
 
 platform:
   authUrl: https://dev.neu.ro
@@ -68,11 +71,7 @@ thanos:
       spec:
         storageClassName: gp2
 
-  objstore:
-    type: S3
-    config:
-      bucket: neuro-dev-metrics
-      endpoint: s3.us-east-1.amazonaws.com
+  objstoreSecretOverride: thanos
 
 grafana:
   adminPassword: password

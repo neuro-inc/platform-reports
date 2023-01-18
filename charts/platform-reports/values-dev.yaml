@@ -51,7 +51,7 @@ kube-prometheus-stack:
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: gp2
+            storageClassName: standard-rwo
 
   prometheusOperator:
     kubeletService:
@@ -64,12 +64,12 @@ thanos:
   store:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
+        storageClassName: standard-rwo
 
   compact:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
+        storageClassName: standard-rwo
 
   objstoreSecretOverride: thanos
 

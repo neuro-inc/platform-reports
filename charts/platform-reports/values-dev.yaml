@@ -46,8 +46,8 @@ kube-prometheus-stack:
     prometheusSpec:
       thanos:
         objectStorageConfig:
-          name: thanos-object-storage-config
-          key: thanos-object-storage.yaml
+          name: thanos
+          key: object-store.yaml
       storageSpec:
         volumeClaimTemplate:
           spec:

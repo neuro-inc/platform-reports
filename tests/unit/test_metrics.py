@@ -391,6 +391,58 @@ class TestGCPNodePriceCollector:
                     ],
                 },
                 {
+                    "description": "N1 Custom Instance Core running in Americas",
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "OnDemand",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 31611000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "description": "N1 Sole Tenancy Instance Core running in Americas",
+                    "category": {
+                        "serviceDisplayName": "Compute Engine",
+                        "resourceFamily": "Compute",
+                        "resourceGroup": "N1Standard",
+                        "usageType": "OnDemand",
+                    },
+                    "serviceRegions": ["us-central1"],
+                    "pricingInfo": [
+                        {
+                            "pricingExpression": {
+                                "tieredRates": [
+                                    {
+                                        "startUsageAmount": 0,
+                                        "unitPrice": {
+                                            "currencyCode": "USD",
+                                            "units": "0",
+                                            "nanos": 31611000,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+                {
                     "description": (
                         "Preemptible N1 Predefined Instance Core running in Americas"
                     ),

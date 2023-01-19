@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from collections.abc import Sequence
@@ -29,8 +30,8 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
             expr_regex.finditer(dashboard_json), var_regex.finditer(dashboard_json)
         ):
             exprs.append(
-                match.group(1)
-                .replace('\\"', '"')
+                json.loads(f'"{match.group(1)}"')
+                .replace("$__interval_ms", "15000")
                 .replace("$__range", "15m")
                 .replace("$__interval", "15s")
                 .replace("$__rate_interval", "1m")

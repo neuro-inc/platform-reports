@@ -269,4 +269,7 @@ LABEL_NAME: (LETTER | "_") (DIGIT | LETTER | "_")*
 %import common.WS
 
 %ignore WS
+
+COMMENT: "#" /[^\n]/*
+%ignore COMMENT
 """

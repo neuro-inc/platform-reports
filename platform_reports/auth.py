@@ -23,6 +23,7 @@ class Dashboard(str, enum.Enum):
     NODES = "nodes"
     SERVICES = "services"
     PRICES = "prices"
+    OVERVIEW = "overview"
     JOB = "job"
     JOBS = "jobs"
     USER_JOBS = "user_jobs"
@@ -77,6 +78,8 @@ class AuthService:
         elif dashboard_id == Dashboard.SERVICES:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.PRICES:
+            permissions = [permissions_service.get_cluster_manager_permission()]
+        elif dashboard_id == Dashboard.OVERVIEW:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")

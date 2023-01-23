@@ -194,7 +194,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": []
       },

@@ -3,142 +3,127 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
+        "datasource": "-- Grafana --",
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [],
-          "type": "dashboard"
-        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "fiscalYearStartMonth": 0,
+  "gnetId": null,
   "graphTooltip": 0,
-  "id": 2,
+  "id": null,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "watt"
+          "custom": {}
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
         "y": 0
       },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+      "hiddenSeries": false,
+      "id": 6,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
           "expr": "sum(sum by(instance) (avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval])) * (400 - 100) + 100))",
-          "hide": false,
+          "interval": "",
           "legendFormat": "CPU",
-          "range": true,
-          "refId": "CPU"
+          "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
           "expr": "sum(DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} and DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)",
+          "interval": "",
           "legendFormat": "GPU",
-          "range": true,
-          "refId": "GPU"
+          "refId": "B"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Power",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "watt",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
-      },
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "custom": {},
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -146,6 +131,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -158,7 +147,7 @@
         "x": 12,
         "y": 0
       },
-      "id": 8,
+      "id": 12,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -173,34 +162,25 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "7.3.5",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
           "expr": "count(node_load15{job=\"node-exporter\"})",
-          "legendFormat": "__auto",
-          "range": true,
+          "interval": "",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
+      "timeFrom": null,
+      "timeShift": null,
       "title": "Nodes",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
-      },
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "continuous-GrYlRd",
-            "seriesBy": "max"
-          },
+          "custom": {},
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -208,10 +188,13 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
-          },
-          "unit": "kwatth"
+          }
         },
         "overrides": []
       },
@@ -221,7 +204,8 @@
         "x": 15,
         "y": 0
       },
-      "id": 11,
+      "id": 10,
+      "interval": "1h",
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -236,308 +220,308 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "7.3.5",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
-          "hide": false,
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
           "interval": "1h",
-          "legendFormat": "CPU",
-          "range": true,
-          "refId": "CPU"
+          "legendFormat": "",
+          "refId": "A"
         }
       ],
+      "timeFrom": null,
+      "timeShift": null,
       "title": "Power Last Hour",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "continuous-YlRd",
-            "seriesBy": "max"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMin": 0,
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 100,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "massg"
+          "custom": {}
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "hiddenSeries": false,
+      "id": 4,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "100 * avg(avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval])))",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "CPU Utilization",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
         "w": 12,
         "x": 12,
         "y": 8
       },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+      "hiddenSeries": false,
+      "id": 8,
+      "interval": "1h",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
       },
-      "pluginVersion": "9.3.2",
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
-          "hide": false,
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
           "interval": "1h",
-          "legendFormat": "CPU",
-          "range": true,
-          "refId": "CPU"
+          "legendFormat": "",
+          "refId": "A"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "CO2eq kWh",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 9
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
+      "yaxes": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
-          "expr": "100 * avg(avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval])))",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          "format": "massg",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
         }
       ],
-      "title": "CPU Utilization",
-      "type": "timeseries"
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VGjwga24z"
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
+          "custom": {}
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 16
       },
-      "id": 6,
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "alertThreshold": true
       },
+      "percentage": false,
+      "pluginVersion": "7.3.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VGjwga24z"
-          },
-          "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"} and DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"} < 100000)",
-          "legendFormat": "__auto",
-          "range": true,
+          "interval": "",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "GPU Utilization",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
-  "refresh": false,
-  "schemaVersion": 37,
+  "schemaVersion": 26,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -551,6 +535,5 @@
   "timezone": "",
   "title": "Overview",
   "uid": "overview",
-  "version": 23,
-  "weekStart": ""
+  "version": 24
 }

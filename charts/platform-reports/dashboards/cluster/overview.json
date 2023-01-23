@@ -120,7 +120,7 @@
             "uid": "VGjwga24z"
           },
           "editorMode": "code",
-          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{} and DCGM_FI_DEV_POWER_USAGE{} < 100000)",
+          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} and DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)",
           "legendFormat": "GPU",
           "range": true,
           "refId": "GPU"
@@ -181,7 +181,7 @@
             "uid": "VGjwga24z"
           },
           "editorMode": "code",
-          "expr": "count(node_load15{})",
+          "expr": "count(node_load15{job=\"node-exporter\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -244,7 +244,7 @@
             "uid": "VGjwga24z"
           },
           "editorMode": "code",
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
           "hide": false,
           "interval": "1h",
           "legendFormat": "CPU",
@@ -338,7 +338,7 @@
             "uid": "VGjwga24z"
           },
           "editorMode": "code",
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
           "hide": false,
           "interval": "1h",
           "legendFormat": "CPU",
@@ -551,6 +551,6 @@
   "timezone": "",
   "title": "Overview",
   "uid": "overview",
-  "version": 17,
+  "version": 23,
   "weekStart": ""
 }

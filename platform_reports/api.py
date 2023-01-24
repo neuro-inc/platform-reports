@@ -146,7 +146,7 @@ class MetricsHandler:
             # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
             # TYPE cpu_max_watts gauge
             cpu_max_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_max_watts}
-            # HELP co2_grams_eq_per_kwh The price of the power in datacenter or region where the node is running
+            # HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
             # TYPE co2_grams_eq_per_kwh gauge
             co2_grams_eq_per_kwh={{cluster="{cluster_name}",node="{node} {power_usage.co2_grams_eq_per_kwh}"}}"""  # noqa: E501
         )

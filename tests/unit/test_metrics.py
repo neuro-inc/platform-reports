@@ -24,6 +24,8 @@ from neuro_config_client import (
     Cluster,
     ClusterStatus,
     ConfigClient,
+    NodePool,
+    OnPremCloudProvider,
     OrchestratorConfig,
     ResourcePoolType,
 )
@@ -960,17 +962,14 @@ class TestNodeCPUPowerCollector:
             name="default",
             status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
-            orchestrator=OrchestratorConfig(
-                job_hostname_template="",
-                job_internal_hostname_template="",
-                job_fallback_hostname="",
-                job_schedule_timeout_s=30,
-                job_schedule_scale_up_timeout_s=30,
-                resource_pool_types=[
-                    ResourcePoolType(
+            cloud_provider=OnPremCloudProvider(
+                storage=None,
+                node_pools=[
+                    NodePool(
                         name="node-pool",
                         cpu_min_watts=Decimal(10),
                         cpu_max_watts=Decimal(100),
+                        co2_grams_eq_per_kwh=Decimal(1000),
                     ),
                 ],
             ),
@@ -994,3 +993,4 @@ class TestNodeCPUPowerCollector:
         value = await cpu_power_collector.get_latest_value()
         assert value.min_consumption == Decimal(10)
         assert value.max_consumption == Decimal(100)
+        assert value.co2_grams_eq_per_kwh == Decimal(1000)

@@ -46,6 +46,7 @@ class Price:
 class CPUPowerConsuption:
     min_consumption: Decimal = Decimal()
     max_consumption: Decimal = Decimal()
+    co2_grams_eq_per_kwh: Decimal = Decimal()
 
 
 _TValue = TypeVar("_TValue")
@@ -546,15 +547,16 @@ class NodeCPUPowerCollector(Collector[CPUPowerConsuption]):
 
     async def get_latest_value(self) -> CPUPowerConsuption:
         cluster = await self._config_client.get_cluster(self._cluster_name)
-        assert cluster.orchestrator is not None
-        for resource_pool in cluster.orchestrator.resource_pool_types:
-            if resource_pool.name == self._node_pool_name:
+        assert cluster.cloud_provider is not None
+        for node_pool in cluster.cloud_provider.node_pools:
+            if node_pool.name == self._node_pool_name:
                 return CPUPowerConsuption(
-                    min_consumption=resource_pool.cpu_min_watts,
-                    max_consumption=resource_pool.cpu_max_watts,
+                    min_consumption=node_pool.cpu_min_watts,
+                    max_consumption=node_pool.cpu_max_watts,
+                    co2_grams_eq_per_kwh=node_pool.co2_grams_eq_per_kwh,
                 )
         logger.warning(
-            f"Node pool '{self._node_pool_name}' was "
+            f"Node pool '{self._node_pool_name}' was not found "
             f"in cluster '{self._cluster_name}."
         )
         return CPUPowerConsuption()

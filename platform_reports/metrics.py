@@ -43,10 +43,10 @@ class Price:
 
 
 @dataclass(frozen=True)
-class CPUPowerConsuption:
-    min_consumption: Decimal = Decimal()
-    max_consumption: Decimal = Decimal()
-    co2_grams_eq_per_kwh: Decimal = Decimal()
+class NodePowerConsuption:
+    cpu_min_watts: float = 0
+    cpu_max_watts: float = 0
+    co2_grams_eq_per_kwh: float = 0
 
 
 _TValue = TypeVar("_TValue")
@@ -531,7 +531,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         )
 
 
-class NodeCPUPowerCollector(Collector[CPUPowerConsuption]):
+class NodePowerConsumptionCollector(Collector[NodePowerConsuption]):
     def __init__(
         self,
         config_client: ConfigClient,
@@ -539,24 +539,24 @@ class NodeCPUPowerCollector(Collector[CPUPowerConsuption]):
         node_pool_name: str,
         interval_s: float = 3600,
     ) -> None:
-        super().__init__(CPUPowerConsuption(), interval_s)
+        super().__init__(NodePowerConsuption(), interval_s)
 
         self._config_client = config_client
         self._cluster_name = cluster_name
         self._node_pool_name = node_pool_name
 
-    async def get_latest_value(self) -> CPUPowerConsuption:
+    async def get_latest_value(self) -> NodePowerConsuption:
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.cloud_provider is not None
         for node_pool in cluster.cloud_provider.node_pools:
             if node_pool.name == self._node_pool_name:
-                return CPUPowerConsuption(
-                    min_consumption=node_pool.cpu_min_watts,
-                    max_consumption=node_pool.cpu_max_watts,
+                return NodePowerConsuption(
+                    cpu_min_watts=node_pool.cpu_min_watts,
+                    cpu_max_watts=node_pool.cpu_max_watts,
                     co2_grams_eq_per_kwh=node_pool.co2_grams_eq_per_kwh,
                 )
         logger.warning(
             f"Node pool '{self._node_pool_name}' was not found "
             f"in cluster '{self._cluster_name}."
         )
-        return CPUPowerConsuption()
+        return NodePowerConsuption()

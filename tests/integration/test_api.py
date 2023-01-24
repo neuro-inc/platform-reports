@@ -61,7 +61,7 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
                     text,
                 ), text
 
-    async def test_node_cpu_power_metrics(
+    async def test_node_power_metrics(
         self,
         client: aiohttp.ClientSession,
         metrics_server_factory: Callable[
@@ -81,7 +81,10 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
                         cpu_min_watts={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*
                         # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
                         # TYPE cpu_max_watts gauge
-                        cpu_max_watts={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*"""  # noqa: E501
+                        cpu_max_watts={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*
+                        # HELP co2_grams_eq_per_kwh The price of the power in datacenter or region where the node is running
+                        # TYPE co2_grams_eq_per_kwh gauge
+                        co2_grams_eq_per_kwh={{cluster="default",node="{kube_node.metadata.name}"}} \d+\.?\d*"""  # noqa: E501
                     ),
                     text,
                 ), text

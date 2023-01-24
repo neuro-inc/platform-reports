@@ -44,7 +44,7 @@ from platform_reports.metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
-    NodeCPUPowerCollector,
+    NodePowerConsumptionCollector,
     PodCreditsCollector,
     Price,
 )
@@ -967,9 +967,9 @@ class TestNodeCPUPowerCollector:
                 node_pools=[
                     NodePool(
                         name="node-pool",
-                        cpu_min_watts=Decimal(10),
-                        cpu_max_watts=Decimal(100),
-                        co2_grams_eq_per_kwh=Decimal(1000),
+                        cpu_min_watts=10.5,
+                        cpu_max_watts=110.0,
+                        co2_grams_eq_per_kwh=1000.0,
                     ),
                 ],
             ),
@@ -977,20 +977,20 @@ class TestNodeCPUPowerCollector:
         return result
 
     @pytest.fixture
-    def cpu_power_collector(
+    def node_power_use_collector(
         self,
-        config_client: NodeCPUPowerCollector,
-    ) -> Callable[..., NodeCPUPowerCollector]:
-        return NodeCPUPowerCollector(
+        config_client: ConfigClient,
+    ) -> NodePowerConsumptionCollector:
+        return NodePowerConsumptionCollector(
             config_client=config_client,
             cluster_name="default",
             node_pool_name="node-pool",
         )
 
     async def test_get_latest_value(
-        self, cpu_power_collector: NodeCPUPowerCollector
+        self, node_power_use_collector: NodePowerConsumptionCollector
     ) -> None:
-        value = await cpu_power_collector.get_latest_value()
-        assert value.min_consumption == Decimal(10)
-        assert value.max_consumption == Decimal(100)
-        assert value.co2_grams_eq_per_kwh == Decimal(1000)
+        value = await node_power_use_collector.get_latest_value()
+        assert value.cpu_min_watts == 10.5
+        assert value.cpu_max_watts == 110.0
+        assert value.co2_grams_eq_per_kwh == 1000.0

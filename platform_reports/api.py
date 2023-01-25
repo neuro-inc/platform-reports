@@ -148,7 +148,7 @@ class MetricsHandler:
             cpu_max_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_max_watts}
             # HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
             # TYPE co2_grams_eq_per_kwh gauge
-            co2_grams_eq_per_kwh={{cluster="{cluster_name}",node="{node} {power_usage.co2_grams_eq_per_kwh}"}}"""  # noqa: E501
+            co2_grams_eq_per_kwh={{cluster="{cluster_name}",node="{node}"}} {power_usage.co2_grams_eq_per_kwh}"""  # noqa: E501
         )
 
 

@@ -1,6 +1,9 @@
 cloudProvider:
-  type: aws
-  region: us-east-1
+  type: gcp
+  region: us-central1
+  serviceAccountSecret:
+    name: gcp-key
+    key: key_json
 
 platform:
   authUrl: https://dev.neu.ro
@@ -43,12 +46,12 @@ kube-prometheus-stack:
     prometheusSpec:
       thanos:
         objectStorageConfig:
-          name: thanos-object-storage-config
-          key: thanos-object-storage.yaml
+          name: thanos
+          key: object-store.yaml
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: gp2
+            storageClassName: standard-rwo
 
   prometheusOperator:
     kubeletService:
@@ -61,18 +64,14 @@ thanos:
   store:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
+        storageClassName: standard-rwo
 
   compact:
     persistentVolumeClaim:
       spec:
-        storageClassName: gp2
+        storageClassName: standard-rwo
 
-  objstore:
-    type: S3
-    config:
-      bucket: neuro-dev-metrics
-      endpoint: s3.us-east-1.amazonaws.com
+  objstoreSecretOverride: thanos
 
 grafana:
   adminPassword: password

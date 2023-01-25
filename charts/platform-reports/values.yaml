@@ -390,6 +390,9 @@ grafana:
   sidecar:
     image:
       repository: kiwigrid/k8s-sidecar
+      tag: 1.22.0
+
+    logLevel: WARN
 
     datasources:
       enabled: false

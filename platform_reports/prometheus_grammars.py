@@ -267,6 +267,8 @@ LABEL_NAME: (LETTER | "_") (DIGIT | LETTER | "_")*
 %import common.DIGIT
 %import common.LETTER
 %import common.WS
+%import common.SH_COMMENT
 
 %ignore WS
+%ignore SH_COMMENT
 """

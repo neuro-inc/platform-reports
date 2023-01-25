@@ -307,6 +307,18 @@ class TestAuthService:
             "user", [Permission(uri="job://default", action="read")]
         )
 
+    async def test_check_overview_dashboard_permissions(
+        self, service: AuthService, auth_client: mock.AsyncMock
+    ) -> None:
+        await service.check_dashboard_permissions(
+            "user", Dashboard.OVERVIEW, MultiDict()
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user",
+            [Permission(uri="role://default/manager", action="read")],
+        )
+
     async def test_check_node_exporter_query_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:

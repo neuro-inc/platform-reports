@@ -397,6 +397,9 @@ class GCPNodePriceCollector(_NodePriceCollector):
             if (
                 self._instance_family in sku_description_words
                 and self._usage_type == sku_usage_type
+                and not sku_description_words.intersection(
+                    ("sole", "tenancy", "custom")
+                )
             ):
                 price_in_nanos = self._get_price_in_nanos(sku)
                 if sku_description_words.intersection(("core", "cpu", "vcpu")):

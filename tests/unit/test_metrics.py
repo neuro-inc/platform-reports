@@ -24,6 +24,8 @@ from neuro_config_client import (
     Cluster,
     ClusterStatus,
     ConfigClient,
+    NodePool,
+    OnPremCloudProvider,
     OrchestratorConfig,
     ResourcePoolType,
 )
@@ -42,6 +44,7 @@ from platform_reports.metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    NodePowerConsumptionCollector,
     PodCreditsCollector,
     Price,
 )
@@ -1001,3 +1004,45 @@ class TestPodCreditsCollector:
         result = await collector.get_latest_value()
 
         assert result == {}
+
+
+class TestNodeCPUPowerCollector:
+    @pytest.fixture
+    def config_client(self) -> mock.AsyncMock:
+        result = mock.AsyncMock(spec=ConfigClient)
+        result.get_cluster.return_value = Cluster(
+            name="default",
+            status=ClusterStatus.DEPLOYED,
+            created_at=datetime.now(),
+            cloud_provider=OnPremCloudProvider(
+                storage=None,
+                node_pools=[
+                    NodePool(
+                        name="node-pool",
+                        cpu_min_watts=10.5,
+                        cpu_max_watts=110.0,
+                        co2_grams_eq_per_kwh=1000.0,
+                    ),
+                ],
+            ),
+        )
+        return result
+
+    @pytest.fixture
+    def node_power_use_collector(
+        self,
+        config_client: ConfigClient,
+    ) -> NodePowerConsumptionCollector:
+        return NodePowerConsumptionCollector(
+            config_client=config_client,
+            cluster_name="default",
+            node_pool_name="node-pool",
+        )
+
+    async def test_get_latest_value(
+        self, node_power_use_collector: NodePowerConsumptionCollector
+    ) -> None:
+        value = await node_power_use_collector.get_latest_value()
+        assert value.cpu_min_watts == 10.5
+        assert value.cpu_max_watts == 110.0
+        assert value.co2_grams_eq_per_kwh == 1000.0

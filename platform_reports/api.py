@@ -58,6 +58,7 @@ from .metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    NodePowerConsumptionCollector,
     PodCreditsCollector,
     Price,
 )
@@ -93,6 +94,10 @@ class MetricsHandler:
         return self._app["pod_credits_collector"]
 
     @property
+    def _node_power_consumption_collector(self) -> NodePowerConsumptionCollector:
+        return self._app["node_power_consumption_collector"]
+
+    @property
     def _config(self) -> MetricsConfig:
         return self._app["config"]
 
@@ -101,6 +106,7 @@ class MetricsHandler:
         pod_credits_text = self._get_pod_credits_total_text()
         if pod_credits_text:
             text.append(pod_credits_text)
+        text.append(self._get_node_power_usage_text())
         return Response(text="\n\n".join(text))
 
     def _get_node_price_total_text(self) -> str:
@@ -127,6 +133,23 @@ class MetricsHandler:
         for name, credits_per_hour in pod_credits_per_hour.items():
             metrics.append(f'kube_pod_credits_total{{pod="{name}"}} {credits_per_hour}')
         return "\n".join(metrics)
+
+    def _get_node_power_usage_text(self) -> str:
+        node = self._config.node_name
+        cluster_name = self._config.cluster_name
+        power_usage = self._node_power_consumption_collector.current_value
+        return dedent(
+            f"""\
+            # HELP cpu_min_watts The CPU power consumption while IDLEing in watts
+            # TYPE cpu_min_watts gauge
+            cpu_min_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_min_watts}
+            # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
+            # TYPE cpu_max_watts gauge
+            cpu_max_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_max_watts}
+            # HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
+            # TYPE co2_grams_eq_per_kwh gauge
+            co2_grams_eq_per_kwh={{cluster="{cluster_name}",node="{node}"}} {power_usage.co2_grams_eq_per_kwh}"""  # noqa: E501
+        )
 
 
 class PrometheusProxyHandler:
@@ -501,12 +524,25 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             )
             app["pod_credits_collector"] = pod_credits_collector
 
+            node_power_consumpt_collector = await exit_stack.enter_async_context(
+                NodePowerConsumptionCollector(
+                    config_client=config_client,
+                    cluster_name=config.cluster_name,
+                    node_pool_name=node_pool_name,
+                )
+            )
+            app["node_power_consumption_collector"] = node_power_consumpt_collector
+
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
             )
 
             await exit_stack.enter_async_context(
                 run_task(await pod_credits_collector.start())
+            )
+
+            await exit_stack.enter_async_context(
+                run_task(await node_power_consumpt_collector.start())
             )
 
             yield

@@ -21,21 +21,21 @@ class TestMetrics:
         async with client.get(metrics_server / "ping") as response:
             assert response.status == HTTPOk.status_code
 
-    async def test_node_metrics(
+    async def test_node_price_metrics(
         self, client: aiohttp.ClientSession, metrics_server: URL, kube_node: Node
     ) -> None:
         async with client.get(metrics_server / "metrics") as response:
             text = await response.text()
             assert response.status == HTTPOk.status_code, text
             assert (
-                text
-                == f"""\
+                f"""\
 # HELP kube_node_price_total The total price of the node.
 # TYPE kube_node_price_total counter
 kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
+                in text
             )
 
-    async def test_node_and_pod_metrics(
+    async def test_node_and_pod_price_metrics(
         self,
         client: aiohttp.ClientSession,
         metrics_server_factory: Callable[
@@ -57,6 +57,32 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
 \# HELP kube_pod_credits_total The total credits of the pod\.
 \# TYPE kube_pod_credits_total counter
 (kube_pod_credits_total{{pod=".+"}} 10\s*)+""",
+                    text,
+                ), text
+
+    async def test_node_power_metrics(
+        self,
+        client: aiohttp.ClientSession,
+        metrics_server_factory: Callable[
+            [MetricsConfig], AbstractAsyncContextManager[URL]
+        ],
+        metrics_config: MetricsConfig,
+        kube_node: Node,
+    ) -> None:
+        async with metrics_server_factory(metrics_config) as server:
+            async with client.get(server / "metrics") as response:
+                text = await response.text()
+                assert response.status == HTTPOk.status_code, text
+                assert re.search(
+                    rf"""# HELP cpu_min_watts The CPU power consumption while IDLEing in watts
+# TYPE cpu_min_watts gauge
+cpu_min_watts={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*
+# HELP cpu_max_watts The CPU power consumption when fully utilized in watts
+# TYPE cpu_max_watts gauge
+cpu_max_watts={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*
+# HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
+# TYPE co2_grams_eq_per_kwh gauge
+co2_grams_eq_per_kwh={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501
                     text,
                 ), text
 

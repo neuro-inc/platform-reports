@@ -42,6 +42,13 @@ class Price:
         return f"{self.value!r} {self.currency}" if self.currency else f"{self.value!r}"
 
 
+@dataclass(frozen=True)
+class NodePowerConsuption:
+    cpu_min_watts: float = 0
+    cpu_max_watts: float = 0
+    co2_grams_eq_per_kwh: float = 0
+
+
 _TValue = TypeVar("_TValue")
 
 
@@ -525,3 +532,34 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         return datetime.now(timezone.utc) - finished_at <= timedelta(
             seconds=2 * self._interval_s
         )
+
+
+class NodePowerConsumptionCollector(Collector[NodePowerConsuption]):
+    def __init__(
+        self,
+        config_client: ConfigClient,
+        cluster_name: str,
+        node_pool_name: str,
+        interval_s: float = 3600,
+    ) -> None:
+        super().__init__(NodePowerConsuption(), interval_s)
+
+        self._config_client = config_client
+        self._cluster_name = cluster_name
+        self._node_pool_name = node_pool_name
+
+    async def get_latest_value(self) -> NodePowerConsuption:
+        cluster = await self._config_client.get_cluster(self._cluster_name)
+        assert cluster.cloud_provider is not None
+        for node_pool in cluster.cloud_provider.node_pools:
+            if node_pool.name == self._node_pool_name:
+                return NodePowerConsuption(
+                    cpu_min_watts=node_pool.cpu_min_watts,
+                    cpu_max_watts=node_pool.cpu_max_watts,
+                    co2_grams_eq_per_kwh=node_pool.co2_grams_eq_per_kwh,
+                )
+        logger.warning(
+            f"Node pool '{self._node_pool_name}' was not found "
+            f"in cluster '{self._cluster_name}."
+        )
+        return NodePowerConsuption()

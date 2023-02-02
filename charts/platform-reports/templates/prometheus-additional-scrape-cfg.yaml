@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ index .Values "kube-prometheus-stack" "prometheus" "prometheusSpec" "additionalScrapeConfigsSecret" "name" }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+type: Opaque
+data:
+  additionalScrapeConfigs.yaml: {{ toYaml .Values.additionalScrapeConfigs | replace "placeholder" .Values.platform.clusterName | b64enc | quote }}

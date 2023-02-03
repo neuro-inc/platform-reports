@@ -10,11 +10,12 @@ from contextlib import (
     contextmanager,
     suppress,
 )
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import pytest
@@ -24,6 +25,9 @@ from neuro_config_client import (
     Cluster,
     ClusterStatus,
     ConfigClient,
+    EnergyConfig,
+    EnergySchedule,
+    EnergySchedulePeriod,
     NodePool,
     OnPremCloudProvider,
     OrchestratorConfig,
@@ -44,7 +48,7 @@ from platform_reports.metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
-    NodePowerConsumptionCollector,
+    NodeEnergyConsumptionCollector,
     PodCreditsCollector,
     Price,
 )
@@ -1006,14 +1010,16 @@ class TestPodCreditsCollector:
         assert result == {}
 
 
-class TestNodeCPUPowerCollector:
+class TestNodeEnergyConsumptionCollector:
     @pytest.fixture
     def config_client(self) -> mock.AsyncMock:
         result = mock.AsyncMock(spec=ConfigClient)
+        timezone = ZoneInfo("UTC")
         result.get_cluster.return_value = Cluster(
             name="default",
             status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
+            timezone=timezone,
             cloud_provider=OnPremCloudProvider(
                 storage=None,
                 node_pools=[
@@ -1021,28 +1027,60 @@ class TestNodeCPUPowerCollector:
                         name="node-pool",
                         cpu_min_watts=10.5,
                         cpu_max_watts=110.0,
-                        co2_grams_eq_per_kwh=1000.0,
+                    ),
+                ],
+            ),
+            energy=EnergyConfig(
+                g_co2eq_kwh=1000,
+                schedules=[
+                    EnergySchedule(
+                        name="default",
+                        price_kwh=Decimal("10"),
+                    ),
+                    EnergySchedule(
+                        name="night",
+                        price_kwh=Decimal("5"),
+                        periods=[
+                            EnergySchedulePeriod(
+                                1,
+                                start_time=time(0, tzinfo=timezone),
+                                end_time=time(5, 59, tzinfo=timezone),
+                            )
+                        ],
                     ),
                 ],
             ),
         )
         return result
 
-    @pytest.fixture
-    def node_power_use_collector(
-        self,
-        config_client: ConfigClient,
-    ) -> NodePowerConsumptionCollector:
-        return NodePowerConsumptionCollector(
+    async def test_get_latest_value(self, config_client: ConfigClient) -> None:
+        current_time = datetime(
+            year=2023, month=1, day=30, hour=5, tzinfo=ZoneInfo("UTC")
+        )
+        async with NodeEnergyConsumptionCollector(
             config_client=config_client,
             cluster_name="default",
             node_pool_name="node-pool",
-        )
+            current_time_factory=lambda _: current_time,
+        ) as collector:
+            value = await collector.get_latest_value()
+            assert value.cpu_min_watts == 10.5
+            assert value.cpu_max_watts == 110.0
+            assert value.g_co2eq_kwh == 1000.0
+            assert value.price_kwh == 5
 
-    async def test_get_latest_value(
-        self, node_power_use_collector: NodePowerConsumptionCollector
-    ) -> None:
-        value = await node_power_use_collector.get_latest_value()
-        assert value.cpu_min_watts == 10.5
-        assert value.cpu_max_watts == 110.0
-        assert value.co2_grams_eq_per_kwh == 1000.0
+    async def test_get_latest_value__default(self, config_client: ConfigClient) -> None:
+        current_time = datetime(
+            year=2023, month=1, day=31, hour=5, tzinfo=ZoneInfo("UTC")
+        )
+        async with NodeEnergyConsumptionCollector(
+            config_client=config_client,
+            cluster_name="default",
+            node_pool_name="node-pool",
+            current_time_factory=lambda _: current_time,
+        ) as collector:
+            value = await collector.get_latest_value()
+            assert value.cpu_min_watts == 10.5
+            assert value.cpu_max_watts == 110.0
+            assert value.g_co2eq_kwh == 1000.0
+            assert value.price_kwh == 10

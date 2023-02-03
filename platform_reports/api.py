@@ -58,7 +58,7 @@ from .metrics import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
-    NodePowerConsumptionCollector,
+    NodeEnergyConsumptionCollector,
     PodCreditsCollector,
     Price,
 )
@@ -94,7 +94,7 @@ class MetricsHandler:
         return self._app["pod_credits_collector"]
 
     @property
-    def _node_power_consumption_collector(self) -> NodePowerConsumptionCollector:
+    def _node_power_consumption_collector(self) -> NodeEnergyConsumptionCollector:
         return self._app["node_power_consumption_collector"]
 
     @property
@@ -136,19 +136,21 @@ class MetricsHandler:
 
     def _get_node_power_usage_text(self) -> str:
         node = self._config.node_name
-        cluster_name = self._config.cluster_name
-        power_usage = self._node_power_consumption_collector.current_value
+        consumption = self._node_power_consumption_collector.current_value
         return dedent(
             f"""\
             # HELP cpu_min_watts The CPU power consumption while IDLEing in watts
             # TYPE cpu_min_watts gauge
-            cpu_min_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_min_watts}
+            cpu_min_watts={{node="{node}"}} {consumption.cpu_min_watts}
             # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
             # TYPE cpu_max_watts gauge
-            cpu_max_watts={{cluster="{cluster_name}",node="{node}"}} {power_usage.cpu_max_watts}
-            # HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
-            # TYPE co2_grams_eq_per_kwh gauge
-            co2_grams_eq_per_kwh={{cluster="{cluster_name}",node="{node}"}} {power_usage.co2_grams_eq_per_kwh}"""  # noqa: E501
+            cpu_max_watts={{node="{node}"}} {consumption.cpu_max_watts}
+            # HELP g_co2eq_kwh Estimated CO2 emission for energy generation in region where the node is running
+            # TYPE g_co2eq_kwh gauge
+            g_co2eq_kwh={{node="{node}"}} {consumption.g_co2eq_kwh}
+            # HELP price_kwh Energy price per kwh in region where the node is running
+            # TYPE price_kwh gauge
+            price_kwh={{node="{node}"}} {consumption.price_kwh}"""  # noqa: E501
         )
 
 
@@ -525,7 +527,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             app["pod_credits_collector"] = pod_credits_collector
 
             node_power_consumpt_collector = await exit_stack.enter_async_context(
-                NodePowerConsumptionCollector(
+                NodeEnergyConsumptionCollector(
                     config_client=config_client,
                     cluster_name=config.cluster_name,
                     node_pool_name=node_pool_name,

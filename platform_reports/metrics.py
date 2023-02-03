@@ -4,20 +4,21 @@ import asyncio
 import json
 import logging
 import re
-from collections.abc import AsyncIterator, Awaitable, Mapping
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from dataclasses import dataclass, replace
+from datetime import datetime, time, timedelta, timezone, tzinfo
 from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Generic, TypeVar
+from zoneinfo import ZoneInfo
 
 import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import ConfigClient
+from neuro_config_client import ConfigClient, EnergySchedule
 from neuro_logging import new_trace_cm, trace_cm
 from neuro_sdk import Client as ApiClient, JobDescription, ResourceNotFound
 from yarl import URL
@@ -43,10 +44,11 @@ class Price:
 
 
 @dataclass(frozen=True)
-class NodePowerConsuption:
+class NodeEnergyConsumption:
     cpu_min_watts: float = 0
     cpu_max_watts: float = 0
-    co2_grams_eq_per_kwh: float = 0
+    g_co2eq_kwh: float = 0
+    price_kwh: Decimal = Decimal("0")
 
 
 _TValue = TypeVar("_TValue")
@@ -534,32 +536,72 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         )
 
 
-class NodePowerConsumptionCollector(Collector[NodePowerConsuption]):
+class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
     def __init__(
         self,
         config_client: ConfigClient,
         cluster_name: str,
         node_pool_name: str,
-        interval_s: float = 3600,
+        interval_s: float = 300,
+        current_time_factory: Callable[[tzinfo], datetime] = datetime.now,
     ) -> None:
-        super().__init__(NodePowerConsuption(), interval_s)
+        super().__init__(NodeEnergyConsumption(), interval_s)
 
         self._config_client = config_client
         self._cluster_name = cluster_name
         self._node_pool_name = node_pool_name
+        self._default_schedule = EnergySchedule(name="default")
+        self._custom_schedules: Sequence[EnergySchedule] = []
+        self._timezone: tzinfo = ZoneInfo("UTC")
+        self._current_time_factory = current_time_factory
 
-    async def get_latest_value(self) -> NodePowerConsuption:
+    @property
+    def current_value(self) -> NodeEnergyConsumption:
+        now = self._current_time_factory(self._timezone)
+        now_weekday = now.weekday() + 1
+        now_time = now.timetz()
+        now_time = time(
+            hour=now_time.hour, minute=now_time.minute, tzinfo=now_time.tzinfo
+        )
+        for schedule in self._custom_schedules:
+            for period in schedule.periods:
+                if (
+                    period.weekday == now_weekday
+                    and period.start_time <= now_time <= period.end_time
+                ):
+                    return replace(super().current_value, price_kwh=schedule.price_kwh)
+        return replace(
+            super().current_value, price_kwh=self._default_schedule.price_kwh
+        )
+
+    async def get_latest_value(self) -> NodeEnergyConsumption:
         cluster = await self._config_client.get_cluster(self._cluster_name)
         assert cluster.cloud_provider is not None
+        energy_consumption = NodeEnergyConsumption()
         for node_pool in cluster.cloud_provider.node_pools:
             if node_pool.name == self._node_pool_name:
-                return NodePowerConsuption(
+                energy_consumption = replace(
+                    energy_consumption,
                     cpu_min_watts=node_pool.cpu_min_watts,
                     cpu_max_watts=node_pool.cpu_max_watts,
-                    co2_grams_eq_per_kwh=node_pool.co2_grams_eq_per_kwh,
                 )
-        logger.warning(
-            f"Node pool '{self._node_pool_name}' was not found "
-            f"in cluster '{self._cluster_name}."
+                break
+        else:
+            logger.warning(
+                f"Node pool '{self._node_pool_name}' was not found "
+                f"in cluster '{self._cluster_name}."
+            )
+        if cluster.energy is None:
+            return energy_consumption
+        energy_consumption = replace(
+            energy_consumption, g_co2eq_kwh=cluster.energy.g_co2eq_kwh
         )
-        return NodePowerConsuption()
+        self._default_schedule = next(
+            s for s in cluster.energy.schedules if s.name == "default"
+        )
+        self._custom_schedules = [
+            s for s in cluster.energy.schedules if s.name != "default"
+        ]
+        self._timezone = cluster.timezone
+        current_value = self.current_value
+        return replace(energy_consumption, price_kwh=current_value.price_kwh)

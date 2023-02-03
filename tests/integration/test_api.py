@@ -76,13 +76,16 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
                 assert re.search(
                     rf"""# HELP cpu_min_watts The CPU power consumption while IDLEing in watts
 # TYPE cpu_min_watts gauge
-cpu_min_watts={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*
+cpu_min_watts={{node="{kube_node.metadata.name}"}} \d+\.?\d*
 # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
 # TYPE cpu_max_watts gauge
-cpu_max_watts={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*
-# HELP co2_grams_eq_per_kwh Estimated CO2 emition for energy generation in region where the node is running
-# TYPE co2_grams_eq_per_kwh gauge
-co2_grams_eq_per_kwh={{cluster="{metrics_config.cluster_name}",node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501
+cpu_max_watts={{node="{kube_node.metadata.name}"}} \d+\.?\d*
+# HELP g_co2eq_kwh Estimated CO2 emission for energy generation in region where the node is running
+# TYPE g_co2eq_kwh gauge
+g_co2eq_kwh={{node="{kube_node.metadata.name}"}} \d+\.?\d*
+# HELP price_kwh Energy price per kwh in region where the node is running
+# TYPE price_kwh gauge
+price_kwh={{node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501
                     text,
                 ), text
 

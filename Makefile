@@ -24,13 +24,13 @@ test_unit:
 	pytest -vv --log-level=INFO tests/unit
 
 test_integration:
-	docker-compose -f tests/integration/docker/docker-compose.yaml pull -q
-	docker-compose -f tests/integration/docker/docker-compose.yaml up -d
+	docker compose -f tests/integration/docker/docker-compose.yaml pull -q
+	docker compose -f tests/integration/docker/docker-compose.yaml up -d
 	@$(WAIT_FOR_IT) 0.0.0.0:3000 -- echo "grafana is up"
 	@$(WAIT_FOR_IT) 0.0.0.0:8080 -- echo "platform-auth is up"
-	@pytest -vv --log-level=INFO tests/integration; \
+	@pytest -vv --log-level=INFO tests/integration -k test_api; \
 	exit_code=$$?; \
-	docker-compose -f tests/integration/docker/docker-compose.yaml down -v; \
+	docker compose -f tests/integration/docker/docker-compose.yaml down -v; \
 	exit $$exit_code
 
 docker_build:

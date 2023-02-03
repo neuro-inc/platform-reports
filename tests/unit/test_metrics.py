@@ -1055,7 +1055,13 @@ class TestNodeEnergyConsumptionCollector:
 
     async def test_get_latest_value(self, config_client: ConfigClient) -> None:
         current_time = datetime(
-            year=2023, month=1, day=30, hour=5, tzinfo=ZoneInfo("UTC")
+            year=2023,
+            month=1,
+            day=30,
+            hour=5,
+            minute=59,
+            second=59,
+            tzinfo=ZoneInfo("UTC"),
         )
         async with NodeEnergyConsumptionCollector(
             config_client=config_client,

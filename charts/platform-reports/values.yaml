@@ -28,38 +28,6 @@ imagePullSecrets: []
 
 secrets: []
 
-additionalScrapeConfigs:
-  - job_name: nvidia-dcgm-exporter
-    honor_labels: true
-    relabel_configs:
-    - sourceLabels: [__name__]
-      targetLabel: np-cluster-name
-      replacement: placeholder
-  - job_name: platform-metrics-exporter
-    honor_labels: true
-    relabel_configs:
-    - sourceLabels: [__name__]
-      targetLabel: np-cluster-name
-      replacement: placeholder
-  - job_name: prometheus-kube-state-metrics
-    honor_labels: true
-    relabel_configs:
-    - sourceLabels: [__name__]
-      targetLabel: np-cluster-name
-      replacement: placeholder
-  - job_name: prometheus-kubelet
-    honor_labels: true
-    relabel_configs:
-    - sourceLabels: [__name__]
-      targetLabel: np-cluster-name
-      replacement: placeholder
-  - job_name: prometheus-node-exporter
-    honor_labels: true
-    relabel_configs:
-    - sourceLabels: [__name__]
-      targetLabel: np-cluster-name
-      replacement: placeholder
-
 metricsExporter:
   port: 9500
   resources:
@@ -317,10 +285,8 @@ kube-prometheus-stack:
         image: quay.io/thanos/thanos:v0.24.0
         version: v0.24.0
         logLevel: error
-      additionalScrapeConfigsSecret:
-        enabled: true
-        name: prometheus-additional-scrape-configs
-        key: additionalScrapeConfigs.yaml
+      externalLabels:
+        np-cluster-name: ""
 
   grafana:
     enabled: false

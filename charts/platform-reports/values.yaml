@@ -286,7 +286,7 @@ kube-prometheus-stack:
         version: v0.24.0
         logLevel: error
       externalLabels:
-        np-cluster-name: ""
+        cluster: ""
 
   grafana:
     enabled: false

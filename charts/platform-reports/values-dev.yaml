@@ -53,7 +53,7 @@ kube-prometheus-stack:
           spec:
             storageClassName: standard-rwo
       externalLabels:
-        np-cluster-name: ""
+        cluster: ""
 
   prometheusOperator:
     kubeletService:

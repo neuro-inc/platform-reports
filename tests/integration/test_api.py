@@ -213,6 +213,25 @@ class TestPrometheusProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
+    async def test_cluster_label_present(
+        self,
+        client: aiohttp.ClientSession,
+        cluster_admin_token: str,
+        prometheus_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            (prometheus_proxy_server / "api/v1/query").with_query(
+                query='node_cpu_seconds_total{job="node-exporter"}'
+            ),
+            cookies={"dat": cluster_admin_token},
+        ) as response:
+            assert response.status == HTTPOk.status_code
+            metrics = await response.json()
+            assert all("cluster" in r["metric"] for r in metrics["data"]["result"])
+            assert all(
+                r["metric"]["cluster"] == "dev" for r in metrics["data"]["result"]
+            )
+
 
 class TestGrafanaProxy:
     async def test_ping(

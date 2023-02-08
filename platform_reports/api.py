@@ -141,16 +141,16 @@ class MetricsHandler:
             f"""\
             # HELP cpu_min_watts The CPU power consumption while IDLEing in watts
             # TYPE cpu_min_watts gauge
-            cpu_min_watts={{node="{node}"}} {consumption.cpu_min_watts}
+            cpu_min_watts{{node="{node}"}} {consumption.cpu_min_watts}
             # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
             # TYPE cpu_max_watts gauge
-            cpu_max_watts={{node="{node}"}} {consumption.cpu_max_watts}
+            cpu_max_watts{{node="{node}"}} {consumption.cpu_max_watts}
             # HELP g_co2eq_kwh Estimated CO2 emission for energy generation in region where the node is running
             # TYPE g_co2eq_kwh gauge
-            g_co2eq_kwh={{node="{node}"}} {consumption.g_co2eq_kwh}
+            g_co2eq_kwh{{node="{node}"}} {consumption.g_co2eq_kwh}
             # HELP price_kwh Energy price per kwh in region where the node is running
             # TYPE price_kwh gauge
-            price_kwh={{node="{node}"}} {consumption.price_kwh}"""  # noqa: E501
+            price_kwh{{node="{node}"}} {consumption.price_kwh}"""  # noqa: E501
         )
 
 

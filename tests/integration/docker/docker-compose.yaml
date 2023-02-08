@@ -38,6 +38,7 @@ services:
       - --storage.tsdb.max-block-duration=2h
     volumes:
       - ./prometheus/prometheus.yaml:/etc/prometheus/config/prometheus.yaml
+      - "./prometheus/tsdb:/prometheus"
     ports:
       - 9090:9090
     healthcheck:
@@ -67,3 +68,24 @@ services:
     depends_on:
       - prometheus
     user: root
+
+  thanos_sidecar:
+    image: quay.io/thanos/thanos:v0.24.0
+    container_name: thanos-sidecar
+    volumes:
+      - "./prometheus/tsdb:/prometheus"
+    command:
+    - "sidecar"
+    - "--prometheus.url=http://prometheus:9090"
+    - "--tsdb.path=/prometheus"
+    - "--grpc-address=0.0.0.0:10901"
+
+  thanos_query:
+    image: quay.io/thanos/thanos:v0.24.0
+    container_name: thanos-query
+    command:
+    - "query"
+    - "--store=thanos-sidecar:10901"
+    - "--http-address=0.0.0.0:9091"
+    ports:
+      - 9091:9091

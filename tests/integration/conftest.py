@@ -194,7 +194,7 @@ def prometheus_proxy_config(
 ) -> PrometheusProxyConfig:
     return PrometheusProxyConfig(
         server=ServerConfig(port=8180),
-        prometheus_server=ServerConfig(port=9090),
+        prometheus_server=ServerConfig(port=9091),
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
         cluster_name="default",

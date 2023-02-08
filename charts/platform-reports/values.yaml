@@ -285,6 +285,8 @@ kube-prometheus-stack:
         image: quay.io/thanos/thanos:v0.24.0
         version: v0.24.0
         logLevel: error
+      externalLabels:
+        cluster: ""
 
   grafana:
     enabled: false

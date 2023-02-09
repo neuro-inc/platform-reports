@@ -66,13 +66,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(sum by(instance) (avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval])) * (400 - 100) + 100))",
+          "expr": "sum(\n  sum by(node) (\n    avg by(node) (\n      1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n    )\n    *\n    on(node) (cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"})\n    +\n    on(node) cpu_min_watts{job= \"neuro-metrics-exporter\"}\n  )\n)",
           "interval": "",
           "legendFormat": "CPU",
           "refId": "A"
         },
         {
-          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} and DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)",
+          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000)",
           "interval": "",
           "legendFormat": "GPU",
           "refId": "B"
@@ -224,7 +224,7 @@
       "pluginVersion": "7.3.5",
       "targets": [
         {
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
           "interval": "1h",
           "legendFormat": "",
           "refId": "A"
@@ -379,7 +379,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(instance) (1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]))\n            # CPU load kW per instance\n            * ((400 - 100) / 1000)\n            # CPU min kW per instance\n            + (100 / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
           "interval": "1h",
           "legendFormat": "",
           "refId": "A"
@@ -536,5 +536,5 @@
   "timezone": "",
   "title": "Overview",
   "uid": "overview",
-  "version": 24
+  "version": 25
 }

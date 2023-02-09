@@ -47,8 +47,8 @@ class Price:
 class NodeEnergyConsumption:
     cpu_min_watts: float = 0
     cpu_max_watts: float = 0
-    g_co2eq_kwh: float = 0
-    price_kwh: Decimal = Decimal("0")
+    co2_grams_eq_per_kwh: float = 0
+    price_per_kwh: Decimal = Decimal("0")
 
 
 _TValue = TypeVar("_TValue")
@@ -569,9 +569,11 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
                     period.weekday == now_weekday
                     and period.start_time <= now_time <= period.end_time
                 ):
-                    return replace(super().current_value, price_kwh=schedule.price_kwh)
+                    return replace(
+                        super().current_value, price_per_kwh=schedule.price_per_kwh
+                    )
         return replace(
-            super().current_value, price_kwh=self._default_schedule.price_kwh
+            super().current_value, price_per_kwh=self._default_schedule.price_per_kwh
         )
 
     async def get_latest_value(self) -> NodeEnergyConsumption:
@@ -594,7 +596,7 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
         if cluster.energy is None:
             return energy_consumption
         energy_consumption = replace(
-            energy_consumption, g_co2eq_kwh=cluster.energy.g_co2eq_kwh
+            energy_consumption, co2_grams_eq_per_kwh=cluster.energy.co2_grams_eq_per_kwh
         )
         self._default_schedule = next(
             s for s in cluster.energy.schedules if s.name == "default"
@@ -604,4 +606,4 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
         ]
         self._timezone = cluster.timezone
         current_value = self.current_value
-        return replace(energy_consumption, price_kwh=current_value.price_kwh)
+        return replace(energy_consumption, price_per_kwh=current_value.price_per_kwh)

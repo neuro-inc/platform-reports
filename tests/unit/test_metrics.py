@@ -1031,15 +1031,15 @@ class TestNodeEnergyConsumptionCollector:
                 ],
             ),
             energy=EnergyConfig(
-                g_co2eq_kwh=1000,
+                co2_grams_eq_per_kwh=1000,
                 schedules=[
                     EnergySchedule(
                         name="default",
-                        price_kwh=Decimal("10"),
+                        price_per_kwh=Decimal("10"),
                     ),
                     EnergySchedule(
                         name="night",
-                        price_kwh=Decimal("5"),
+                        price_per_kwh=Decimal("5"),
                         periods=[
                             EnergySchedulePeriod(
                                 1,
@@ -1072,8 +1072,8 @@ class TestNodeEnergyConsumptionCollector:
             value = await collector.get_latest_value()
             assert value.cpu_min_watts == 10.5
             assert value.cpu_max_watts == 110.0
-            assert value.g_co2eq_kwh == 1000.0
-            assert value.price_kwh == 5
+            assert value.co2_grams_eq_per_kwh == 1000.0
+            assert value.price_per_kwh == 5
 
     async def test_get_latest_value__default(self, config_client: ConfigClient) -> None:
         current_time = datetime(
@@ -1088,5 +1088,5 @@ class TestNodeEnergyConsumptionCollector:
             value = await collector.get_latest_value()
             assert value.cpu_min_watts == 10.5
             assert value.cpu_max_watts == 110.0
-            assert value.g_co2eq_kwh == 1000.0
-            assert value.price_kwh == 10
+            assert value.co2_grams_eq_per_kwh == 1000.0
+            assert value.price_per_kwh == 10

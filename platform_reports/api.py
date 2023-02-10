@@ -145,12 +145,12 @@ class MetricsHandler:
             # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
             # TYPE cpu_max_watts gauge
             cpu_max_watts{{node="{node}"}} {consumption.cpu_max_watts}
-            # HELP g_co2eq_kwh Estimated CO2 emission for energy generation in region where the node is running
-            # TYPE g_co2eq_kwh gauge
-            g_co2eq_kwh{{node="{node}"}} {consumption.g_co2eq_kwh}
-            # HELP price_kwh Energy price per kwh in region where the node is running
-            # TYPE price_kwh gauge
-            price_kwh{{node="{node}"}} {consumption.price_kwh}"""  # noqa: E501
+            # HELP co2_grams_eq_per_kwh Estimated CO2 emission for energy generation in region where the node is running
+            # TYPE co2_grams_eq_per_kwh gauge
+            co2_grams_eq_per_kwh{{node="{node}"}} {consumption.co2_grams_eq_per_kwh}
+            # HELP price_per_kwh Energy price per kwh in region where the node is running
+            # TYPE price_per_kwh gauge
+            price_per_kwh{{node="{node}"}} {consumption.price_per_kwh}"""  # noqa: E501
         )
 
 

@@ -80,12 +80,12 @@ cpu_min_watts{{node="{kube_node.metadata.name}"}} \d+\.?\d*
 # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
 # TYPE cpu_max_watts gauge
 cpu_max_watts{{node="{kube_node.metadata.name}"}} \d+\.?\d*
-# HELP g_co2eq_kwh Estimated CO2 emission for energy generation in region where the node is running
-# TYPE g_co2eq_kwh gauge
-g_co2eq_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*
-# HELP price_kwh Energy price per kwh in region where the node is running
-# TYPE price_kwh gauge
-price_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501
+# HELP co2_grams_eq_per_kwh Estimated CO2 emission for energy generation in region where the node is running
+# TYPE co2_grams_eq_per_kwh gauge
+co2_grams_eq_per_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*
+# HELP price_per_kwh Energy price per kwh in region where the node is running
+# TYPE price_per_kwh gauge
+price_per_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501
                     text,
                 ), text
 

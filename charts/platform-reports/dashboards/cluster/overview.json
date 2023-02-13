@@ -66,7 +66,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(\n  sum by(node) (\n    avg by(node) (\n      1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n    )\n    *\n    on(node) (cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"})\n    +\n    on(node) cpu_min_watts{job= \"neuro-metrics-exporter\"}\n  )\n)",
+          "expr": "sum(\n  sum by(node) (\n    avg by(node) (\n      1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\", created_by_name=\"prometheus-node-exporter\"}\n    )\n    *\n    on(node) (cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"})\n    +\n    on(node) cpu_min_watts{job= \"neuro-metrics-exporter\"}\n  )\n)",
           "interval": "",
           "legendFormat": "CPU",
           "refId": "A"
@@ -224,7 +224,7 @@
       "pluginVersion": "7.3.5",
       "targets": [
         {
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\", created_by_name=\"prometheus-node-exporter\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)",
           "interval": "1h",
           "legendFormat": "",
           "refId": "A"
@@ -379,7 +379,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* 323",
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\", created_by_name=\"prometheus-node-exporter\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# g CO2eq per kWh\n* avg(co2_grams_eq_per_kwh{job=\"neuro-metrics-exporter\"})",
+          "hide": false,
           "interval": "1h",
           "legendFormat": "",
           "refId": "A"
@@ -520,6 +521,103 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "interval": "1h",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "(\n    # CPU kW per cluster per step\n    sum(\n        # avg CPU kWh per instance per step\n        (\n            # avg CPU uilization per instance\n            avg by(node) (\n              1 - irate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__interval]) * on(pod) group_left(node) kube_pod_info{job=\"kube-state-metrics\", created_by_name=\"prometheus-node-exporter\"}\n            )\n            # CPU load kW per instance\n            * on(node) ((cpu_max_watts{job=\"neuro-metrics-exporter\"} - cpu_min_watts{job= \"neuro-metrics-exporter\"}) / 1000)\n            # CPU min kW per instance\n            + on(node) (cpu_min_watts{job= \"neuro-metrics-exporter\"} / 1000)\n        )\n        \n    )\n    # GPU kW per cluster per step\n    + sum(avg_over_time((DCGM_FI_DEV_POWER_USAGE{job=\"nvidia-dcgm-exporter\"} < 100000 or on() vector(0))[$__interval:]) / 1000)\n)\n    \n# step in hours\n* ($__interval_ms / 1000 / 60 / 60)\n# Cost per kWh\n* avg(price_per_kwh{job=\"neuro-metrics-exporter\"})",
+          "hide": false,
+          "interval": "1h",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Power Cost Per Hour",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "currencyUSD",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "schemaVersion": 26,
@@ -536,5 +634,5 @@
   "timezone": "",
   "title": "Overview",
   "uid": "overview",
-  "version": 25
+  "version": 26
 }

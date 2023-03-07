@@ -461,3 +461,5 @@ grafana:
 zipkin: {}
 
 sentry: {}
+
+priorityClassName: ""

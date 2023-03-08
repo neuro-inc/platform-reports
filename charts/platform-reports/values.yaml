@@ -323,7 +323,6 @@ thanos:
     labels:
       service: thanos-store
     logLevel: error
-    priorityClassName: ""
 
   # Compact service works with data in object storage
   compact:
@@ -351,19 +350,16 @@ thanos:
     labels:
       service: thanos-compact
     logLevel: error
-    priorityClassName: ""
 
   query:
     labels:
       service: thanos-query
     logLevel: error
-    priorityClassName: ""
 
   bucket:
     labels:
       service: thanos-bucket
     logLevel: error
-    priorityClassName: ""
 
   rule:
     enabled: false
@@ -373,6 +369,8 @@ thanos:
     enabled: true
     selector:
       app: prometheus
+
+  priorityClassName: ""
 
 grafana:
   nameOverride: grafana

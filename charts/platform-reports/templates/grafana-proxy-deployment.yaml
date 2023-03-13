@@ -83,6 +83,6 @@ spec:
               port: http
             initialDelaySeconds: 3
             periodSeconds: 3
-      {{ - if .Values.priorityClassName }}
+      {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
       {{- end }}

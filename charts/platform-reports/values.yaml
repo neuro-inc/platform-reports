@@ -238,6 +238,7 @@ kube-prometheus-stack:
         image:
           repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
           tag: v1.1.1
+        priorityClassName: ""
       logLevel: error
 
     createCustomResource: false
@@ -248,6 +249,8 @@ kube-prometheus-stack:
 
     serviceMonitor:
       selfMonitor: false
+
+    priorityClassName: ""
 
   prometheus:
     podSecurityPolicy:
@@ -287,6 +290,7 @@ kube-prometheus-stack:
         logLevel: error
       externalLabels:
         cluster: ""
+      priorityClassName: ""
 
   grafana:
     enabled: false
@@ -365,6 +369,8 @@ thanos:
     enabled: true
     selector:
       app: prometheus
+
+  priorityClassName: ""
 
 grafana:
   nameOverride: grafana
@@ -458,6 +464,10 @@ grafana:
       mode: console
       level: error
 
+  priorityClassName: ""
+
 zipkin: {}
 
 sentry: {}
+
+priorityClassName: ""

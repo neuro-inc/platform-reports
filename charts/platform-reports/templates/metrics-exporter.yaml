@@ -62,9 +62,9 @@ spec:
             - name: NP_KUBE_AUTH_TYPE
               value: token
             - name: NP_KUBE_CERT_AUTHORITY_PATH
-              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              value: {{ include "platformReports.kubeAuthMountRoot" . }}/ca.crt
             - name: NP_KUBE_TOKEN_PATH
-              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+              value: {{ include "platformReports.kubeAuthMountRoot" . }}/token
             - name: NP_CONFIG_URL
               value: {{ .Values.platform.configUrl | quote }}
             - name: NP_API_URL
@@ -135,17 +135,31 @@ spec:
             periodSeconds: 3
             successThreshold: 1
             failureThreshold: 10
+          volumeMounts:
+          - mountPath: {{ include "platformReports.kubeAuthMountRoot" . }}
+            name: kube-api-token
+            readOnly: true
           {{- if .Values.cloudProvider }}
           {{- if eq .Values.cloudProvider.type "gcp" }}
-          volumeMounts:
             - name: service-account-key
               mountPath: /root/service_account
               readOnly: true
           {{- end }}
           {{- end }}
+      volumes:
+        - name: kube-api-data
+          projected:
+            sources:
+            - serviceAccountToken:
+                expirationSeconds: 3600
+                path: token
+            - configMap:
+                name: kube-root-ca.crt
+                items:
+                - key: ca.crt
+                  path: ca.crt
       {{- if .Values.cloudProvider }}
       {{- if eq .Values.cloudProvider.type "gcp" }}
-      volumes:
         - name: service-account-key
           secret:
             secretName: {{ .Values.cloudProvider.serviceAccountSecret.name | quote }}

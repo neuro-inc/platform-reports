@@ -136,9 +136,9 @@ spec:
             successThreshold: 1
             failureThreshold: 10
           volumeMounts:
-          - mountPath: {{ include "platformReports.kubeAuthMountRoot" . }}
-            name: kube-api-token
-            readOnly: true
+            - name: kube-api-token
+              mountPath: {{ include "platformReports.kubeAuthMountRoot" . }}
+              readOnly: true
           {{- if .Values.cloudProvider }}
           {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: service-account-key

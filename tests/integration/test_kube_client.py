@@ -1,7 +1,6 @@
-import aiohttp
 import pytest
 
-from platform_reports.kube_client import KubeClient, Node, PodPhase
+from platform_reports.kube_client import KubeClient, KubeClientError, Node, PodPhase
 
 
 class TestKubeClient:
@@ -14,7 +13,7 @@ class TestKubeClient:
     async def test_get_unknown_node__raises_error(
         self, kube_client: KubeClient
     ) -> None:
-        with pytest.raises(aiohttp.ClientError):
+        with pytest.raises(KubeClientError):
             await kube_client.get_node("unknown")
 
     async def test_get_pods(self, kube_client: KubeClient) -> None:

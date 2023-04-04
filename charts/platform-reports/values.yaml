@@ -153,6 +153,8 @@ kube-prometheus-stack:
     podSecurityPolicy:
       enabled: false
 
+    priorityClassName: ""
+
   kubelet:
     enabled: true
 

@@ -21,6 +21,14 @@ from .config import KubeClientAuthType, KubeConfig
 logger = logging.getLogger(__name__)
 
 
+class KubeClientError(Exception):
+    pass
+
+
+class KubeClientUnauthorized(KubeClientError):
+    pass
+
+
 @dataclass(frozen=True)
 class Metadata:
     name: str
@@ -143,6 +151,7 @@ class KubeClient:
         trace_configs: list[aiohttp.TraceConfig] | None = None,
     ) -> None:
         self._config = config
+        self._token = config.token
         self._trace_configs = trace_configs
         self._client: aiohttp.ClientSession | None = None
 
@@ -177,7 +186,7 @@ class KubeClient:
             limit=self._config.conn_pool_size, ssl=self._create_ssl_context()
         )
         if self._config.auth_type == KubeClientAuthType.TOKEN:
-            token = self._config.token
+            token = self._token
             if not token:
                 assert self._config.token_path is not None
                 token = Path(self._config.token_path).read_text()
@@ -198,6 +207,11 @@ class KubeClient:
         assert self._client
         await self._client.close()
 
+    async def _reload_http_client(self) -> None:
+        await self.aclose()
+        self._token = None
+        self._client = await self._create_http_client()
+
     def _get_pods_url(self, namespace: str) -> URL:
         if namespace:
             return self._config.url / "api/v1/namespaces" / namespace / "pods"
@@ -206,13 +220,10 @@ class KubeClient:
     @trace
     async def get_node(self, name: str) -> Node:
         assert self._client
-        async with self._client.get(
-            self._config.url / "api/v1/nodes" / name
-        ) as response:
-            response.raise_for_status()
-            payload = await response.json()
-            assert payload["kind"] == "Node"
-            return Node.from_payload(payload)
+        url = self._config.url / "api/v1/nodes" / name
+        payload = await self._request(method="get", url=url)
+        assert payload["kind"] == "Node"
+        return Node.from_payload(payload)
 
     @trace
     async def get_pods(
@@ -224,10 +235,34 @@ class KubeClient:
             params["fieldSelector"] = field_selector
         if label_selector:
             params["labelSelector"] = label_selector
-        async with self._client.get(
-            self._get_pods_url(namespace), params=params or None
-        ) as response:
-            response.raise_for_status()
-            payload = await response.json()
-            assert payload["kind"] == "PodList"
-            return [Pod.from_payload(i) for i in payload["items"]]
+        payload = await self._request(
+            method="get", url=self._get_pods_url(namespace), params=params or None
+        )
+        assert payload["kind"] == "PodList"
+        return [Pod.from_payload(i) for i in payload["items"]]
+
+    async def _request(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        assert self._client, "client is not initialized"
+        doing_retry = kwargs.pop("doing_retry", False)
+        async with self._client.request(*args, **kwargs) as resp:
+            payload = await resp.json()
+        try:
+            self._raise_for_status(payload)
+        except KubeClientUnauthorized:
+            if doing_retry:
+                raise
+            # K8s SA's token might be stale, need to refresh it and retry
+            await self._reload_http_client()
+            kwargs["doing_retry"] = True
+            payload = await self._request(*args, **kwargs)
+        return payload
+
+    def _raise_for_status(self, payload: dict[str, Any]) -> None:
+        kind = payload["kind"]
+        if kind == "Status":
+            if payload.get("status") == "Success":
+                return
+            code = payload.get("code")
+            if code == 401:
+                raise KubeClientUnauthorized(payload)
+            raise KubeClientError(payload["message"])

@@ -136,7 +136,7 @@ spec:
             successThreshold: 1
             failureThreshold: 10
           volumeMounts:
-            - name: kube-api-token
+            - name: kube-api-data
               mountPath: {{ include "platformReports.kubeAuthMountRoot" . }}
               readOnly: true
           {{- if .Values.cloudProvider }}

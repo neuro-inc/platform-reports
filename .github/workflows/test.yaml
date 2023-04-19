@@ -44,6 +44,13 @@ jobs:
       run: make setup
     - name: Run unit tests
       run: make test_unit
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: .coverage-unit.xml
+        flags: unit
+        name: codecov-unit
 
   integration:
     name: Integration tests
@@ -76,6 +83,13 @@ jobs:
         ./minikube.sh start
     - name: Run integration tests
       run: make test_integration
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: .coverage-integration.xml
+        flags: integration
+        name: codecov-integration
 
   image-upload:
     name: Upload image artifact

@@ -212,6 +212,10 @@ class KubeClient:
         self._token = None
         self._client = await self._create_http_client()
 
+    async def init_if_needed(self) -> None:
+        if not self._client or self._client.closed:
+            self._client = await self._create_http_client()
+
     def _get_pods_url(self, namespace: str) -> URL:
         if namespace:
             return self._config.url / "api/v1/namespaces" / namespace / "pods"
@@ -219,6 +223,7 @@ class KubeClient:
 
     @trace
     async def get_node(self, name: str) -> Node:
+        await self.init_if_needed()
         assert self._client
         url = self._config.url / "api/v1/nodes" / name
         payload = await self._request(method="get", url=url)
@@ -229,6 +234,7 @@ class KubeClient:
     async def get_pods(
         self, namespace: str = "", field_selector: str = "", label_selector: str = ""
     ) -> Sequence[Pod]:
+        await self.init_if_needed()
         assert self._client
         params: dict[str, str] = {}
         if field_selector:
@@ -242,6 +248,7 @@ class KubeClient:
         return [Pod.from_payload(i) for i in payload["items"]]
 
     async def _request(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        await self.init_if_needed()
         assert self._client, "client is not initialized"
         doing_retry = kwargs.pop("doing_retry", False)
         async with self._client.request(*args, **kwargs) as resp:

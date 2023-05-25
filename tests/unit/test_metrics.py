@@ -652,9 +652,12 @@ class TestGCPNodePriceCollector:
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory("n1-highmem-8", "unknown", True) as collector:
-            with pytest.raises(AssertionError, match=r"Found prices only for: \[\]"):
-                await collector.get_latest_value()
+        with collector_factory(
+            "n1-highmem-8", "unknown", True
+        ) as collector, pytest.raises(
+            AssertionError, match=r"Found prices only for: \[\]"
+        ):
+            await collector.get_latest_value()
 
     async def test_get_latest_value_unknown_gpu(
         self,
@@ -662,11 +665,10 @@ class TestGCPNodePriceCollector:
     ) -> None:
         with collector_factory(
             "n1-highmem-8-1xv100", "n1-highmem-8", True
-        ) as collector:
-            with pytest.raises(
-                AssertionError, match=r"Found prices only for: \[CPU, RAM\]"
-            ):
-                await collector.get_latest_value()
+        ) as collector, pytest.raises(
+            AssertionError, match=r"Found prices only for: \[CPU, RAM\]"
+        ):
+            await collector.get_latest_value()
 
 
 class TestAzureNodePriceCollector:

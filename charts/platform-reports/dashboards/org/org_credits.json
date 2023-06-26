@@ -15,7 +15,8 @@
     "editable": true,
     "gnetId": null,
     "graphTooltip": 1,
-    "id": 9,
+    "id": 13,
+    "iteration": 1687819901868,
     "links": [],
     "panels": [
         {
@@ -103,12 +104,313 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                    "expr": "sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_project,label_platform_neuromation_io_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_project,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=~\"^$project_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
                     "format": "table",
                     "hide": false,
                     "instant": false,
                     "interval": "",
                     "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": " ",
+            "transformations": [
+                {
+                    "id": "groupBy",
+                    "options": {
+                        "fields": {
+                            "Value": {
+                                "aggregations": [
+                                    "diff"
+                                ],
+                                "operation": "aggregate"
+                            },
+                            "label_platform_neuromation_io_preset": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_project": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_user": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "pod": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "indexByName": {
+                            "Value (diff)": 4,
+                            "label_platform_neuromation_io_preset": 2,
+                            "label_platform_neuromation_io_project": 1,
+                            "label_platform_neuromation_io_user": 0,
+                            "pod": 3
+                        },
+                        "renameByName": {
+                            "Value (diff)": "Credits",
+                            "label_platform_neuromation_io_preset": "Preset",
+                            "label_platform_neuromation_io_project": "Project",
+                            "label_platform_neuromation_io_user": "User",
+                            "pod": "Job"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        },
+        {
+            "collapsed": false,
+            "datasource": null,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 15
+            },
+            "id": 32,
+            "panels": [],
+            "title": "Projects",
+            "type": "row"
+        },
+        {
+            "datasource": "-- Dashboard --",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": null,
+                        "filterable": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Credits"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            },
+                            {
+                                "id": "unit",
+                                "value": "none"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 16
+            },
+            "id": 30,
+            "options": {
+                "frameIndex": 0,
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "User"
+                    },
+                    {
+                        "desc": false,
+                        "displayName": "Preset"
+                    }
+                ]
+            },
+            "pluginVersion": "7.3.5",
+            "targets": [
+                {
+                    "panelId": 19,
+                    "refId": "A"
+                }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": " ",
+            "transformations": [
+                {
+                    "id": "groupBy",
+                    "options": {
+                        "fields": {
+                            "Value": {
+                                "aggregations": [
+                                    "diff"
+                                ],
+                                "operation": "aggregate"
+                            },
+                            "label_platform_neuromation_io_preset": {
+                                "aggregations": [],
+                                "operation": null
+                            },
+                            "label_platform_neuromation_io_project": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_user": {
+                                "aggregations": [],
+                                "operation": null
+                            },
+                            "pod": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "groupBy",
+                    "options": {
+                        "fields": {
+                            "Value (diff)": {
+                                "aggregations": [
+                                    "sum"
+                                ],
+                                "operation": "aggregate"
+                            },
+                            "label_platform_neuromation_io_preset": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_project": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_user": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "indexByName": {
+                            "Value (diff) (sum)": 1,
+                            "label_platform_neuromation_io_project": 0
+                        },
+                        "renameByName": {
+                            "Value (diff) (sum)": "Credits",
+                            "label_platform_neuromation_io_preset": "Preset",
+                            "label_platform_neuromation_io_project": "Project",
+                            "label_platform_neuromation_io_user": "User"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        },
+        {
+            "collapsed": false,
+            "datasource": null,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 26
+            },
+            "id": 29,
+            "panels": [],
+            "title": "Users",
+            "type": "row"
+        },
+        {
+            "datasource": "-- Dashboard --",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": null,
+                        "filterable": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Credits"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            },
+                            {
+                                "id": "unit",
+                                "value": "none"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 11,
+                "w": 24,
+                "x": 0,
+                "y": 27
+            },
+            "id": 23,
+            "options": {
+                "frameIndex": 0,
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "User"
+                    },
+                    {
+                        "desc": false,
+                        "displayName": "Preset"
+                    }
+                ]
+            },
+            "pluginVersion": "7.3.5",
+            "targets": [
+                {
+                    "panelId": 19,
                     "refId": "A"
                 }
             ],
@@ -142,179 +444,44 @@
                     }
                 },
                 {
+                    "id": "groupBy",
+                    "options": {
+                        "fields": {
+                            "Value (diff)": {
+                                "aggregations": [
+                                    "sum"
+                                ],
+                                "operation": "aggregate"
+                            },
+                            "label_platform_neuromation_io_preset": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            },
+                            "label_platform_neuromation_io_user": {
+                                "aggregations": [],
+                                "operation": "groupby"
+                            }
+                        }
+                    }
+                },
+                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {},
                         "indexByName": {
-                            "Value (diff)": 3,
+                            "Value (diff) (sum)": 2,
                             "label_platform_neuromation_io_preset": 1,
-                            "label_platform_neuromation_io_user": 0,
-                            "pod": 2
+                            "label_platform_neuromation_io_user": 0
                         },
                         "renameByName": {
-                            "Value (diff)": "Credits",
+                            "Value (diff) (sum)": "Credits",
                             "label_platform_neuromation_io_preset": "Preset",
-                            "label_platform_neuromation_io_user": "User",
-                            "pod": "Job"
+                            "label_platform_neuromation_io_user": "User"
                         }
                     }
                 }
             ],
             "type": "table"
-        },
-        {
-            "collapsed": true,
-            "datasource": null,
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 15
-            },
-            "id": 29,
-            "panels": [
-                {
-                    "datasource": "-- Dashboard --",
-                    "fieldConfig": {
-                        "defaults": {
-                            "custom": {
-                                "align": null,
-                                "filterable": false
-                            },
-                            "mappings": [],
-                            "thresholds": {
-                                "mode": "absolute",
-                                "steps": [
-                                    {
-                                        "color": "green",
-                                        "value": null
-                                    },
-                                    {
-                                        "color": "red",
-                                        "value": 80
-                                    }
-                                ]
-                            }
-                        },
-                        "overrides": [
-                            {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "Credits"
-                                },
-                                "properties": [
-                                    {
-                                        "id": "decimals",
-                                        "value": 2
-                                    },
-                                    {
-                                        "id": "unit",
-                                        "value": "none"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    "gridPos": {
-                        "h": 14,
-                        "w": 24,
-                        "x": 0,
-                        "y": 16
-                    },
-                    "id": 23,
-                    "options": {
-                        "frameIndex": 0,
-                        "showHeader": true,
-                        "sortBy": [
-                            {
-                                "desc": false,
-                                "displayName": "User"
-                            },
-                            {
-                                "desc": false,
-                                "displayName": "Preset"
-                            }
-                        ]
-                    },
-                    "pluginVersion": "7.3.5",
-                    "targets": [
-                        {
-                            "panelId": 19,
-                            "refId": "A"
-                        }
-                    ],
-                    "timeFrom": null,
-                    "timeShift": null,
-                    "title": " ",
-                    "transformations": [
-                        {
-                            "id": "groupBy",
-                            "options": {
-                                "fields": {
-                                    "Value": {
-                                        "aggregations": [
-                                            "diff"
-                                        ],
-                                        "operation": "aggregate"
-                                    },
-                                    "label_platform_neuromation_io_preset": {
-                                        "aggregations": [],
-                                        "operation": "groupby"
-                                    },
-                                    "label_platform_neuromation_io_user": {
-                                        "aggregations": [],
-                                        "operation": "groupby"
-                                    },
-                                    "pod": {
-                                        "aggregations": [],
-                                        "operation": "groupby"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "id": "groupBy",
-                            "options": {
-                                "fields": {
-                                    "Value (diff)": {
-                                        "aggregations": [
-                                            "sum"
-                                        ],
-                                        "operation": "aggregate"
-                                    },
-                                    "label_platform_neuromation_io_preset": {
-                                        "aggregations": [],
-                                        "operation": "groupby"
-                                    },
-                                    "label_platform_neuromation_io_user": {
-                                        "aggregations": [],
-                                        "operation": "groupby"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "id": "organize",
-                            "options": {
-                                "excludeByName": {},
-                                "indexByName": {
-                                    "Value (diff) (sum)": 2,
-                                    "label_platform_neuromation_io_preset": 1,
-                                    "label_platform_neuromation_io_user": 0
-                                },
-                                "renameByName": {
-                                    "Value (diff) (sum)": "Credits",
-                                    "label_platform_neuromation_io_preset": "Preset",
-                                    "label_platform_neuromation_io_user": "User"
-                                }
-                            }
-                        }
-                    ],
-                    "type": "table"
-                }
-            ],
-            "title": "Users",
-            "type": "row"
         }
     ],
     "refresh": "1m",
@@ -352,6 +519,33 @@
                     "value": "$__all"
                 },
                 "datasource": "Prometheus",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\"},label_platform_neuromation_io_project)",
+                "error": null,
+                "hide": 0,
+                "includeAll": true,
+                "label": "Project",
+                "multi": false,
+                "name": "project_name",
+                "options": [],
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\"},label_platform_neuromation_io_project)",
+                "refresh": 2,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 1,
+                "tagValuesQuery": "",
+                "tags": [],
+                "tagsQuery": "",
+                "type": "query",
+                "useTags": false
+            },
+            {
+                "allValue": ".*",
+                "current": {
+                    "selected": true,
+                    "text": "All",
+                    "value": "$__all"
+                },
+                "datasource": "Prometheus",
                 "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\"},label_platform_neuromation_io_user)",
                 "error": null,
                 "hide": 0,
@@ -374,7 +568,7 @@
         ]
     },
     "time": {
-        "from": "now-1h",
+        "from": "now-15m",
         "to": "now"
     },
     "timepicker": {
@@ -404,5 +598,5 @@
     "timezone": "browser",
     "title": "Credits",
     "uid": "org_credits",
-    "version": 1
+    "version": 2
 }

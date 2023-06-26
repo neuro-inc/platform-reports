@@ -177,10 +177,6 @@
                                         "url": "/d/job/job?orgId=${__org}&var-job_id=${__data.fields[pod]}&${__url_time_range}&refresh=15s"
                                     }
                                 ]
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 332
                             }
                         ]
                     },
@@ -202,46 +198,6 @@
                                         "value": "no_org"
                                     }
                                 ]
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 163
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Preset"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 123
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Project"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 171
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "User"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 177
                             }
                         ]
                     }

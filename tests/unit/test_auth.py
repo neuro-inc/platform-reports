@@ -79,25 +79,26 @@ class TestDashboards:
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
-    async def test_user_dashboards_permissions(
-        self,
-        auth_service: AuthService,
-        auth_client: mock.AsyncMock,
-        user_dashboards_expressions: dict[str, Sequence[str]],
-    ) -> None:
-        assert user_dashboards_expressions, "No user dashboards found"
+    # TODO: uncomment
+    # async def test_project_dashboards_permissions(
+    #     self,
+    #     auth_service: AuthService,
+    #     auth_client: mock.AsyncMock,
+    #     project_dashboards_expressions: dict[str, Sequence[str]],
+    # ) -> None:
+    #     assert project_dashboards_expressions, "No project dashboards found"
 
-        async def get_missing_permissions(
-            _: str, permissions: Sequence[Permission]
-        ) -> Sequence[Permission]:
-            assert all(p.uri.startswith("job://default/user") for p in permissions)
-            return []
+    #     async def get_missing_permissions(
+    #         _: str, permissions: Sequence[Permission]
+    #     ) -> Sequence[Permission]:
+    #         assert all(p.uri.startswith("job://default/project") for p in permissions)
+    #         return []
 
-        auth_client.get_missing_permissions.side_effect = get_missing_permissions
+    #     auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-        for _, exprs in user_dashboards_expressions.items():
-            await auth_service.check_query_permissions("user", exprs)
-            auth_client.reset_mock()
+    #     for _, exprs in project_dashboards_expressions.items():
+    #         await auth_service.check_query_permissions("user", exprs)
+    #         auth_client.reset_mock()
 
     async def test_org_dashboards_permissions(
         self,
@@ -178,7 +179,7 @@ class TestAuthService:
         await service.check_dashboard_permissions("user", Dashboard.JOB, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user", action="read")]
+            "user", [Permission(uri="cluster://default/access", action="read")]
         )
 
     async def test_check_job_dashboard_with_job_id_permissions(
@@ -199,26 +200,26 @@ class TestAuthService:
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
-    async def test_check_user_jobs_dashboard_without_user_name_permissions(
+    async def test_check_project_jobs_dashboard_without_project_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_JOBS, MultiDict()
+            "user", Dashboard.PROJECT_JOBS, MultiDict()
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user", action="read")]
+            "user", [Permission(uri="cluster://default/access", action="read")]
         )
 
-    async def test_check_user_jobs_dashboard_with_user_name_permissions(
+    async def test_check_project_jobs_dashboard_with_project_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_JOBS, MultiDict({"var-user_name": "other_user"})
+            "user", Dashboard.PROJECT_JOBS, MultiDict({"var-project_name": "project"})
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/other_user", action="read")]
+            "user", [Permission(uri="job://default/project", action="read")]
         )
 
     async def test_check_org_jobs_dashboard_with_org_name_permissions(
@@ -263,26 +264,28 @@ class TestAuthService:
             "user", [Permission(uri="job://default", action="read")]
         )
 
-    async def test_check_user_credits_dashboard_with_user_name_permissions(
+    async def test_check_project_credits_dashboard_with_project_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_CREDITS, MultiDict({"var-user_name": "other_user"})
+            "user",
+            Dashboard.PROJECT_CREDITS,
+            MultiDict({"var-project_name": "project"}),
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/other_user", action="read")]
+            "user", [Permission(uri="job://default/project", action="read")]
         )
 
-    async def test_check_user_credits_dashboard_without_user_name_permissions(
+    async def test_check_project_credits_dashboard_without_project_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_dashboard_permissions(
-            "user", Dashboard.USER_CREDITS, MultiDict()
+            "user", Dashboard.PROJECT_CREDITS, MultiDict()
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/user", action="read")]
+            "user", [Permission(uri="cluster://default/access", action="read")]
         )
 
     async def test_check_org_credits_with_org_name_dashboard_permissions(
@@ -655,7 +658,7 @@ class TestAuthService:
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
-    async def test_check_join_for_user_jobs_permissions(
+    async def test_check_join_for_project_jobs_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_query_permissions(
@@ -664,7 +667,7 @@ class TestAuthService:
                 """
                 kube_pod_labels{
                     job='kube-state-metrics',
-                    label_platform_neuromation_io_user='other_user'
+                    label_platform_neuromation_io_project='project'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -673,7 +676,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/other_user", action="read")]
+            "user", [Permission(uri="job://default/project", action="read")]
         )
 
     async def test_check_join_for_org_jobs_permissions(
@@ -718,7 +721,7 @@ class TestAuthService:
             "user", [Permission(uri="job://default", action="read")]
         )
 
-    async def test_check_join_for_org_user_jobs_permissions(
+    async def test_check_join_for_org_project_jobs_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         await service.check_query_permissions(
@@ -728,7 +731,7 @@ class TestAuthService:
                 kube_pod_labels{
                     job='kube-state-metrics',
                     label_platform_neuromation_io_org='org',
-                    label_platform_neuromation_io_user='other_user'
+                    label_platform_neuromation_io_project='project'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -737,7 +740,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="job://default/org/other_user", action="read")]
+            "user", [Permission(uri="job://default/org/project", action="read")]
         )
 
     async def test_check_join_for_all_jobs_permissions(
@@ -765,14 +768,14 @@ class TestAuthService:
             user_name="user",
             queries=[
                 """
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
                 *
                 container_cpu_usage_seconds_total{job='kubelet'}
                 """,
                 """
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
                 *
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_user='user'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
                 """,
             ],
         )

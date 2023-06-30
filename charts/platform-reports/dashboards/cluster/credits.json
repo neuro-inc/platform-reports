@@ -537,7 +537,7 @@
                                     },
                                     "label_platform_neuromation_io_preset": {
                                         "aggregations": [],
-                                        "operation": null
+                                        "operation": "groupby"
                                     },
                                     "label_platform_neuromation_io_project": {
                                         "aggregations": [],
@@ -570,7 +570,7 @@
                                     },
                                     "label_platform_neuromation_io_preset": {
                                         "aggregations": [],
-                                        "operation": null
+                                        "operation": "groupby"
                                     },
                                     "label_platform_neuromation_io_project": {
                                         "aggregations": [],

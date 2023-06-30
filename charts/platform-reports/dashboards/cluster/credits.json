@@ -114,6 +114,10 @@
                     },
                     {
                         "desc": false,
+                        "displayName": "Project"
+                    },
+                    {
+                        "desc": false,
                         "displayName": "User"
                     },
                     {
@@ -288,6 +292,10 @@
                             {
                                 "desc": false,
                                 "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Project"
                             },
                             {
                                 "desc": false,
@@ -487,6 +495,10 @@
                             {
                                 "desc": false,
                                 "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Project"
                             },
                             {
                                 "desc": false,

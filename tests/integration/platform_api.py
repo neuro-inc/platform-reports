@@ -38,6 +38,8 @@ def platform_api_app() -> aiohttp.web.Application:
                 "id": job_id,
                 "owner": "user",
                 "cluster_name": "default",
+                "org_name": "org",
+                "project_name": "project",
                 "status": "running",
                 "history": {"status": "running"},
                 "container": {
@@ -45,7 +47,7 @@ def platform_api_app() -> aiohttp.web.Application:
                     "resources": {"cpu": 0.1, "memory": 128 * 1024**2},
                 },
                 "is_preemptible": False,
-                "uri": f"job://default/user/{job_id}",
+                "uri": f"job://default/org/project/{job_id}",
                 "total_price_credits": "10",
                 "price_credits_per_hour": "10",
                 "pass_config": False,

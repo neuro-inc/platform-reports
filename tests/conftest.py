@@ -38,6 +38,7 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
                 .replace("$__from", "1604070620")
                 .replace("$project_name", "project")
                 .replace("$org_name", "org")
+                .replace("$user_name", "user")
                 .replace("$job_id", f"job-{uuid.uuid4()}")
             )
         if not exprs:

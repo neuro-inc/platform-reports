@@ -25,7 +25,7 @@ def job_factory() -> Callable[[str], Job]:
             status=None,  # type: ignore
             history=None,  # type: ignore
             container=None,  # type: ignore
-            uri=URL(f"job://default/user/{id}"),
+            uri=URL(f"job://default/org/project/{id}"),
             total_price_credits=Decimal("500"),
             price_credits_per_hour=Decimal("5"),
             pass_config=None,  # type: ignore
@@ -79,26 +79,27 @@ class TestDashboards:
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
 
-    # TODO: uncomment
-    # async def test_project_dashboards_permissions(
-    #     self,
-    #     auth_service: AuthService,
-    #     auth_client: mock.AsyncMock,
-    #     project_dashboards_expressions: dict[str, Sequence[str]],
-    # ) -> None:
-    #     assert project_dashboards_expressions, "No project dashboards found"
+    async def test_project_dashboards_permissions(
+        self,
+        auth_service: AuthService,
+        auth_client: mock.AsyncMock,
+        project_dashboards_expressions: dict[str, Sequence[str]],
+    ) -> None:
+        assert project_dashboards_expressions, "No project dashboards found"
 
-    #     async def get_missing_permissions(
-    #         _: str, permissions: Sequence[Permission]
-    #     ) -> Sequence[Permission]:
-    #         assert all(p.uri.startswith("job://default/project") for p in permissions)
-    #         return []
+        async def get_missing_permissions(
+            _: str, permissions: Sequence[Permission]
+        ) -> Sequence[Permission]:
+            assert all(
+                p.uri.startswith("job://default/org/project") for p in permissions
+            )
+            return []
 
-    #     auth_client.get_missing_permissions.side_effect = get_missing_permissions
+        auth_client.get_missing_permissions.side_effect = get_missing_permissions
 
-    #     for _, exprs in project_dashboards_expressions.items():
-    #         await auth_service.check_query_permissions("user", exprs)
-    #         auth_client.reset_mock()
+        for _, exprs in project_dashboards_expressions.items():
+            await auth_service.check_query_permissions("user", exprs)
+            auth_client.reset_mock()
 
     async def test_org_dashboards_permissions(
         self,

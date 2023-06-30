@@ -195,6 +195,10 @@
                 "sortBy": [
                     {
                         "desc": false,
+                        "displayName": "Project"
+                    },
+                    {
+                        "desc": false,
                         "displayName": "User"
                     },
                     {
@@ -465,7 +469,7 @@
                     "steppedLine": false,
                     "targets": [
                         {
-                            "expr": "sum by (label_platform_neuromation_io_user) (container_spec_memory_limit_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"} * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=~\"^$project_name$\",label_platform_neuromation_io_user=~\"^$user_name$\"})",
+                            "expr": "sum(sum by (pod) (container_spec_memory_limit_bytes{job=\"kubelet\",pod=~\"^job-.+\",container!=\"POD\",image!=\"\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=~\"^$project_name$\",label_platform_neuromation_io_user=~\"^$user_name$\"})",
                             "hide": false,
                             "interval": "",
                             "intervalFactor": 1,

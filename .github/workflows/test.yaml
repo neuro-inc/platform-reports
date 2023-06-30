@@ -48,7 +48,7 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: .coverage-unit.xml
+        file: .coverage.unit.xml
         flags: unit
         name: codecov-unit
 
@@ -87,7 +87,7 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: .coverage-integration.xml
+        file: .coverage.integration.xml
         flags: integration
         name: codecov-integration
 

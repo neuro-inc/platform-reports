@@ -36,8 +36,9 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
                 .replace("$__interval", "15s")
                 .replace("$__rate_interval", "1m")
                 .replace("$__from", "1604070620")
-                .replace("$user_name", "user")
+                .replace("$project_name", "project")
                 .replace("$org_name", "org")
+                .replace("$user_name", "user")
                 .replace("$job_id", f"job-{uuid.uuid4()}")
             )
         if not exprs:
@@ -59,12 +60,12 @@ def cluster_dashboards_expressions(
 
 
 @pytest.fixture(scope="session")
-def user_dashboards_expressions(
+def project_dashboards_expressions(
     dashboards_expressions: dict[str, Sequence[str]]
 ) -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():
-        if key.startswith("user/"):
+        if key.startswith("project/"):
             result[key] = exprs
     return result
 

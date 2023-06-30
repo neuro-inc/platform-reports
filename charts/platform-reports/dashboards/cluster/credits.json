@@ -114,6 +114,10 @@
                     },
                     {
                         "desc": false,
+                        "displayName": "Project"
+                    },
+                    {
+                        "desc": false,
                         "displayName": "User"
                     },
                     {
@@ -288,6 +292,10 @@
                             {
                                 "desc": false,
                                 "displayName": "Organization"
+                            },
+                            {
+                                "desc": false,
+                                "displayName": "Project"
                             },
                             {
                                 "desc": false,
@@ -490,6 +498,10 @@
                             },
                             {
                                 "desc": false,
+                                "displayName": "Project"
+                            },
+                            {
+                                "desc": false,
                                 "displayName": "User"
                             },
                             {
@@ -525,7 +537,7 @@
                                     },
                                     "label_platform_neuromation_io_preset": {
                                         "aggregations": [],
-                                        "operation": null
+                                        "operation": "groupby"
                                     },
                                     "label_platform_neuromation_io_project": {
                                         "aggregations": [],
@@ -558,7 +570,7 @@
                                     },
                                     "label_platform_neuromation_io_preset": {
                                         "aggregations": [],
-                                        "operation": null
+                                        "operation": "groupby"
                                     },
                                     "label_platform_neuromation_io_project": {
                                         "aggregations": [],

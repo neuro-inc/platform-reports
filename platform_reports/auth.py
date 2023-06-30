@@ -26,18 +26,18 @@ class Dashboard(str, enum.Enum):
     OVERVIEW = "overview"
     JOB = "job"
     JOBS = "jobs"
-    USER_JOBS = "user_jobs"
+    PROJECT_JOBS = "project_jobs"
     ORG_JOBS = "org_jobs"
     CREDITS = "credits"
-    USER_CREDITS = "user_credits"
+    PROJECT_CREDITS = "project_credits"
     ORG_CREDITS = "org_credits"
 
 
 class Matcher(str, enum.Enum):
     JOB = "job"
     POD = "pod"
-    USER_LABEL = "label_platform_neuromation_io_user"
     ORG_LABEL = "label_platform_neuromation_io_org"
+    PROJECT_LABEL = "label_platform_neuromation_io_project"
     SERVICE_LABEL = "label_service"
 
 
@@ -72,6 +72,7 @@ class AuthService:
         self, user_name: str, dashboard_id: str, params: MultiMapping[str]
     ) -> bool:
         permissions_service = PermissionsService(self._api_client, self._cluster_name)
+        permissions = []
 
         if dashboard_id == Dashboard.NODES:
             permissions = [permissions_service.get_cluster_manager_permission()]
@@ -85,19 +86,16 @@ class AuthService:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
                 permissions = await permissions_service.get_job_permissions([job_id])
-            else:
-                # If no job id is specified, check that user has access
-                # to his own jobs in cluster.
-                permissions = [
-                    permissions_service.get_job_permission(user_name=user_name)
-                ]
         elif dashboard_id == Dashboard.JOBS:
             permissions = [permissions_service.get_job_permission()]
-        elif dashboard_id == Dashboard.USER_JOBS:
-            dashboard_user_name = params.get("var-user_name", user_name)
-            permissions = [
-                permissions_service.get_job_permission(user_name=dashboard_user_name)
-            ]
+        elif dashboard_id == Dashboard.PROJECT_JOBS:
+            dashboard_project_name = params.get("var-project_name")
+            if dashboard_project_name:
+                permissions = [
+                    permissions_service.get_job_permission(
+                        project_name=dashboard_project_name
+                    )
+                ]
         elif dashboard_id == Dashboard.ORG_JOBS:
             dashboard_org_name = params.get("var-org_name")
             permissions = [
@@ -105,11 +103,14 @@ class AuthService:
             ]
         elif dashboard_id == Dashboard.CREDITS:
             permissions = [permissions_service.get_job_permission()]
-        elif dashboard_id == Dashboard.USER_CREDITS:
-            dashboard_user_name = params.get("var-user_name", user_name)
-            permissions = [
-                permissions_service.get_job_permission(user_name=dashboard_user_name)
-            ]
+        elif dashboard_id == Dashboard.PROJECT_CREDITS:
+            dashboard_project_name = params.get("var-project_name")
+            if dashboard_project_name:
+                permissions = [
+                    permissions_service.get_job_permission(
+                        project_name=dashboard_project_name
+                    )
+                ]
         elif dashboard_id == Dashboard.ORG_CREDITS:
             dashboard_org_name = params.get("var-org_name")
             permissions = [
@@ -117,6 +118,13 @@ class AuthService:
             ]
         else:
             return False
+
+        if not permissions:
+            # Check user has access to cluster
+            permissions.append(
+                Permission(uri=f"cluster://{self._cluster_name}/access", action="read")
+            )
+
         return await self.check_permissions(user_name, permissions)
 
     async def check_query_permissions(
@@ -220,20 +228,21 @@ class PermissionsService:
                     continue
 
                 org_matcher = vector.get_eq_label_matcher(Matcher.ORG_LABEL)
-                user_matcher = vector.get_eq_label_matcher(Matcher.USER_LABEL)
-                if org_matcher is not None and user_matcher is not None:
+                project_matcher = vector.get_eq_label_matcher(Matcher.PROJECT_LABEL)
+                if org_matcher is not None and project_matcher is not None:
                     permissions.append(
                         self.get_job_permission(
-                            org_name=org_matcher.value, user_name=user_matcher.value
+                            org_name=org_matcher.value,
+                            project_name=project_matcher.value,
                         )
                     )
                 elif org_matcher is not None:
                     permissions.append(
                         self.get_job_permission(org_name=org_matcher.value)
                     )
-                elif user_matcher is not None:
+                elif project_matcher is not None:
                     permissions.append(
-                        self.get_job_permission(user_name=user_matcher.value)
+                        self.get_job_permission(project_name=project_matcher.value)
                     )
                 else:
                     return [self.get_cluster_manager_permission()]
@@ -348,13 +357,13 @@ class PermissionsService:
         return Permission(uri=f"role://{self._cluster_name}/manager", action="read")
 
     def get_job_permission(
-        self, *, org_name: str | None = None, user_name: str | None = None
+        self, *, org_name: str | None = None, project_name: str | None = None
     ) -> Permission:
         uri = f"job://{self._cluster_name}"
         if org_name and org_name != "no_org":
             uri = f"{uri}/{org_name}"
-        if user_name:
-            uri = f"{uri}/{user_name}"
+        if project_name:
+            uri = f"{uri}/{project_name}"
         return Permission(uri=uri, action="read")
 
     async def get_job_permissions(self, job_ids: Iterable[str]) -> list[Permission]:

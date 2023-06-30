@@ -197,7 +197,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -383,7 +383,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -452,7 +452,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -524,7 +524,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -579,7 +579,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -610,7 +610,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 
@@ -655,7 +655,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/user/{JOB_ID}", action="read")],
+            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
         api_client.jobs.status.assert_awaited_once_with(JOB_ID)
 

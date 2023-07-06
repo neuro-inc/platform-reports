@@ -350,7 +350,7 @@ class GCPNodePriceCollector(_NodePriceCollector):
         self._loop = asyncio.get_event_loop()
         self._client: Any = None
 
-    async def __aenter__(self) -> "Collector[Price]":
+    async def __aenter__(self) -> Collector[Price]:
         self._client = await self._loop.run_in_executor(None, self._create_client)
         return self
 

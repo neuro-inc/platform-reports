@@ -23,14 +23,14 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "platformReports.grafana.fullname" . }}-user-dashboards
+  name: {{ include "platformReports.grafana.fullname" . }}-project-dashboards
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     grafana_dashboard: "true"
     service: grafana
   annotations:
-    grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/User
+    grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/Project
 data:
-{{ (.Files.Glob "dashboards/user/*.json").AsConfig | indent 2 }}
+{{ (.Files.Glob "dashboards/project/*.json").AsConfig | indent 2 }}
 ---
 apiVersion: v1
 kind: ConfigMap

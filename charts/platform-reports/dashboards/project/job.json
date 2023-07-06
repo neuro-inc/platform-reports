@@ -15,8 +15,8 @@
     "editable": true,
     "gnetId": null,
     "graphTooltip": 1,
-    "id": 1,
-    "iteration": 1653309215737,
+    "id": 5,
+    "iteration": 1687820485348,
     "links": [],
     "panels": [
         {
@@ -488,17 +488,17 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "max by(label_platform_neuromation_io_user) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
+                    "expr": "max by(label_platform_neuromation_io_project) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_user}}",
+                    "legendFormat": "{{label_platform_neuromation_io_project}}",
                     "refId": "A"
                 }
             ],
             "timeFrom": null,
             "timeShift": null,
-            "title": "User",
+            "title": "Project",
             "type": "stat"
         },
         {

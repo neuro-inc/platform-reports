@@ -74,7 +74,7 @@ async def cluster_admin_token(
         "cluster-admin",
         [
             Permission(uri="role://default/manager", action="manage"),
-            Permission(uri="job://default", action="manage"),
+            Permission(uri="cluster://default/access", action="read"),
         ],
     )
     return token_factory("cluster-admin")
@@ -84,7 +84,13 @@ async def cluster_admin_token(
 async def regular_user_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
-    await user_factory("user", [Permission(uri="job://default/user", action="manage")])
+    await user_factory(
+        "user",
+        [
+            Permission(uri="cluster://default/access", action="read"),
+            Permission(uri="job://default/user", action="manage"),
+        ],
+    )
     return token_factory("user")
 
 
@@ -93,7 +99,11 @@ async def other_cluster_user_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
     await user_factory(
-        "other-user", [Permission(uri="job://neuro-public/other-user", action="manage")]
+        "other-user",
+        [
+            Permission(uri="cluster://neuro-public/access", action="read"),
+            Permission(uri="job://neuro-public/other-user", action="manage"),
+        ],
     )
     return token_factory("other-user")
 

@@ -237,7 +237,7 @@ class GrafanaProxyHandler:
             user_name,
             [
                 Permission(
-                    uri=(f"job://{self._config.cluster_name}/{user_name}"),
+                    uri=f"cluster://{self._config.cluster_name}/access",
                     action="read",
                 )
             ],

@@ -20,7 +20,12 @@ from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
 from neuro_config_client import ConfigClient, EnergySchedule
 from neuro_logging import new_trace_cm, trace_cm
-from neuro_sdk import Client as ApiClient, JobDescription, ResourceNotFound
+from neuro_sdk import (
+    Client as ApiClient,
+    IllegalArgumentError,
+    JobDescription,
+    ResourceNotFound,
+)
 from yarl import URL
 
 from .kube_client import KubeClient
@@ -515,6 +520,9 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
             try:
                 job = await self._api_client.jobs.status(pod_name)
             except ResourceNotFound:
+                logger.warning("Job %r not found", pod_name)
+                continue
+            except IllegalArgumentError:
                 logger.warning("Job %r not found", pod_name)
                 continue
             if not self._should_collect(job):

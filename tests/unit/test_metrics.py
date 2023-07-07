@@ -35,9 +35,9 @@ from neuro_config_client import (
 )
 from neuro_sdk import (
     Client as ApiClient,
+    IllegalArgumentError,
     JobDescription,
     JobStatusHistory,
-    ResourceNotFound,
 )
 from yarl import URL
 
@@ -864,7 +864,7 @@ class TestPodCreditsCollector:
                 for job in jobs:
                     if job.id == id:
                         return job
-                raise ResourceNotFound(f"Job {id!r} not found")
+                raise IllegalArgumentError(f"Job {id!r} not found")
 
             result = mock.AsyncMock(spec=ApiClient)
             result.jobs = mock.AsyncMock()

@@ -29,6 +29,7 @@ class KubeConfig:
     client_key_path: str | None = None
     token: str | None = None
     token_path: str | None = None
+    token_update_interval_s: int = 300
     conn_timeout_s: int = 300
     read_timeout_s: int = 100
     conn_pool_size: int = 100

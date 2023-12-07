@@ -175,8 +175,9 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: neuro-metrics-exporter # name is fixed as it is used grafana dashboards
+  name: {{ include "platformReports.metricsExporter.fullname" . }}
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    job: neuro-metrics-exporter
     service: platform-metrics-exporter
 spec:
   selector:
@@ -200,6 +201,7 @@ spec:
       app: {{ include "platformReports.name" . }}
       release: {{ .Release.Name | quote }}
       service: platform-metrics-exporter
+  jobLabel: job
   endpoints:
     - port: metrics
       path: /metrics

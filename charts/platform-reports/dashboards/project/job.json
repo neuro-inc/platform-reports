@@ -161,7 +161,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval])) / sum(kube_pod_container_resource_requests{job=\"kube-state-metrics\",resource=\"cpu\",pod=\"$job_id\",container!=\"POD\"}) * 100",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -233,7 +233,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) * 100",
+                    "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) / sum(kube_pod_container_resource_limits{job=\"kube-state-metrics\",resource=\"memory\",pod=\"$job_id\",container!=\"POD\"}) * 100",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "",
@@ -579,7 +579,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "sum(container_spec_cpu_quota{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval]))",
+                    "expr": "sum(kube_pod_container_resource_requests{job=\"kube-state-metrics\",resource=\"cpu\",pod=\"$job_id\",container!=\"POD\"}) - sum(irate(container_cpu_usage_seconds_total{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}[$__rate_interval]))",
                     "interval": "",
                     "legendFormat": "Free",
                     "refId": "B"
@@ -689,7 +689,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "sum(container_spec_memory_limit_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"}) - sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
+                    "expr": "sum(kube_pod_container_resource_limits{job=\"kube-state-metrics\",resource=\"memory\",pod=\"$job_id\",container!=\"POD\"}) - sum(container_memory_working_set_bytes{job=\"kubelet\",pod=\"$job_id\",container!=\"POD\",image!=\"\"})",
                     "interval": "",
                     "legendFormat": "Free",
                     "refId": "B"

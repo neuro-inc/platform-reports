@@ -96,7 +96,7 @@ class TestParseQueries:
         )
 
     def test_range_vector_with_interval(self) -> None:
-        result = parse_query("irate(container_cpu_usage_seconds_total[5m])")
+        result = parse_query("irate(container_cpu_usage_seconds_total[5m0s])")
         assert result == InstantVector(name="container_cpu_usage_seconds_total")
 
     def test_instant_vector_with_subquery(self) -> None:

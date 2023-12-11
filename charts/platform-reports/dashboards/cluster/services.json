@@ -97,7 +97,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max(sum by(pod) (container_spec_cpu_quota{job=\"kubelet\",container!=\"POD\",image!=\"\"} / container_spec_cpu_period{job=\"kubelet\",container!=\"POD\",image!=\"\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_service=\"$service\"})",
+                    "expr": "max(sum by(pod) (kube_pod_container_resource_requests{job=\"kube-state-metrics\",resource=\"cpu\",container!=\"POD\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_service=\"$service\"})",
                     "hide": false,
                     "interval": "",
                     "legendFormat": "Limit",
@@ -212,7 +212,7 @@
                     "refId": "A"
                 },
                 {
-                    "expr": "max(sum by(pod) (container_spec_memory_limit_bytes{job=\"kubelet\",container!=\"POD\",image!=\"\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_service=\"$service\"})",
+                    "expr": "max(sum by(pod) (kube_pod_container_resource_limits{job=\"kube-state-metrics\",resource=\"memory\",container!=\"POD\"}) * on(pod) kube_pod_labels{job=\"kube-state-metrics\",label_service=\"$service\"})",
                     "hide": false,
                     "interval": "",
                     "legendFormat": "Limit",

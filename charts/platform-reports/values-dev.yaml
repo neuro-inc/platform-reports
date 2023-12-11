@@ -46,19 +46,24 @@ kube-prometheus-stack:
     prometheusSpec:
       thanos:
         objectStorageConfig:
-          name: thanos
-          key: object-store.yaml
+          existingSecret:
+            name: thanos
+            key: object-store.yaml
+
       storageSpec:
         volumeClaimTemplate:
           spec:
             storageClassName: standard-rwo
+
       externalLabels:
         cluster: ""
+
       priorityClassName: ""
 
   prometheusOperator:
     kubeletService:
       namespace: platform
+
     priorityClassName: ""
 
   kubelet:

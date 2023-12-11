@@ -258,7 +258,8 @@ STRING\
     : "'" /([^'\\\\]|\\\\.)*/ "'"
     | "\\"" /([^\\"\\\\]|\\\\.)*/ "\\""
 
-DURATION: DIGIT+ ("s" | "m" | "h" | "d" | "w" | "y")
+DURATION: DIGIT+ ("s" | "m" | "h" | "d" | "w" | "y") \
+          (DIGIT+ ("s" | "m" | "h" | "d" | "w" | "y"))*
 
 METRIC_NAME: (LETTER | "_" | ":") (DIGIT | LETTER | "_" | ":")*
 

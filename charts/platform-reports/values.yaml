@@ -1,7 +1,3 @@
-global:
-  rbac:
-    pspEnabled: false
-
 nodePoolLabels:
   job: platform.neuromation.io/job
   gpu: platform.neuromation.io/accelerator
@@ -66,11 +62,11 @@ kube-prometheus-stack:
   defaultRules:
     create: false
 
-  alertmanager:
-    enabled: false
-
   kubeApiServer:
     enabled: false
+
+  kubelet:
+    enabled: true
 
   kubeControllerManager:
     enabled: false
@@ -93,122 +89,62 @@ kube-prometheus-stack:
   kubeStateMetrics:
     enabled: true
 
-    serviceMonitor:
-      interval: 15s
-
-      metricRelabelings:
-        - sourceLabels:
-            - label_beta_kubernetes_io_instance_type
-          targetLabel: label_node_kubernetes_io_instance_type
-
   kube-state-metrics:
     nameOverride: kube-state-metrics
     fullnameOverride: kube-state-metrics
 
     image:
-      repository: quay.io/coreos/kube-state-metrics
-      tag: v1.9.7
+      registry: registry.k8s.io
+      repository: kube-state-metrics/kube-state-metrics
+      tag: v2.10.1
 
     customLabels:
       service: kube-state-metrics
+
+    selectorOverride:
+      app.kubernetes.io/name: kube-state-metrics
 
     resources:
       requests:
         cpu: 100m
         memory: 200Mi
 
+    prometheus:
+      monitor:
+        metricRelabelings:
+          - sourceLabels:
+              - label_beta_kubernetes_io_instance_type
+            targetLabel: label_node_kubernetes_io_instance_type
+
     collectors:
-      # enabled
-      nodes: true
-      pods: true
+      - nodes
+      - pods
 
-      # disabled
-      certificatesigningrequests: false
-      configmaps: false
-      cronjobs: false
-      daemonsets: false
-      deployments: false
-      endpoints: false
-      horizontalpodautoscalers: false
-      ingresses: false
-      jobs: false
-      limitranges: false
-      mutatingwebhookconfigurations: false
-      namespaces: false
-      networkpolicies: false
-      persistentvolumeclaims: false
-      persistentvolumes: false
-      poddisruptionbudgets: false
-      replicasets: false
-      replicationcontrollers: false
-      resourcequotas: false
-      secrets: false
-      services: false
-      statefulsets: false
-      storageclasses: false
-      validatingwebhookconfigurations: false
-      verticalpodautoscalers: false
-      volumeattachments: false
-
-    podSecurityPolicy:
-      enabled: false
+    metricLabelsAllowlist:
+      - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
+      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/gpu-model]
 
     priorityClassName: ""
 
-  kubelet:
-    enabled: true
-
-    serviceMonitor:
-      interval: 15s
-      https: true
-      probes: false
-      resource: false
-      cAdvisor: true
-
   nodeExporter:
     enabled: true
-
-    resources:
-      requests:
-        cpu: 15m
-        memory: 50Mi
-
-    serviceMonitor:
-      interval: 15s
 
   prometheus-node-exporter:
     nameOverride: prometheus-node-exporter
     fullnameOverride: prometheus-node-exporter
 
     image:
-      repository: quay.io/prometheus/node-exporter
-      tag: v1.0.1
+      registry: quay.io
+      repository: prometheus/node-exporter
+      tag: v1.7.0
 
     podLabels:
       service: prometheus-node-exporter
 
-    securityContext:
-      runAsUser: 0
-      runAsNonRoot: false
-
-    rbac:
-      pspEnabled: false
-
-    extraHostVolumeMounts:
-      - name: system-dbus-socket
-        hostPath: /var/run/dbus/system_bus_socket
-        mountPath: /var/run/dbus/system_bus_socket
-        readOnly: true
-      - name: systemd-private
-        hostPath: /run/systemd/private
-        mountPath: /run/systemd/private
-        readOnly: true
-
-    extraArgs:
-      - --collector.systemd
-      - --collector.processes
-      - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)
-      - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+    resources:
+      requests:
+        cpu: 15m
+        memory: 50Mi
 
     updateStrategy:
       type: RollingUpdate
@@ -217,37 +153,31 @@ kube-prometheus-stack:
 
   prometheusOperator:
     image:
-      repository: quay.io/coreos/prometheus-operator
+      registry: quay.io
+      repository: prometheus-operator/prometheus-operator
+      tag: v0.69.1
 
     podLabels:
       service: prometheus-operator
 
-    prometheusConfigReloaderImage:
-      repository: quay.io/coreos/prometheus-config-reloader
-
-    configmapReloadImage:
-      repository: docker.io/jimmidyson/configmap-reload
-
-    kubectlImage:
-      repository: docker.io/bitnami/kubectl
-
-    tlsProxy:
+    prometheusConfigReloader:
       image:
-        repository: squareup/ghostunnel
+        registry: quay.io
+        repository: prometheus-operator/prometheus-config-reloader
+        tag: v0.69.1
+
+    thanosImage:
+      registry: quay.io
+      repository: thanos/thanos
+      tag: v0.24.0
 
     admissionWebhooks:
       patch:
         image:
-          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
-          tag: v1.1.1
+          registry: registry.k8s.io
+          repository: ingress-nginx/kube-webhook-certgen
+          tag: v20221220-controller-v1.5.1-58-g787ea74b6
         priorityClassName: ""
-      logLevel: error
-
-    createCustomResource: false
-    cleanupCustomResource: false
-
-    kubeletService:
-      enabled: true
 
     serviceMonitor:
       selfMonitor: false
@@ -255,26 +185,31 @@ kube-prometheus-stack:
     priorityClassName: ""
 
   prometheus:
-    podSecurityPolicy:
-      enabled: false
-
     serviceMonitor:
       selfMonitor: false
 
     prometheusSpec:
       image:
-        repository: quay.io/prometheus/prometheus
+        registry: quay.io
+        repository: prometheus/prometheus
+        tag: v2.48.0
+
       podMetadata:
         labels:
           service: prometheus
+
       replicas: 1
+
       retention: 12h
+
       scrapeInterval: 15s
       evaluationInterval: 15s
+
       resources:
         requests:
           cpu: "500m"
           memory: "1Gi"
+
       storageSpec:
         volumeClaimTemplate:
           metadata:
@@ -284,14 +219,26 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 10Gi
-      logLevel: error
-      # thanos sidecar
-      thanos:
-        image: quay.io/thanos/thanos:v0.24.0
-        version: v0.24.0
-        logLevel: error
+
       externalLabels:
         cluster: ""
+
+      priorityClassName: ""
+
+  alertmanager:
+    serviceMonitor:
+      selfMonitor: false
+
+    alertmanagerSpec:
+      image:
+        registry: quay.io
+        repository: prometheus/alertmanager
+        tag: v0.26.0
+
+      podMetadata:
+        labels:
+          service: alert-manager
+
       priorityClassName: ""
 
   grafana:
@@ -324,7 +271,6 @@ thanos:
             storage: 10Gi
     labels:
       service: thanos-store
-    logLevel: error
 
   # Compact service works with data in object storage
   compact:
@@ -351,17 +297,14 @@ thanos:
             storage: 10Gi
     labels:
       service: thanos-compact
-    logLevel: error
 
   query:
     labels:
       service: thanos-query
-    logLevel: error
 
   bucket:
     labels:
       service: thanos-bucket
-    logLevel: error
 
   rule:
     enabled: false
@@ -370,7 +313,8 @@ thanos:
     # NOTE: This is only the service references for the sidecar
     enabled: true
     selector:
-      app: prometheus
+      app: null
+      app.kubernetes.io/name: prometheus
 
   priorityClassName: ""
 
@@ -379,7 +323,9 @@ grafana:
   fullnameOverride: grafana
 
   image:
+    registry: docker.io
     repository: grafana/grafana
+    tag: 10.2.2
 
   podLabels:
     service: grafana
@@ -389,9 +335,6 @@ grafana:
   ingress:
     enabled: false
 
-  rbac:
-    pspEnabled: false
-
   initChownData:
     image:
       repository: busybox
@@ -399,22 +342,15 @@ grafana:
 
   sidecar:
     image:
+      registry: quay.io
       repository: kiwigrid/k8s-sidecar
-      tag: 1.22.0
-
-    logLevel: WARN
-
-    datasources:
-      enabled: false
-
-    notifiers:
-      enabled: false
+      tag: 1.25.2
 
     dashboards:
       enabled: true
       SCProvider: false
 
-      watchMethod: SLEEP
+      watchMethod: WATCH
       label: grafana_dashboard
       folderAnnotation: grafana_folder
       folder: /etc/grafana/dashboards
@@ -443,9 +379,12 @@ grafana:
           access: proxy
           isDefault: true
           jsonData:
+            httpMethod: GET
+            manageAlerts: false
             keepCookies:
               - dat
               - sat
+            prometheusType: Thanos
 
   persistence:
     enabled: false

@@ -63,7 +63,7 @@ kube-prometheus-stack:
     create: false
 
   kubeApiServer:
-    enabled: false
+    enabled: true
 
   kubelet:
     enabled: true
@@ -119,6 +119,10 @@ kube-prometheus-stack:
     collectors:
       - nodes
       - pods
+      - deployments
+      - statefulsets
+      - daemonsets
+      - horizontalpodautoscalers
 
     metricLabelsAllowlist:
       - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
@@ -179,15 +183,9 @@ kube-prometheus-stack:
           tag: v20221220-controller-v1.5.1-58-g787ea74b6
         priorityClassName: ""
 
-    serviceMonitor:
-      selfMonitor: false
-
     priorityClassName: ""
 
   prometheus:
-    serviceMonitor:
-      selfMonitor: false
-
     prometheusSpec:
       image:
         registry: quay.io
@@ -226,9 +224,6 @@ kube-prometheus-stack:
       priorityClassName: ""
 
   alertmanager:
-    serviceMonitor:
-      selfMonitor: false
-
     alertmanagerSpec:
       image:
         registry: quay.io

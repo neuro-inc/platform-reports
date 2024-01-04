@@ -41,6 +41,26 @@ grafanaProxy:
       traefik.ingress.kubernetes.io/router.middlewares: platform-platform-ingress-auth@kubernetescrd
       external-dns.platform.neuromation.io: "true"
 
+secrets:
+  - name: alertmanager-config
+    data:
+      alertmanager.yaml: |
+        route:
+          receiver: platform-notifications
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+          group_by: [alertname]
+
+        receivers:
+          - name: platform-notifications
+            webhook_configs:
+              - url: http://platform-notifications:8080/api/v1/notifications/alert-manager-notification
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials_file: /etc/alertmanager/secrets/platformservices-secret/compute_token
+
 kube-prometheus-stack:
   prometheus:
     prometheusSpec:
@@ -56,9 +76,16 @@ kube-prometheus-stack:
             storageClassName: standard-rwo
 
       externalLabels:
-        cluster: ""
+        cluster: default
 
       priorityClassName: ""
+
+  alertmanager:
+    alertmanagerSpec:
+      configSecret: alertmanager-config
+
+      secrets:
+        - platformservices-secret
 
   prometheusOperator:
     kubeletService:

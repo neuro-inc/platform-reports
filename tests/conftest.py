@@ -20,7 +20,7 @@ pytest_plugins = [
 @pytest.fixture(scope="session")
 def dashboards_expressions() -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
-    dashboards_path = Path("charts/platform-reports/dashboards")
+    dashboards_path = Path("charts/platform-reports/files/grafana-dashboards")
     expr_regex = re.compile(r'"expr": "((?:[^"\\]|\\.)+)"')
     var_regex = re.compile(r'"query": "label_values\(((?:[^"\\]|\\.)+),[a-z_]+\)"')
     for path in dashboards_path.glob("**/*.json"):

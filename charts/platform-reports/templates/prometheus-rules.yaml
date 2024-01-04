@@ -1,0 +1,53 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-alertmanager
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/alertmanager.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-kube-control-plane
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/kube-control-plane.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-node-exporter
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/node-exporter.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-prometheus-operator
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/prometheus-operator.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-prometheus
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/prometheus.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-traefik
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/traefik.yaml" | indent 2 }}

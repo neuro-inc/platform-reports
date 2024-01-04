@@ -1,0 +1,54 @@
+groups:
+- name: traefik
+  rules:
+  - alert: TraefikDown
+    annotations:
+      summary: Traefik Down
+      description: '{{$labels.namespace}}/{{$labels.pod}} on {{$labels.nodename}} is down'
+    expr: up{job="traefik"} == 0
+    for: 5m
+    labels:
+      severity: critical
+  - alert: TraefikConfigReloadError
+    annotations:
+      description: Traefik {{$labels.namespace}}/{{$labels.pod}} has failed to reload its configuration.
+      summary: Failed Traefik configuration reload.
+    expr: |
+      # Without max_over_time, failed scrapes could create false negatives, see
+      # https://www.robustperception.io/alerting-on-gauges-in-prometheus-2-0 for details.
+      max_over_time(traefik_config_last_reload_success{job="traefik"}[5m]) == 0
+    for: 10m
+    labels:
+      severity: critical
+  - alert: TraefikTlsCertExpiration
+    annotations:
+      description: TLS Certificate will expire within the next 30 Days
+      summary: TLS Certificate will expire soon
+    expr: (traefik_tls_certs_not_after - time()) < 2592000
+    for: 1h
+    labels:
+      severity: critical
+  - alert: TraefikTooMuchErrors5XX
+    annotations:
+      description: '{{$value | humanizePercentage}} of responses from service {{$labels.exported_service}} have 5XX status code during last 5 minutes.'
+      summary: Too much 5XX responses from service {{$labels.exported_service}}
+    expr: |
+      100 *
+      sum by(exported_service) (rate(traefik_service_requests_total{job="traefik", code=~"5.+"}[5m]))
+      / sum by(exported_service) (rate(traefik_service_requests_total{job="traefik"}[5m]))
+      > 5
+    for: 5m
+    labels:
+      severity: critical
+  - alert: TraefikTooMuchErrors4XX
+    annotations:
+      description: '{{$value | humanizePercentage}} of responses from service {{$labels.exported_service}} have 4XX status code during last 5 minutes.'
+      summary: Too much 4XX responses from service {{$labels.exported_service}}
+    expr: |
+      100 *
+      sum by(exported_service) (rate(traefik_service_requests_total{job="traefik", code=~"5.+"}[5m]))
+      / sum by(exported_service) (rate(traefik_service_requests_total{job="traefik"}[5m]))
+      > 5
+    for: 5m
+    labels:
+      severity: warning

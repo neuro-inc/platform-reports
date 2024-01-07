@@ -11,7 +11,7 @@ dependencies:
   - name: thanos
     version: "0.3.23"
     repository: "https://kubernetes-charts.banzaicloud.com"
-    condition: objectStore.supported
+    condition: prometheusRemoteStorageEnabled
   - name: grafana
     version: "7.0.11"
     repository: "https://grafana.github.io/helm-charts"

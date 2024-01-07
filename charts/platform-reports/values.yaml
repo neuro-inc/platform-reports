@@ -4,10 +4,6 @@ nodePoolLabels:
   nodePool: platform.neuromation.io/nodepool
   preemptible: platform.neuromation.io/preemptible
 
-objectStore:
-  supported: true
-  configMapName: thanos-object-storage-config
-
 platform:
   accessTokenCookieNames: sat,dat
   token: {}
@@ -54,6 +50,8 @@ grafanaProxy:
     ingressClassName: ""
     hosts: []
     annotations: {}
+
+prometheusRemoteStorageEnabled: true
 
 kube-prometheus-stack:
   nameOverride: prometheus

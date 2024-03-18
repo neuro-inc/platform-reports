@@ -170,9 +170,9 @@ def metrics_config(
 
 
 @pytest.fixture
-async def metrics_server_factory() -> Callable[
-    [MetricsConfig], AbstractAsyncContextManager[URL]
-]:
+async def metrics_server_factory() -> (
+    Callable[[MetricsConfig], AbstractAsyncContextManager[URL]]
+):
     @asynccontextmanager
     async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
         app = create_metrics_app(metrics_config)

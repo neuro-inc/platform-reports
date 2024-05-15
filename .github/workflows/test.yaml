@@ -12,7 +12,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version-file: .python-version
     - name: Cache packages
       uses: actions/cache@v3
       with:
@@ -34,7 +34,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version-file: .python-version
     - name: Cache packages
       uses: actions/cache@v3
       with:
@@ -63,7 +63,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version-file: .python-version
     - name: Cache packages
       uses: actions/cache@v3
       with:
@@ -100,7 +100,7 @@ jobs:
     - name: Install python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version-file: .python-version
     - name: Cache packages
       uses: actions/cache@v3
       with:
@@ -117,7 +117,7 @@ jobs:
     - name: Build Docker image
       run: make docker_build
     - name: Upload image artifact
-      uses: neuro-inc/upload-image-action@v21.9.2
+      uses: neuro-inc/upload-image-action@v24.4.0
       with:
         image: platform-reports
         token: ${{ github.token }}

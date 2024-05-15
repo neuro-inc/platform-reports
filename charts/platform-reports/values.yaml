@@ -306,7 +306,8 @@ thanos:
     # NOTE: This is only the service references for the sidecar
     enabled: true
     selector:
-      app: null
+      app: ~
+      service: prometheus
       app.kubernetes.io/name: prometheus
 
   priorityClassName: ""

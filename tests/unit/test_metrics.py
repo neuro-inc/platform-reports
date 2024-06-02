@@ -895,7 +895,6 @@ class TestPodCreditsCollector:
                             name=name, created_at=datetime.now(timezone.utc)
                         ),
                         status=PodStatus(phase=PodPhase.RUNNING),
-                        containers=[],
                     )
                     for name in pod_names
                 ]

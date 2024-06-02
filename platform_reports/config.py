@@ -56,21 +56,6 @@ class PlatformServiceConfig:
 
 
 @dataclass(frozen=True)
-class ZipkinConfig:
-    url: URL
-    app_name: str
-    sample_rate: float = 0
-
-
-@dataclass(frozen=True)
-class SentryConfig:
-    dsn: URL
-    cluster_name: str
-    app_name: str
-    sample_rate: float = 0
-
-
-@dataclass(frozen=True)
 class MetricsConfig:
     server: ServerConfig
     kube: KubeConfig
@@ -87,9 +72,6 @@ class MetricsConfig:
     node_preemptible_label: str = "platform.neuromation.io/preemptible"
     job_label: str = "platform.neuromation.io/job"
 
-    zipkin: ZipkinConfig | None = None
-    sentry: SentryConfig | None = None
-
 
 @dataclass(frozen=True)
 class PrometheusProxyConfig:
@@ -101,9 +83,6 @@ class PrometheusProxyConfig:
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
 
-    zipkin: ZipkinConfig | None = None
-    sentry: SentryConfig | None = None
-
 
 @dataclass(frozen=True)
 class GrafanaProxyConfig:
@@ -114,9 +93,6 @@ class GrafanaProxyConfig:
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
-
-    zipkin: ZipkinConfig | None = None
-    sentry: SentryConfig | None = None
 
 
 class EnvironConfigFactory:
@@ -167,8 +143,6 @@ class EnvironConfigFactory:
                 "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
             ),
             job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
-            zipkin=self.create_zipkin(default_app_name="platform-metrics-exporter"),
-            sentry=self.create_sentry(default_app_name="platform-metrics-exporter"),
         )
 
     def create_prometheus_proxy(self) -> PrometheusProxyConfig:
@@ -181,8 +155,6 @@ class EnvironConfigFactory:
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
             ].split(","),
-            zipkin=self.create_zipkin(default_app_name="platform-prometheus-proxy"),
-            sentry=self.create_sentry(default_app_name="platform-prometheus-proxy"),
         )
 
     def create_grafana_proxy(self) -> GrafanaProxyConfig:
@@ -195,8 +167,6 @@ class EnvironConfigFactory:
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
             ].split(","),
-            zipkin=self.create_zipkin(default_app_name="platform-grafana-proxy"),
-            sentry=self.create_sentry(default_app_name="platform-grafana-proxy"),
         )
 
     def _create_server(self) -> ServerConfig:
@@ -261,29 +231,5 @@ class EnvironConfigFactory:
                     "NP_KUBE_CONN_KEEP_ALIVE_TIMEOUT",
                     KubeConfig.conn_keep_alive_timeout_s,
                 )
-            ),
-        )
-
-    def create_zipkin(self, default_app_name: str) -> ZipkinConfig | None:
-        if "NP_ZIPKIN_URL" not in self._environ:
-            return None
-
-        url = URL(self._environ["NP_ZIPKIN_URL"])
-        app_name = self._environ.get("NP_ZIPKIN_APP_NAME", default_app_name)
-        sample_rate = float(
-            self._environ.get("NP_ZIPKIN_SAMPLE_RATE", ZipkinConfig.sample_rate)
-        )
-        return ZipkinConfig(url=url, app_name=app_name, sample_rate=sample_rate)
-
-    def create_sentry(self, default_app_name: str) -> SentryConfig | None:
-        if "NP_SENTRY_DSN" not in self._environ:
-            return None
-
-        return SentryConfig(
-            dsn=URL(self._environ["NP_SENTRY_DSN"]),
-            cluster_name=self._environ["NP_SENTRY_CLUSTER_NAME"],
-            app_name=self._environ.get("NP_SENTRY_APP_NAME", default_app_name),
-            sample_rate=float(
-                self._environ.get("NP_SENTRY_SAMPLE_RATE", SentryConfig.sample_rate)
             ),
         )

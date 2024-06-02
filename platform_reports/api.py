@@ -28,16 +28,7 @@ from jose import jwt
 from multidict import CIMultiDict, CIMultiDictProxy
 from neuro_auth_client import AuthClient, Permission
 from neuro_config_client.client import ConfigClient
-from neuro_logging import (
-    init_logging,
-    make_request_logging_trace_config,
-    make_sentry_trace_config,
-    make_zipkin_trace_config,
-    notrace,
-    setup_sentry,
-    setup_zipkin,
-    setup_zipkin_tracer,
-)
+from neuro_logging import init_logging, setup_sentry
 from neuro_sdk import Client as ApiClient, Factory as ClientFactory
 
 from .auth import AuthService
@@ -47,9 +38,7 @@ from .config import (
     MetricsConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
-    SentryConfig,
     ServerConfig,
-    ZipkinConfig,
 )
 from .kube_client import KubeClient
 from .metrics import (
@@ -73,7 +62,6 @@ class ProbesHandler:
     def register(self) -> list[AbstractRoute]:
         return self._app.router.add_routes([aiohttp.web.get("/ping", self.handle_ping)])
 
-    @notrace
     async def handle_ping(self, request: Request) -> Response:
         return Response(text="Pong")
 
@@ -361,11 +349,9 @@ async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
 
 
 @asynccontextmanager
-async def create_api_client(
-    config: PlatformServiceConfig, trace_configs: list[aiohttp.TraceConfig]
-) -> AsyncIterator[ApiClient]:
+async def create_api_client(config: PlatformServiceConfig) -> AsyncIterator[ApiClient]:
     tmp_config = Path(mktemp())
-    platform_api_factory = ClientFactory(tmp_config, trace_configs=trace_configs)
+    platform_api_factory = ClientFactory(tmp_config)
     await platform_api_factory.login_with_token(url=config.url, token=config.token)
     client = None
     try:
@@ -393,35 +379,25 @@ async def add_version_to_header(request: Request, response: StreamResponse) -> N
 
 def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
-    probes_routes = ProbesHandler(app).register()
+    ProbesHandler(app).register()
     MetricsHandler(app).register()
 
     app["config"] = config
-
-    trace_configs = make_logging_trace_configs() + make_tracing_trace_configs(
-        config.zipkin, config.sentry
-    )
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
             logger.info("Initializing Config client")
             config_client = await exit_stack.enter_async_context(
-                ConfigClient(
-                    config.platform_config.url,
-                    config.platform_config.token,
-                    trace_configs=trace_configs,
-                )
+                ConfigClient(config.platform_config.url, config.platform_config.token)
             )
 
             logger.info("Initializing Api client")
             api_client = await exit_stack.enter_async_context(
-                create_api_client(config.platform_api, trace_configs)
+                create_api_client(config.platform_api)
             )
 
             logger.info("Initializing Kube client")
-            kube_client = await exit_stack.enter_async_context(
-                KubeClient(config.kube, trace_configs=make_logging_trace_configs())
-            )
+            kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
             node = await kube_client.get_node(config.node_name)
             zone = (
                 node.metadata.labels.get("failure-domain.beta.kubernetes.io/zone")
@@ -492,7 +468,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             elif config.cloud_provider == "azure":
                 assert instance_type
                 prices_client = await exit_stack.enter_async_context(
-                    aiohttp.ClientSession(trace_configs=trace_configs)
+                    aiohttp.ClientSession()
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AzureNodePriceCollector(
@@ -551,9 +527,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
 
     app.cleanup_ctx.append(_init_app)
 
-    if config.zipkin:
-        setup_zipkin(app, skip_routes=probes_routes)
-
     return app
 
 
@@ -562,14 +535,10 @@ def create_prometheus_proxy_app(
 ) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     api_v1_app = aiohttp.web.Application(middlewares=[handle_exceptions])
-    probes_routes = ProbesHandler(api_v1_app).register()
+    ProbesHandler(api_v1_app).register()
     PrometheusProxyHandler(api_v1_app).register()
 
     app.add_subapp("/api/v1", api_v1_app)
-
-    trace_configs = make_logging_trace_configs() + make_tracing_trace_configs(
-        config.zipkin, config.sentry
-    )
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
@@ -577,17 +546,13 @@ def create_prometheus_proxy_app(
 
             logger.info("Initializing Auth client")
             auth_client = await exit_stack.enter_async_context(
-                AuthClient(
-                    config.platform_auth.url,
-                    config.platform_auth.token,
-                    trace_configs,
-                )
+                AuthClient(config.platform_auth.url, config.platform_auth.token)
             )
             api_v1_app["auth_client"] = auth_client
 
             logger.info("Initializing Api client")
             api_client = await exit_stack.enter_async_context(
-                create_api_client(config.platform_api, trace_configs)
+                create_api_client(config.platform_api)
             )
             api_v1_app["api_client"] = auth_client
 
@@ -596,11 +561,7 @@ def create_prometheus_proxy_app(
 
             logger.info("Initializing Prometheus client")
             prometheus_client = await exit_stack.enter_async_context(
-                aiohttp.ClientSession(
-                    auto_decompress=False,
-                    timeout=config.timeout,
-                    trace_configs=trace_configs,
-                )
+                aiohttp.ClientSession(auto_decompress=False, timeout=config.timeout)
             )
             api_v1_app["prometheus_client"] = prometheus_client
 
@@ -608,20 +569,13 @@ def create_prometheus_proxy_app(
 
     app.cleanup_ctx.append(_init_app)
 
-    if config.zipkin:
-        setup_zipkin(app, skip_routes=probes_routes)
-
     return app
 
 
 def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Application:
     app = aiohttp.web.Application(middlewares=[handle_exceptions])
-    probes_routes = ProbesHandler(app).register()
+    ProbesHandler(app).register()
     GrafanaProxyHandler(app).register()
-
-    trace_configs = make_logging_trace_configs() + make_tracing_trace_configs(
-        config.zipkin, config.sentry
-    )
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
@@ -629,17 +583,13 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
             logger.info("Initializing Auth client")
             auth_client = await exit_stack.enter_async_context(
-                AuthClient(
-                    config.platform_auth.url,
-                    config.platform_auth.token,
-                    trace_configs,
-                )
+                AuthClient(config.platform_auth.url, config.platform_auth.token)
             )
             app["auth_client"] = auth_client
 
             logger.info("Initializing Api client")
             api_client = await exit_stack.enter_async_context(
-                create_api_client(config.platform_api, trace_configs)
+                create_api_client(config.platform_api)
             )
             app["api_client"] = auth_client
 
@@ -648,11 +598,7 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
             logger.info("Initializing Grafana client")
             grafana_client = await exit_stack.enter_async_context(
-                aiohttp.ClientSession(
-                    auto_decompress=False,
-                    timeout=config.timeout,
-                    trace_configs=trace_configs,
-                )
+                aiohttp.ClientSession(auto_decompress=False, timeout=config.timeout)
             )
             app["grafana_client"] = grafana_client
 
@@ -662,55 +608,14 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
     app.on_response_prepare.append(add_version_to_header)
 
-    if config.zipkin:
-        setup_zipkin(app, skip_routes=probes_routes)
-
     return app
-
-
-def make_logging_trace_configs() -> list[aiohttp.TraceConfig]:
-    return [make_request_logging_trace_config()]
-
-
-def make_tracing_trace_configs(
-    zipkin: ZipkinConfig | None, sentry: SentryConfig | None
-) -> list[aiohttp.TraceConfig]:
-    trace_configs = []
-
-    if zipkin:
-        trace_configs.append(make_zipkin_trace_config())
-
-    if sentry:
-        trace_configs.append(make_sentry_trace_config())
-
-    return trace_configs
-
-
-def setup_tracing(
-    server: ServerConfig, zipkin: ZipkinConfig | None, sentry: SentryConfig | None
-) -> None:  # pragma: no coverage
-    if zipkin:
-        setup_zipkin_tracer(
-            zipkin.app_name, server.host, server.port, zipkin.url, zipkin.sample_rate
-        )
-
-    if sentry:
-        setup_sentry(
-            sentry.dsn,
-            app_name=sentry.app_name,
-            cluster_name=sentry.cluster_name,
-            sample_rate=sentry.sample_rate,
-        )
 
 
 def run_metrics_server() -> None:  # pragma: no coverage
     init_logging()
-
     config = EnvironConfigFactory().create_metrics()
     logging.info("Loaded config: %r", config)
-
-    setup_tracing(config.server, config.zipkin, config.sentry)
-
+    setup_sentry(health_check_url_path="/ping")
     aiohttp.web.run_app(
         create_metrics_app(config), host=config.server.host, port=config.server.port
     )
@@ -718,12 +623,9 @@ def run_metrics_server() -> None:  # pragma: no coverage
 
 def run_prometheus_proxy() -> None:  # pragma: no coverage
     init_logging()
-
     config = EnvironConfigFactory().create_prometheus_proxy()
     logging.info("Loaded config: %r", config)
-
-    setup_tracing(config.server, config.zipkin, config.sentry)
-
+    setup_sentry()
     aiohttp.web.run_app(
         create_prometheus_proxy_app(config),
         host=config.server.host,
@@ -733,12 +635,9 @@ def run_prometheus_proxy() -> None:  # pragma: no coverage
 
 def run_grafana_proxy() -> None:  # pragma: no coverage
     init_logging()
-
     config = EnvironConfigFactory().create_grafana_proxy()
     logging.info("Loaded config: %r", config)
-
-    setup_tracing(config.server, config.zipkin, config.sentry)
-
+    setup_sentry(health_check_url_path="/ping")
     aiohttp.web.run_app(
         create_grafana_proxy_app(config),
         host=config.server.host,

@@ -31,7 +31,7 @@ spec:
           command: ["prometheus-proxy"]
           env:
             {{- if .Values.logLevel }}
-            - name: NP_LOG_LEVEL
+            - name: LOG_LEVEL
               value: {{ .Values.logLevel }}
             {{- end }}
             - name: NP_CLUSTER_NAME
@@ -50,18 +50,14 @@ spec:
 {{- end }}
             - name: NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES
               value: {{ .Values.platform.accessTokenCookieNames }}
-            {{- if .Values.zipkin }}
-            - name: NP_ZIPKIN_URL
-              value: {{ .Values.zipkin.url }}
-            - name: NP_ZIPKIN_SAMPLE_RATE
-              value: {{ .Values.zipkin.sampleRate | default 0 | quote }}
-            {{- end }}
             {{- if .Values.sentry }}
-            - name: NP_SENTRY_DSN
+            - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn }}
-            - name: NP_SENTRY_CLUSTER_NAME
+            - name: SENTRY_CLUSTER_NAME
               value: {{ .Values.sentry.clusterName }}
-            - name: NP_SENTRY_SAMPLE_RATE
+            - name: SENTRY_APP_NAME
+              value: platform-prometheus-proxy
+            - name: SENTRY_SAMPLE_RATE
               value: {{ .Values.sentry.sampleRate | default 0 | quote }}
             {{- end }}
           {{- if .Values.prometheusProxy.resources }}

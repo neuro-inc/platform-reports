@@ -612,7 +612,7 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
 
 def run_metrics_server() -> None:  # pragma: no coverage
-    init_logging()
+    init_logging(health_check_url_path="/ping")
     config = EnvironConfigFactory().create_metrics()
     logging.info("Loaded config: %r", config)
     setup_sentry(health_check_url_path="/ping")
@@ -634,7 +634,7 @@ def run_prometheus_proxy() -> None:  # pragma: no coverage
 
 
 def run_grafana_proxy() -> None:  # pragma: no coverage
-    init_logging()
+    init_logging(health_check_url_path="/ping")
     config = EnvironConfigFactory().create_grafana_proxy()
     logging.info("Loaded config: %r", config)
     setup_sentry(health_check_url_path="/ping")

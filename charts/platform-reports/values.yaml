@@ -400,8 +400,6 @@ grafana:
 
   priorityClassName: ""
 
-zipkin: {}
-
 sentry: {}
 
 priorityClassName: ""

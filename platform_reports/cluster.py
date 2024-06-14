@@ -17,7 +17,7 @@ class ClusterHolder(abc.ABC):
         pass
 
 
-class RefreshingClusterHolder(ClusterHolder):
+class RefreshableClusterHolder(ClusterHolder):
     def __init__(
         self,
         *,

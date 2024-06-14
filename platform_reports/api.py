@@ -32,7 +32,7 @@ from neuro_logging import init_logging, setup_sentry
 from neuro_sdk import Client as ApiClient, Factory as ClientFactory
 
 from .auth import AuthService
-from .cluster import RefreshingClusterHolder
+from .cluster import RefreshableClusterHolder
 from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
@@ -392,7 +392,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 ConfigClient(config.platform_config.url, config.platform_config.token)
             )
             cluster_holder = await exit_stack.enter_async_context(
-                RefreshingClusterHolder(
+                RefreshableClusterHolder(
                     config_client=config_client, cluster_name=config.cluster_name
                 )
             )

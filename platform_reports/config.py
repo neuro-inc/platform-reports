@@ -67,10 +67,9 @@ class MetricsConfig:
     region: str = ""
     gcp_service_account_key_path: Path | None = None
     azure_prices_url: URL = URL("https://prices.azure.com")
-    jobs_namespace: str = ""
     node_pool_label: str = "platform.neuromation.io/nodepool"
     node_preemptible_label: str = "platform.neuromation.io/preemptible"
-    job_label: str = "platform.neuromation.io/job"
+    pod_preset_label: str = "platform.apolo.us/preset"
 
 
 @dataclass(frozen=True)
@@ -133,16 +132,15 @@ class EnvironConfigFactory:
                     "NP_AZURE_PRICES_URL", str(MetricsConfig.azure_prices_url)
                 )
             ),
-            jobs_namespace=self._environ.get(
-                "NP_JOBS_NAMESPACE", MetricsConfig.jobs_namespace
-            ),
             node_pool_label=self._environ.get(
                 "NP_NODE_POOL_LABEL", MetricsConfig.node_pool_label
             ),
             node_preemptible_label=self._environ.get(
                 "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
             ),
-            job_label=self._environ.get("NP_JOB_LABEL", MetricsConfig.job_label),
+            pod_preset_label=self._environ.get(
+                "NP_POD_PRESET_LABEL", MetricsConfig.pod_preset_label
+            ),
         )
 
     def create_prometheus_proxy(self) -> PrometheusProxyConfig:

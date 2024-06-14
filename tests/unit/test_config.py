@@ -58,10 +58,9 @@ class TestEnvironConfigFactory:
             "NP_REGION": "us-east-1",
             "NP_GCP_SERVICE_ACCOUNT_KEY_PATH": "sa.json",
             "NP_AZURE_PRICES_URL": "https://azure-prices",
-            "NP_JOBS_NAMESPACE": "platform-jobs",
             "NP_NODE_POOL_LABEL": "node-pool",
             "NP_NODE_PREEMPTIBLE_LABEL": "preemptible",
-            "NP_JOB_LABEL": "job",
+            "NP_POD_PRESET_LABEL": "preset",
             "NP_KUBE_URL": "https://kubernetes.default.svc",
         }
 
@@ -85,10 +84,9 @@ class TestEnvironConfigFactory:
             region="us-east-1",
             gcp_service_account_key_path=Path("sa.json"),
             azure_prices_url=URL("https://azure-prices"),
-            jobs_namespace="platform-jobs",
             node_pool_label="node-pool",
             node_preemptible_label="preemptible",
-            job_label="job",
+            pod_preset_label="preset",
         )
 
     def test_create_prometheus_proxy_defaults(self) -> None:

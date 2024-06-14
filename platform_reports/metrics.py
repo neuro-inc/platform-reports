@@ -18,20 +18,17 @@ import aiohttp
 from aiobotocore.client import AioBaseClient
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import ConfigClient, EnergySchedule
+from neuro_config_client import EnergySchedule
 from neuro_logging import new_trace_cm, trace_cm
-from neuro_sdk import (
-    Client as ApiClient,
-    IllegalArgumentError,
-    JobDescription,
-    ResourceNotFound,
-)
 from yarl import URL
 
-from .kube_client import KubeClient
+from .cluster import ClusterHolder
+from .kube_client import KubeClient, Pod
 
 logger = logging.getLogger(__name__)
 
+
+UTC = timezone.utc
 
 GOOGLE_COMPUTE_ENGINE_ID = "services/6F81-5844-456A"
 
@@ -73,13 +70,13 @@ class Collector(Generic[_TValue]):
 
     async def start(self) -> Awaitable[None]:
         self._value = await self.get_latest_value()
-        logger.info("Updated value to %s", self._value)
+        logger.debug("Updated value to %s", self._value)
         return self._update()
 
     async def _update(self) -> None:
         while True:
             try:
-                logger.info("Next update will be in %s seconds", self._interval_s)
+                logger.debug("Next update will be in %s seconds", self._interval_s)
                 await asyncio.sleep(self._interval_s)
 
                 async with new_trace_cm(
@@ -87,7 +84,7 @@ class Collector(Generic[_TValue]):
                 ):
                     self._value = await self.get_latest_value()
 
-                logger.info("Updated value to %s", self._value)
+                logger.debug("Updated value to %s", self._value)
             except asyncio.CancelledError:
                 raise
             except Exception as ex:
@@ -116,7 +113,7 @@ class _NodePriceCollector(Collector[Price]):
         self._node_created_at = node_created_at
 
     async def get_latest_value(self) -> Price:
-        node_up_time = datetime.now(timezone.utc) - self._node_created_at
+        node_up_time = datetime.now(UTC) - self._node_created_at
         price_per_hour = await self.get_price_per_hour()
         return Price(
             currency=price_per_hour.currency,
@@ -132,21 +129,19 @@ class _NodePriceCollector(Collector[Price]):
 class ConfigPriceCollector(_NodePriceCollector):
     def __init__(
         self,
-        config_client: ConfigClient,
-        cluster_name: str,
+        cluster_holder: ClusterHolder,
         node_created_at: datetime,
         node_pool_name: str,
         interval_s: float = 60,
     ) -> None:
         super().__init__(node_created_at, Price(), interval_s)
 
-        self._config_client = config_client
-        self._cluster_name = cluster_name
+        self._cluster_holder = cluster_holder
         self._node_pool_name = node_pool_name
         self._client: Any = None
 
     async def get_price_per_hour(self) -> Price:
-        cluster = await self._config_client.get_cluster(self._cluster_name)
+        cluster = self._cluster_holder.cluster
         assert cluster.orchestrator is not None
         for resource_pool in cluster.orchestrator.resource_pool_types:
             if resource_pool.name == self._node_pool_name:
@@ -333,11 +328,10 @@ class AzureNodePriceCollector(_NodePriceCollector):
 class GCPNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
-        config_client: ConfigClient,
+        cluster_holder: ClusterHolder,
         service_account_path: Path,
         node_created_at: datetime,
         node_pool_name: str,
-        cluster_name: str,
         region: str,
         instance_type: str,
         is_preemptible: bool,
@@ -345,9 +339,8 @@ class GCPNodePriceCollector(_NodePriceCollector):
     ) -> None:
         super().__init__(node_created_at, Price(), interval_s)
 
-        self._config_client = config_client
+        self._cluster_holder = cluster_holder
         self._service_account_path = service_account_path
-        self._cluster_name = cluster_name
         self._node_pool_name = node_pool_name
         self._region = region
         self._instance_family = self._get_instance_family(instance_type)
@@ -373,7 +366,7 @@ class GCPNodePriceCollector(_NodePriceCollector):
         return "preemptible" if is_preemptible else "ondemand"
 
     async def get_price_per_hour(self) -> Price:
-        cluster = await self._config_client.get_cluster(self._cluster_name)
+        cluster = self._cluster_holder.cluster
         assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
         if self._node_pool_name not in resource_pools:
@@ -482,81 +475,69 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
     def __init__(
         self,
         kube_client: KubeClient,
-        api_client: ApiClient,
+        cluster_holder: ClusterHolder,
         node_name: str,
-        jobs_namespace: str,
-        job_label: str,
+        pod_preset_label: str,
         interval_s: float = 15,
     ) -> None:
         super().__init__({}, interval_s)
 
         self._kube_client = kube_client
-        self._api_client = api_client
-        self._jobs_namespace = jobs_namespace
-        self._job_label = job_label
+        self._pod_preset_label = pod_preset_label
+        self._cluster_holder = cluster_holder
         self._node_name = node_name
 
     async def get_latest_value(self) -> Mapping[str, Decimal]:
-        # Calculate prices only for pods in Pending and Running phases
-        pods = await self._kube_client.get_pods(
-            namespace=self._jobs_namespace,
-            label_selector=self._job_label,
-            field_selector=",".join(
-                (
-                    f"spec.nodeName={self._node_name}",
-                    "status.phase!=Failed",
-                    "status.phase!=Succeeded",
-                    "status.phase!=Unknown",
-                ),
-            ),
-        )
-        if not pods:
-            logger.info("Node doesn't have any pods in Running phase")
+        cluster = self._cluster_holder.cluster
+        if cluster.orchestrator is None:
+            logger.warning("Cluster doesn't have orchestrator config")
             return {}
+        presets = {
+            preset.name: preset for preset in cluster.orchestrator.resource_presets
+        }
+        if not presets:
+            return {}
+        pods = await self._kube_client.get_pods(
+            label_selector=self._pod_preset_label,
+            field_selector=f"spec.nodeName={self._node_name},status.phase!=Pending",
+        )
         result: dict[str, Decimal] = {}
         for pod in pods:
             pod_name = pod.metadata.name
-            logger.debug("Checking pod %r credits per hour", pod_name)
-            try:
-                job = await self._api_client.jobs.status(pod_name)
-            except ResourceNotFound:
-                logger.warning("Job %r not found", pod_name)
+            preset_name = pod.metadata.labels[self._pod_preset_label]
+            if not (preset := presets.get(preset_name)):
+                logger.warning(
+                    "Pod %s resource preset %s not found", pod_name, preset_name
+                )
                 continue
-            except IllegalArgumentError:
-                logger.warning("Job %r not found", pod_name)
-                continue
-            if not self._should_collect(job):
-                logger.debug("Pod %r credits won't be collected", pod_name)
-                continue
-            logger.debug("Pod %r credits: %s", pod_name, job.total_price_credits)
-            result[pod_name] = job.total_price_credits
+            credits_total = self._get_pod_credits_total(pod, preset.credits_per_hour)
+            logger.debug("Pod %r credits total: %s", pod_name, credits_total)
+            result[pod_name] = credits_total
         return result
 
-    def _should_collect(self, job: JobDescription) -> bool:
-        finished_at = job.history.finished_at
-        if finished_at is None:
-            return True
-        # Pod credits should not be collected after job finished.
-        # Ensure metric is exported during two intervals after job finished
-        # to allow Prometheus to collect it.
-        return datetime.now(timezone.utc) - finished_at <= timedelta(
-            seconds=2 * self._interval_s
-        )
+    @classmethod
+    def _get_pod_credits_total(cls, pod: Pod, credits_per_hour: Decimal) -> Decimal:
+        if pod.status.is_running:
+            run_time = datetime.now(UTC) - pod.status.start_date
+        elif pod.status.is_terminated:
+            run_time = pod.status.finish_date - pod.status.start_date
+        else:
+            run_time = timedelta()
+        credits_total = Decimal(run_time.total_seconds()) * credits_per_hour / 3600
+        return round(credits_total, 3)
 
 
 class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
     def __init__(
         self,
-        config_client: ConfigClient,
-        cluster_name: str,
+        cluster_holder: ClusterHolder,
         node_pool_name: str,
         interval_s: float = 300,
         current_time_factory: Callable[[tzinfo], datetime] = datetime.now,
     ) -> None:
         super().__init__(NodeEnergyConsumption(), interval_s)
 
-        self._config_client = config_client
-        self._cluster_name = cluster_name
+        self._cluster_holder = cluster_holder
         self._node_pool_name = node_pool_name
         self._default_schedule = EnergySchedule(name="default")
         self._custom_schedules: Sequence[EnergySchedule] = []
@@ -585,7 +566,7 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
         )
 
     async def get_latest_value(self) -> NodeEnergyConsumption:
-        cluster = await self._config_client.get_cluster(self._cluster_name)
+        cluster = self._cluster_holder.cluster
         assert cluster.cloud_provider is not None
         energy_consumption = NodeEnergyConsumption()
         for node_pool in cluster.cloud_provider.node_pools:
@@ -598,8 +579,7 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
                 break
         else:
             logger.warning(
-                f"Node pool '{self._node_pool_name}' was not found "
-                f"in cluster '{self._cluster_name}."
+                "Node pool %s was not found in cluster", self._node_pool_name
             )
         if cluster.energy is None:
             return energy_consumption

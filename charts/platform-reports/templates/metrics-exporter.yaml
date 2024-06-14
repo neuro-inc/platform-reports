@@ -33,7 +33,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: {{ .Values.nodePoolLabels.job }}
+                  - key: {{ .Values.platform.nodeLabels.job }}
                     operator: Exists
       tolerations:
         - effect: NoSchedule
@@ -89,14 +89,12 @@ spec:
               value: /root/service_account/key.json
             {{- end }}
             {{- end }}
-            - name: NP_JOBS_NAMESPACE
-              value: {{ .Values.platformJobs.namespace }}
             - name: NP_NODE_POOL_LABEL
-              value: {{ .Values.nodePoolLabels.nodePool }}
+              value: {{ .Values.platform.nodeLabels.nodePool }}
             - name: NP_NODE_PREEMPTIBLE_LABEL
-              value: {{ .Values.nodePoolLabels.preemptible }}
-            - name: NP_JOB_LABEL
-              value: {{ .Values.platformJobs.label }}
+              value: {{ .Values.platform.nodeLabels.preemptible }}
+            - name: NP_POD_PRESET_LABEL
+              value: {{ .Values.platform.podLabels.preset }}
             {{- if .Values.sentry }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn }}

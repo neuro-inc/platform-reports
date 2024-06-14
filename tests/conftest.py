@@ -10,10 +10,10 @@ from pathlib import Path
 import pytest
 
 pytest_plugins = [
-    "tests.integration.platform_auth",
-    "tests.integration.platform_config",
-    "tests.integration.platform_api",
-    "tests.integration.kube",
+    "tests.integration.conftest_platform_auth",
+    "tests.integration.conftest_platform_config",
+    "tests.integration.conftest_platform_api",
+    "tests.integration.conftest_kube",
 ]
 
 
@@ -50,7 +50,7 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
 
 @pytest.fixture(scope="session")
 def cluster_dashboards_expressions(
-    dashboards_expressions: dict[str, Sequence[str]]
+    dashboards_expressions: dict[str, Sequence[str]],
 ) -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():
@@ -61,7 +61,7 @@ def cluster_dashboards_expressions(
 
 @pytest.fixture(scope="session")
 def project_dashboards_expressions(
-    dashboards_expressions: dict[str, Sequence[str]]
+    dashboards_expressions: dict[str, Sequence[str]],
 ) -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():
@@ -72,7 +72,7 @@ def project_dashboards_expressions(
 
 @pytest.fixture(scope="session")
 def org_dashboards_expressions(
-    dashboards_expressions: dict[str, Sequence[str]]
+    dashboards_expressions: dict[str, Sequence[str]],
 ) -> dict[str, Sequence[str]]:
     result: dict[str, Sequence[str]] = {}
     for key, exprs in dashboards_expressions.items():

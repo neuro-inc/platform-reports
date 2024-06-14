@@ -1,16 +1,14 @@
-nodePoolLabels:
-  job: platform.neuromation.io/job
-  gpu: platform.neuromation.io/accelerator
-  nodePool: platform.neuromation.io/nodepool
-  preemptible: platform.neuromation.io/preemptible
-
 platform:
   accessTokenCookieNames: sat,dat
   token: {}
 
-platformJobs:
-  namespace: platform-jobs
-  label: platform.neuromation.io/job
+  nodeLabels:
+    job: platform.neuromation.io/job
+    nodePool: platform.neuromation.io/nodepool
+    preemptible: platform.neuromation.io/preemptible
+
+  podLabels:
+    preset: platform.neuromation.io/preset
 
 image:
   repository: "$IMAGE_REPO"

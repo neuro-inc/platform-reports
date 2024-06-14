@@ -34,6 +34,14 @@ def platform_config_app() -> aiohttp.web.Application:
                             "currency": "USD",
                         }
                     ],
+                    "resource_presets": [
+                        {
+                            "name": "test-preset",
+                            "cpu": 1,
+                            "memory": 1024**3,
+                            "credits_per_hour": "3600",
+                        }
+                    ],
                 },
                 "storage": {"url": f"https://{name}.org.neu.ro/api/v1/storage"},
                 "blob_storage": {"url": f"https://{name}.org.neu.ro/api/v1/blob"},

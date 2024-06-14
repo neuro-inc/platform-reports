@@ -1,8 +1,6 @@
 import asyncio
-from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Protocol
 
 import pytest
 from neuro_config_client import (
@@ -15,6 +13,8 @@ from neuro_config_client import (
 from platform_reports.cluster import ClusterHolder
 from platform_reports.kube_client import KubeClient, Node
 from platform_reports.metrics import PodCreditsCollector
+
+from .conftest_kube import KubePodFactory
 
 
 class _TestClusterHolder(ClusterHolder):
@@ -55,15 +55,6 @@ def cluster_holder(cluster: Cluster) -> ClusterHolder:
     return _TestClusterHolder(cluster)
 
 
-class KubePodFactory(Protocol):
-    async def __call__(
-        self,
-        namespace: str,
-        pod: dict[str, Any],
-    ) -> dict[str, Any]:
-        pass
-
-
 class TestPodCreditsCollector:
     @pytest.fixture
     def collector(
@@ -75,23 +66,6 @@ class TestPodCreditsCollector:
             node_name=kube_node.metadata.name,
             pod_preset_label="preset",
         )
-
-    @pytest.fixture
-    async def kube_pod_factory(
-        self, kube_client: KubeClient
-    ) -> AsyncIterator[KubePodFactory]:
-        pods = []
-
-        async def _create(namespace: str, pod: dict[str, Any]) -> dict[str, Any]:
-            pod = await kube_client.create_raw_pod(namespace, pod)
-            pods.append(pod)
-            return pod
-
-        yield _create
-
-        for pod in pods:
-            metadata = pod["metadata"]
-            await kube_client.delete_pod(metadata["namespace"], metadata["name"])
 
     async def test_get_latest_value__pod_running(
         self,
@@ -121,16 +95,17 @@ class TestPodCreditsCollector:
                 },
             },
         )
+        pod_namespace = pod["metadata"]["namespace"]
         pod_name = pod["metadata"]["name"]
 
-        await kube_client.wait_pod_is_running("default", pod_name)
+        await kube_client.wait_pod_is_running(pod_namespace, pod_name)
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
 
         value = await collector.get_latest_value()
 
         assert pod_name in value
-        assert value[pod_name] >= Decimal(5)
+        assert value[pod_name] >= Decimal(2)
 
     async def test_get_latest_value__pod_terminated(
         self,
@@ -154,17 +129,18 @@ class TestPodCreditsCollector:
                             "name": "ubuntu",
                             "image": "ubuntu:20.04",
                             "command": ["bash"],
-                            "args": ["-c", "sleep 5"],
+                            "args": ["-c", "sleep 2"],
                         }
                     ],
                 },
             },
         )
+        pod_namespace = pod["metadata"]["namespace"]
         pod_name = pod["metadata"]["name"]
 
-        await kube_client.wait_pod_is_terminated("default", pod_name)
+        await kube_client.wait_pod_is_terminated(pod_namespace, pod_name)
 
         value = await collector.get_latest_value()
 
         assert pod_name in value
-        assert value[pod_name] >= Decimal(5)
+        assert value[pod_name] >= Decimal(2)

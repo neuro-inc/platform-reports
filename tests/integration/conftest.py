@@ -166,6 +166,7 @@ def metrics_config(
         kube=kube_config,
         cluster_name="default",
         node_name=kube_node.metadata.name,
+        pod_preset_label="preset",
     )
 
 

@@ -524,7 +524,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         else:
             run_time = timedelta()
         credits_total = Decimal(run_time.total_seconds()) * credits_per_hour / 3600
-        return round(credits_total, 3)
+        return round(credits_total, 2)
 
 
 class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):

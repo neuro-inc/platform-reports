@@ -871,7 +871,7 @@ class TestPodCreditsCollector:
                 label_selector: str | None = None,
             ) -> Sequence[Pod]:
                 assert namespace is None
-                assert label_selector == "preset"
+                assert label_selector is None
                 assert field_selector == "spec.nodeName=minikube,status.phase!=Pending"
                 return pods
 
@@ -893,7 +893,6 @@ class TestPodCreditsCollector:
                 kube_client=kube_client,
                 cluster_holder=cluster_holder,
                 node_name="minikube",
-                pod_preset_label="preset",
             )
 
         return _create
@@ -906,7 +905,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"preset": "test-preset"},
+                        labels={"platform.apolo.us/preset": "test-preset"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -938,7 +937,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"preset": "test-preset"},
+                        labels={"platform.apolo.us/preset": "test-preset"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -973,7 +972,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"preset": "unknown-preset"},
+                        labels={"platform.apolo.us/preset": "unknown-preset"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(

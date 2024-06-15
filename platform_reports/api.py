@@ -36,6 +36,7 @@ from .cluster import RefreshableClusterHolder
 from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
+    Label,
     MetricsConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -416,13 +417,13 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             app["instance_type"] = instance_type
             logger.info("Node instance type is %s", instance_type)
 
-            is_preemptible = config.node_preemptible_label in node.metadata.labels
+            is_preemptible = Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
             if is_preemptible:
                 logger.info("Node is preemptible")
             else:
                 logger.info("Node is not preemptible")
 
-            node_pool_name = node.metadata.labels.get(config.node_pool_label, "")
+            node_pool_name = node.metadata.labels.get(Label.NEURO_NODE_POOL_KEY, "")
             app["node_pool_name"] = node_pool_name
             logger.info("Node pool name is %s", node_pool_name)
 
@@ -495,7 +496,6 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     kube_client=kube_client,
                     cluster_holder=cluster_holder,
                     node_name=config.node_name,
-                    pod_preset_label=config.pod_preset_label,
                 )
             )
             app["pod_credits_collector"] = pod_credits_collector

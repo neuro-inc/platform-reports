@@ -4,11 +4,7 @@ platform:
 
   nodeLabels:
     job: platform.neuromation.io/job
-    nodePool: platform.neuromation.io/nodepool
-    preemptible: platform.neuromation.io/preemptible
 
-  podLabels:
-    preset: platform.neuromation.io/preset
 
 image:
   repository: "$IMAGE_REPO"
@@ -122,7 +118,7 @@ kube-prometheus-stack:
 
     metricLabelsAllowlist:
       - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
-      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/gpu-model]
+      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/gpu-model,platform.apolo.us/preset]
 
     priorityClassName: ""
 

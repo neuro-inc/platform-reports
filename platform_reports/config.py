@@ -13,6 +13,13 @@ from yarl import URL
 logger = logging.getLogger(__name__)
 
 
+class Label:
+    NEURO_NODE_POOL_KEY = "platform.neuromation.io/nodepool"
+    NEURO_PREEMPTIBLE_KEY = "platform.neuromation.io/preemptible"
+    NEURO_PRESET_KEY = "platform.neuromation.io/preset"
+    APOLO_PRESET_KEY = "platform.apolo.us/preset"
+
+
 class KubeClientAuthType(enum.Enum):
     NONE = "none"
     TOKEN = "token"
@@ -67,9 +74,6 @@ class MetricsConfig:
     region: str = ""
     gcp_service_account_key_path: Path | None = None
     azure_prices_url: URL = URL("https://prices.azure.com")
-    node_pool_label: str = "platform.neuromation.io/nodepool"
-    node_preemptible_label: str = "platform.neuromation.io/preemptible"
-    pod_preset_label: str = "platform.apolo.us/preset"
 
 
 @dataclass(frozen=True)
@@ -131,15 +135,6 @@ class EnvironConfigFactory:
                 self._environ.get(
                     "NP_AZURE_PRICES_URL", str(MetricsConfig.azure_prices_url)
                 )
-            ),
-            node_pool_label=self._environ.get(
-                "NP_NODE_POOL_LABEL", MetricsConfig.node_pool_label
-            ),
-            node_preemptible_label=self._environ.get(
-                "NP_NODE_PREEMPTIBLE_LABEL", MetricsConfig.node_preemptible_label
-            ),
-            pod_preset_label=self._environ.get(
-                "NP_POD_PRESET_LABEL", MetricsConfig.pod_preset_label
             ),
         )
 

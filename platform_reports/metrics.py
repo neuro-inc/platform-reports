@@ -23,6 +23,7 @@ from neuro_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .cluster import ClusterHolder
+from .config import Label
 from .kube_client import KubeClient, Pod
 
 logger = logging.getLogger(__name__)
@@ -474,16 +475,15 @@ class GCPNodePriceCollector(_NodePriceCollector):
 class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
     def __init__(
         self,
+        *,
         kube_client: KubeClient,
         cluster_holder: ClusterHolder,
         node_name: str,
-        pod_preset_label: str,
         interval_s: float = 15,
     ) -> None:
         super().__init__({}, interval_s)
 
         self._kube_client = kube_client
-        self._pod_preset_label = pod_preset_label
         self._cluster_holder = cluster_holder
         self._node_name = node_name
 
@@ -498,13 +498,16 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         if not presets:
             return {}
         pods = await self._kube_client.get_pods(
-            label_selector=self._pod_preset_label,
             field_selector=f"spec.nodeName={self._node_name},status.phase!=Pending",
         )
         result: dict[str, Decimal] = {}
         for pod in pods:
             pod_name = pod.metadata.name
-            preset_name = pod.metadata.labels[self._pod_preset_label]
+            preset_name = pod.metadata.labels.get(
+                Label.APOLO_PRESET_KEY
+            ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
+            if not preset_name:
+                continue
             if not (preset := presets.get(preset_name)):
                 logger.warning(
                     "Pod %s resource preset %s not found", pod_name, preset_name

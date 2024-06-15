@@ -4,7 +4,6 @@ import re
 import time
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from dataclasses import replace
 
 import aiohttp
 from aiohttp.web import HTTPForbidden, HTTPOk
@@ -54,7 +53,7 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"preset": "test-preset"},
+                    "labels": {"platform.apolo.us/preset": "test-preset"},
                 },
                 "spec": {
                     "restartPolicy": "Never",
@@ -73,7 +72,6 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
             pod["metadata"]["namespace"], pod["metadata"]["name"]
         )
 
-        metrics_config = replace(metrics_config, pod_preset_label="preset")
         async with metrics_server_factory(metrics_config) as server:
             async with client.get(server / "metrics") as response:
                 text = await response.text()

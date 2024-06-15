@@ -64,7 +64,6 @@ class TestPodCreditsCollector:
             kube_client=kube_client,
             cluster_holder=cluster_holder,
             node_name=kube_node.metadata.name,
-            pod_preset_label="preset",
         )
 
     async def test_get_latest_value__pod_running(
@@ -80,7 +79,7 @@ class TestPodCreditsCollector:
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"preset": "test-preset"},
+                    "labels": {"platform.apolo.us/preset": "test-preset"},
                 },
                 "spec": {
                     "restartPolicy": "Never",
@@ -120,7 +119,7 @@ class TestPodCreditsCollector:
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"preset": "test-preset"},
+                    "labels": {"platform.apolo.us/preset": "test-preset"},
                 },
                 "spec": {
                     "restartPolicy": "Never",

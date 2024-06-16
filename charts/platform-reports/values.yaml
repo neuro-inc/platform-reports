@@ -30,9 +30,6 @@ metricsExporter:
     annotations: {}
 
 prometheusProxy:
-  prometheus:
-    host: thanos-query-http
-    port: 10902
   replicas: 2
   resources:
     requests:

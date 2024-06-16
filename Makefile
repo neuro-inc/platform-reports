@@ -23,19 +23,9 @@ test_unit:
 	. venv/bin/activate; \
 	pytest -vv --log-level=INFO --cov=platform_reports --cov-report xml:.coverage.unit.xml tests/unit
 
-WAIT_FOR_IT_URL = https://raw.githubusercontent.com/eficode/wait-for/master/wait-for
-WAIT_FOR_IT = curl -s $(WAIT_FOR_IT_URL) | bash -s --
-
 test_integration:
-	docker compose -f tests/integration/docker/docker-compose.yaml pull -q
-	docker compose -f tests/integration/docker/docker-compose.yaml up -d
-	@$(WAIT_FOR_IT) 0.0.0.0:3000 -- echo "grafana is up"
-	@$(WAIT_FOR_IT) 0.0.0.0:8080 -- echo "platform-auth is up"
 	. venv/bin/activate; \
-	pytest -vv --log-level=INFO --cov=platform_reports --cov-report xml:.coverage.integration.xml tests/integration; \
-	exit_code=$$?; \
-	docker compose -f tests/integration/docker/docker-compose.yaml down -v; \
-	exit $$exit_code
+	pytest -vv --log-level=INFO --cov=platform_reports --cov-report xml:.coverage.integration.xml tests/integration
 
 
 docker_build:

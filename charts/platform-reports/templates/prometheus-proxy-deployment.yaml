@@ -36,10 +36,8 @@ spec:
             {{- end }}
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName | quote }}
-            - name: NP_PROMETHEUS_HOST
-              value: {{ .Values.prometheusProxy.prometheus.host | quote }}
-            - name: NP_PROMETHEUS_PORT
-              value: {{ .Values.prometheusProxy.prometheus.port | quote }}
+            - name: PROMETHEUS_URL
+              value: http://thanos-query-http:10902
             - name: NP_AUTH_URL
               value: {{ .Values.platform.authUrl | quote }}
             - name: NP_API_URL

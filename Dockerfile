@@ -16,6 +16,5 @@ LABEL org.opencontainers.image.source = "https://github.com/neuro-inc/platform-r
 WORKDIR /app
 
 ENV PATH=/root/.local/bin:$PATH
-ENV NP_REPORTS_API_PORT=8080
 
 COPY --from=installer /root/.local/ /root/.local/

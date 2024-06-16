@@ -2,29 +2,35 @@ version: "3"
 services:
 
   platform-auth:
-    image: ghcr.io/neuro-inc/platformauthapi:latest
+    image: platform-auth
+    container_name: platform-auth
+    build:
+      context: ./platform-auth
+      dockerfile: Dockerfile
     environment:
       - NP_AUTH_API_PORT=8080
       - NP_JWT_SECRET=secret
     ports:
-      - 8080:8080
+      - 8080
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:8080/api/v1/ping"]
-      interval: 5s
-      timeout: 30s
-      retries: 3
+      test: curl --fail http://localhost:8080/api/v1/ping
+      interval: 1s
+      timeout: 5s
+      retries: 10
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.0.0
+    container_name: node-exporter
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:9100"]
-      interval: 5s
-      timeout: 30s
+      test: wget -O - http://localhost:9100
+      interval: 1s
+      timeout: 5s
       retries: 3
     user: root
 
   prometheus:
     image: quay.io/prometheus/prometheus:v2.18.1
+    container_name: prometheus
     command:
       - --web.console.templates=/etc/prometheus/consoles
       - --web.console.libraries=/etc/prometheus/console_libraries
@@ -40,52 +46,52 @@ services:
       - ./prometheus/prometheus.yaml:/etc/prometheus/config/prometheus.yaml
       - "./prometheus/tsdb:/prometheus"
     ports:
-      - 9090:9090
+      - 9090
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:9090/-/healthy"]
-      interval: 5s
-      timeout: 30s
+      test: wget -O - http://localhost:9090/-/healthy
+      interval: 1s
+      timeout: 5s
       retries: 3
     depends_on:
       - node-exporter
     user: root
 
   grafana:
-    container_name: grafana
     image: grafana/grafana:7.1.0
+    container_name: grafana
     volumes:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/nodes.json:/var/lib/grafana/dashboards/default/nodes.json
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ./grafana/dashboardproviders.yaml:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
     ports:
-      - 3000:3000
+      - 3000
     healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:3000/api/health"]
-      interval: 5s
-      timeout: 30s
+      test: wget -O - http://localhost:3000/api/health
+      interval: 1s
+      timeout: 5s
       retries: 3
     depends_on:
       - prometheus
     user: root
 
-  thanos_sidecar:
+  thanos-sidecar:
     image: quay.io/thanos/thanos:v0.24.0
     container_name: thanos-sidecar
     volumes:
       - "./prometheus/tsdb:/prometheus"
     command:
-    - "sidecar"
-    - "--prometheus.url=http://prometheus:9090"
-    - "--tsdb.path=/prometheus"
-    - "--grpc-address=0.0.0.0:10901"
+      - "sidecar"
+      - "--prometheus.url=http://prometheus:9090"
+      - "--tsdb.path=/prometheus"
+      - "--grpc-address=0.0.0.0:10901"
 
-  thanos_query:
+  thanos-query:
     image: quay.io/thanos/thanos:v0.24.0
     container_name: thanos-query
     command:
-    - "query"
-    - "--store=thanos-sidecar:10901"
-    - "--http-address=0.0.0.0:9091"
+      - "query"
+      - "--store=thanos-sidecar:10901"
+      - "--http-address=0.0.0.0:9091"
     ports:
-      - 9091:9091
+      - 9091

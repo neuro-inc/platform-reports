@@ -55,7 +55,7 @@ spec:
             - name: LOG_LEVEL
               value: {{ .Values.logLevel }}
             {{- end }}
-            - name: NP_METRICS_API_PORT
+            - name: SERVER_PORT
               value: {{ .Values.metricsExporter.port | quote }}
             - name: NP_KUBE_URL
               value: https://kubernetes.default.svc

@@ -4,11 +4,13 @@ import asyncio
 from collections.abc import AsyncIterator, Callable, Coroutine, Sequence
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import aiohttp
 import pytest
 from neuro_auth_client import Permission
+from pytest_docker.plugin import Services
 from yarl import URL
 
 from platform_reports.api import (
@@ -26,6 +28,16 @@ from platform_reports.config import (
     ServerConfig,
 )
 from platform_reports.kube_client import Node
+
+
+@pytest.fixture(scope="session")
+def docker_compose_file() -> str:
+    return str(Path(__file__).parent.resolve() / "docker/docker-compose.yaml")
+
+
+@pytest.fixture(scope="session")
+def docker_setup() -> list[str]:
+    return ["up --wait --pull always --build"]
 
 
 @dataclass(frozen=True)
@@ -109,23 +121,30 @@ async def other_cluster_user_token(
 
 
 @pytest.fixture
-def platform_auth_server() -> URL:
-    return URL("http://localhost:8080")
+def platform_auth_server(docker_ip: str, docker_services: Services) -> URL:
+    port = docker_services.port_for("platform-auth", 8080)
+    return URL(f"http://{docker_ip}:{port}")
 
 
 @pytest.fixture
 async def platform_api_server(
+    unused_tcp_port_factory: Callable[[], int],
     platform_api_app: aiohttp.web.Application,
 ) -> AsyncIterator[URL]:
-    async with create_local_app_server(app=platform_api_app, port=8380) as address:
+    async with create_local_app_server(
+        app=platform_api_app, port=unused_tcp_port_factory()
+    ) as address:
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
 @pytest.fixture
 async def platform_config_server(
+    unused_tcp_port_factory: Callable[[], int],
     platform_config_app: aiohttp.web.Application,
 ) -> AsyncIterator[URL]:
-    async with create_local_app_server(app=platform_config_app, port=8481) as address:
+    async with create_local_app_server(
+        app=platform_config_app, port=unused_tcp_port_factory()
+    ) as address:
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
@@ -154,13 +173,14 @@ def platform_config_config(
 
 @pytest.fixture
 def metrics_config(
+    unused_tcp_port_factory: Callable[[], int],
     platform_config_config: PlatformServiceConfig,
     platform_api_config: PlatformServiceConfig,
     kube_config: KubeConfig,
     kube_node: Node,
 ) -> MetricsConfig:
     return MetricsConfig(
-        server=ServerConfig(port=9500),
+        server=ServerConfig(port=unused_tcp_port_factory()),
         platform_config=platform_config_config,
         platform_api=platform_api_config,
         kube=kube_config,
@@ -177,8 +197,7 @@ async def metrics_server_factory() -> (
     async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
         app = create_metrics_app(metrics_config)
         async with create_local_app_server(
-            app=app,
-            port=metrics_config.server.port,
+            app=app, port=metrics_config.server.port
         ) as address:
             assert app["zone"] == "minikube-zone"
             assert app["instance_type"] == "minikube"
@@ -198,13 +217,21 @@ async def metrics_server(
 
 
 @pytest.fixture
+def thanos_query_url(docker_ip: str, docker_services: Services) -> URL:
+    port = docker_services.port_for("thanos-query", 9091)
+    return URL(f"http://{docker_ip}:{port}")
+
+
+@pytest.fixture
 def prometheus_proxy_config(
+    unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
+    thanos_query_url: URL,
 ) -> PrometheusProxyConfig:
     return PrometheusProxyConfig(
-        server=ServerConfig(port=8180),
-        prometheus_server=ServerConfig(port=9091),
+        server=ServerConfig(port=unused_tcp_port_factory()),
+        prometheus_url=thanos_query_url,
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
         cluster_name="default",
@@ -224,13 +251,21 @@ async def prometheus_proxy_server(
 
 
 @pytest.fixture
+def grafana_url(docker_ip: str, docker_services: Services) -> URL:
+    port = docker_services.port_for("grafana", 3000)
+    return URL(f"http://{docker_ip}:{port}")
+
+
+@pytest.fixture
 def grafana_proxy_config(
+    unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
+    grafana_url: URL,
 ) -> GrafanaProxyConfig:
     return GrafanaProxyConfig(
-        server=ServerConfig(port=8280),
-        grafana_server=ServerConfig(port=3000),
+        server=ServerConfig(port=unused_tcp_port_factory()),
+        grafana_url=grafana_url,
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
         cluster_name="default",

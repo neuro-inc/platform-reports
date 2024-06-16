@@ -38,7 +38,6 @@ class KubeConfig:
 
 @dataclass(frozen=True)
 class ServerConfig:
-    scheme: str = "http"
     host: str = "0.0.0.0"
     port: int = 8080
 
@@ -76,7 +75,7 @@ class MetricsConfig:
 @dataclass(frozen=True)
 class PrometheusProxyConfig:
     server: ServerConfig
-    prometheus_server: ServerConfig
+    prometheus_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
@@ -87,7 +86,7 @@ class PrometheusProxyConfig:
 @dataclass(frozen=True)
 class GrafanaProxyConfig:
     server: ServerConfig
-    grafana_server: ServerConfig
+    grafana_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
@@ -113,11 +112,7 @@ class EnvironConfigFactory:
                 self._environ["NP_GCP_SERVICE_ACCOUNT_KEY_PATH"]
             )
         return MetricsConfig(
-            server=ServerConfig(
-                scheme=self._environ.get("NP_METRICS_API_SCHEME", ServerConfig.scheme),
-                host=self._environ.get("NP_METRICS_API_HOST", ServerConfig.host),
-                port=int(self._environ.get("NP_METRICS_API_PORT", ServerConfig.port)),
-            ),
+            server=self._create_server(),
             kube=self.create_kube(),
             platform_config=self._create_platform_config(),
             platform_api=self._create_platform_api(),
@@ -148,7 +143,7 @@ class EnvironConfigFactory:
     def create_prometheus_proxy(self) -> PrometheusProxyConfig:
         return PrometheusProxyConfig(
             server=self._create_server(),
-            prometheus_server=self._create_prometheus_server(),
+            prometheus_url=URL(self._environ["PROMETHEUS_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
@@ -160,7 +155,7 @@ class EnvironConfigFactory:
     def create_grafana_proxy(self) -> GrafanaProxyConfig:
         return GrafanaProxyConfig(
             server=self._create_server(),
-            grafana_server=self._create_grafana_server(),
+            grafana_url=URL(self._environ["GRAFANA_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
@@ -171,23 +166,8 @@ class EnvironConfigFactory:
 
     def _create_server(self) -> ServerConfig:
         return ServerConfig(
-            scheme=self._environ.get("NP_REPORTS_API_SCHEME", ServerConfig.scheme),
-            host=self._environ.get("NP_REPORTS_API_HOST", ServerConfig.host),
-            port=int(self._environ.get("NP_REPORTS_API_PORT", ServerConfig.port)),
-        )
-
-    def _create_prometheus_server(self) -> ServerConfig:
-        return ServerConfig(
-            scheme=self._environ.get("NP_PROMETHEUS_SCHEME", ServerConfig.scheme),
-            host=self._environ["NP_PROMETHEUS_HOST"],
-            port=int(self._environ["NP_PROMETHEUS_PORT"]),
-        )
-
-    def _create_grafana_server(self) -> ServerConfig:
-        return ServerConfig(
-            scheme=self._environ.get("NP_GRAFANA_SCHEME", ServerConfig.scheme),
-            host=self._environ["NP_GRAFANA_HOST"],
-            port=int(self._environ["NP_GRAFANA_PORT"]),
+            host=self._environ.get("SERVER_HOST", ServerConfig.host),
+            port=int(self._environ.get("SERVER_PORT", ServerConfig.port)),
         )
 
     def _create_platform_auth(self) -> PlatformAuthConfig:

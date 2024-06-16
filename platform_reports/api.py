@@ -30,6 +30,7 @@ from neuro_auth_client import AuthClient, Permission
 from neuro_config_client.client import ConfigClient
 from neuro_logging import init_logging, setup_sentry
 from neuro_sdk import Client as ApiClient, Factory as ClientFactory
+from yarl import URL
 
 from .auth import AuthService
 from .config import (
@@ -38,7 +39,6 @@ from .config import (
     MetricsConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
-    ServerConfig,
 )
 from .kube_client import KubeClient
 from .metrics import (
@@ -190,7 +190,7 @@ class PrometheusProxyHandler:
 
         return await _proxy_request(
             client=self._prometheus_client,
-            upstream_server=self._config.prometheus_server,
+            upstream_url=self._config.prometheus_url,
             request=request,
         )
 
@@ -234,7 +234,7 @@ class GrafanaProxyHandler:
 
         return await _proxy_request(
             client=self._grafana_client,
-            upstream_server=self._config.grafana_server,
+            upstream_url=self._config.grafana_url,
             request=request,
         )
 
@@ -249,7 +249,7 @@ class GrafanaProxyHandler:
 
         return await _proxy_request(
             client=self._grafana_client,
-            upstream_server=self._config.grafana_server,
+            upstream_url=self._config.grafana_url,
             request=request,
         )
 
@@ -267,12 +267,13 @@ def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -
 
 
 async def _proxy_request(
-    client: aiohttp.ClientSession, upstream_server: ServerConfig, request: Request
+    client: aiohttp.ClientSession, upstream_url: URL, request: Request
 ) -> StreamResponse:
+    assert upstream_url.host
     upstream_url = (
-        request.url.with_scheme(upstream_server.scheme)
-        .with_host(upstream_server.host)
-        .with_port(upstream_server.port)
+        request.url.with_scheme(upstream_url.scheme)
+        .with_host(upstream_url.host)
+        .with_port(upstream_url.port)
     )
     upstream_request_headers = _prepare_upstream_request_headers(request.headers)
 

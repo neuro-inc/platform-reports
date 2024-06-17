@@ -4,7 +4,6 @@ import re
 import time
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from dataclasses import replace
 
 import aiohttp
 from aiohttp.web import HTTPForbidden, HTTPOk
@@ -12,6 +11,8 @@ from yarl import URL
 
 from platform_reports.config import MetricsConfig
 from platform_reports.kube_client import Node
+
+from .conftest_kube import KubeClient, KubePodFactory
 
 
 class TestMetrics:
@@ -35,28 +36,51 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
                 in text
             )
 
-    async def test_node_and_pod_price_metrics(
+    async def test_pod_credits_metrics(
         self,
         client: aiohttp.ClientSession,
         metrics_server_factory: Callable[
             [MetricsConfig], AbstractAsyncContextManager[URL]
         ],
         metrics_config: MetricsConfig,
-        kube_node: Node,
+        kube_client: KubeClient,
+        kube_pod_factory: KubePodFactory,
     ) -> None:
-        metrics_config = replace(metrics_config, job_label="")
+        pod = await kube_pod_factory(
+            "default",
+            {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "metadata": {
+                    "generateName": "test-",
+                    "labels": {"platform.apolo.us/preset": "test-preset"},
+                },
+                "spec": {
+                    "restartPolicy": "Never",
+                    "containers": [
+                        {
+                            "name": "ubuntu",
+                            "image": "ubuntu:20.04",
+                            "command": ["bash"],
+                            "args": ["-c", "sleep 60"],
+                        }
+                    ],
+                },
+            },
+        )
+        await kube_client.wait_pod_is_running(
+            pod["metadata"]["namespace"], pod["metadata"]["name"]
+        )
+
         async with metrics_server_factory(metrics_config) as server:
             async with client.get(server / "metrics") as response:
                 text = await response.text()
                 assert response.status == HTTPOk.status_code, text
                 assert re.search(
-                    rf"""# HELP kube_node_price_total The total price of the node\.
-\# TYPE kube_node_price_total counter
-kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0\.00
-
-\# HELP kube_pod_credits_total The total credits of the pod\.
+                    r"""
+\# HELP kube_pod_credits_total The total credits consumed by the pod\.
 \# TYPE kube_pod_credits_total counter
-(kube_pod_credits_total{{pod=".+"}} 10\s*)+""",
+(kube_pod_credits_total\{pod=".+"\} [0-9]+(\.[0-9]+)?\s*)+""",
                     text,
                 ), text
 

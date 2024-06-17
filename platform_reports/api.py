@@ -33,9 +33,11 @@ from neuro_sdk import Client as ApiClient, Factory as ClientFactory
 from yarl import URL
 
 from .auth import AuthService
+from .cluster import RefreshableClusterHolder
 from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
+    Label,
     MetricsConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -108,18 +110,18 @@ class MetricsHandler:
         )
 
     def _get_pod_credits_total_text(self) -> str:
-        pod_credits_per_hour = self._pod_credits_collector.current_value
-        if not pod_credits_per_hour:
+        pod_credits_total = self._pod_credits_collector.current_value
+        if not pod_credits_total:
             return ""
         metrics: list[str] = [
             dedent(
                 """\
-                # HELP kube_pod_credits_total The total credits of the pod.
+                # HELP kube_pod_credits_total The total credits consumed by the pod.
                 # TYPE kube_pod_credits_total counter"""
             )
         ]
-        for name, credits_per_hour in pod_credits_per_hour.items():
-            metrics.append(f'kube_pod_credits_total{{pod="{name}"}} {credits_per_hour}')
+        for name, pod_credits in pod_credits_total.items():
+            metrics.append(f'kube_pod_credits_total{{pod="{name}"}} {pod_credits}')
         return "\n".join(metrics)
 
     def _get_node_power_usage_text(self) -> str:
@@ -391,10 +393,10 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             config_client = await exit_stack.enter_async_context(
                 ConfigClient(config.platform_config.url, config.platform_config.token)
             )
-
-            logger.info("Initializing Api client")
-            api_client = await exit_stack.enter_async_context(
-                create_api_client(config.platform_api)
+            cluster_holder = await exit_stack.enter_async_context(
+                RefreshableClusterHolder(
+                    config_client=config_client, cluster_name=config.cluster_name
+                )
             )
 
             logger.info("Initializing Kube client")
@@ -416,13 +418,13 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             app["instance_type"] = instance_type
             logger.info("Node instance type is %s", instance_type)
 
-            is_preemptible = config.node_preemptible_label in node.metadata.labels
+            is_preemptible = Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
             if is_preemptible:
                 logger.info("Node is preemptible")
             else:
                 logger.info("Node is not preemptible")
 
-            node_pool_name = node.metadata.labels.get(config.node_pool_label, "")
+            node_pool_name = node.metadata.labels.get(Label.NEURO_NODE_POOL_KEY, "")
             app["node_pool_name"] = node_pool_name
             logger.info("Node pool name is %s", node_pool_name)
 
@@ -443,7 +445,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     AWSNodePriceCollector(
                         pricing_client=pricing_client,
                         ec2_client=ec2_client,
-                        node_created_at=node.metadata.created_at,
+                        node_created_at=node.metadata.creation_timestamp,
                         region=config.region,
                         zone=zone,
                         instance_type=instance_type,
@@ -456,11 +458,10 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 assert instance_type
                 node_price_collector = await exit_stack.enter_async_context(
                     GCPNodePriceCollector(
-                        config_client=config_client,
+                        cluster_holder=cluster_holder,
                         service_account_path=config.gcp_service_account_key_path,
-                        cluster_name=config.cluster_name,
                         node_pool_name=node_pool_name,
-                        node_created_at=node.metadata.created_at,
+                        node_created_at=node.metadata.creation_timestamp,
                         region=config.region,
                         instance_type=instance_type,
                         is_preemptible=is_preemptible,
@@ -475,7 +476,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     AzureNodePriceCollector(
                         prices_client=prices_client,
                         prices_url=config.azure_prices_url,
-                        node_created_at=node.metadata.created_at,
+                        node_created_at=node.metadata.creation_timestamp,
                         region=config.region,
                         instance_type=instance_type,
                         is_spot=is_preemptible,
@@ -484,9 +485,8 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             else:
                 node_price_collector = await exit_stack.enter_async_context(
                     ConfigPriceCollector(
-                        config_client=config_client,
-                        cluster_name=config.cluster_name,
-                        node_created_at=node.metadata.created_at,
+                        cluster_holder=cluster_holder,
+                        node_created_at=node.metadata.creation_timestamp,
                         node_pool_name=node_pool_name,
                     )
                 )
@@ -495,18 +495,15 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
             pod_credits_collector = await exit_stack.enter_async_context(
                 PodCreditsCollector(
                     kube_client=kube_client,
-                    api_client=api_client,
+                    cluster_holder=cluster_holder,
                     node_name=config.node_name,
-                    jobs_namespace=config.jobs_namespace,
-                    job_label=config.job_label,
                 )
             )
             app["pod_credits_collector"] = pod_credits_collector
 
             node_power_consumpt_collector = await exit_stack.enter_async_context(
                 NodeEnergyConsumptionCollector(
-                    config_client=config_client,
-                    cluster_name=config.cluster_name,
+                    cluster_holder=cluster_holder,
                     node_pool_name=node_pool_name,
                 )
             )

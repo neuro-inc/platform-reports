@@ -4,7 +4,7 @@ import os
 import socket
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import pytest
 import yaml
@@ -23,7 +23,7 @@ def _kube_config_payload() -> dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def _kube_config_cluster_payload(
-    _kube_config_payload: dict[str, Any]
+    _kube_config_payload: dict[str, Any],
 ) -> dict[str, Any]:
     clusters = {
         cluster["name"]: cluster["cluster"]
@@ -72,3 +72,28 @@ async def kube_node(kube_client: KubeClient) -> Node:
         return await kube_client.get_node("minikube")
     except Exception:
         return await kube_client.get_node(socket.gethostname())
+
+
+class KubePodFactory(Protocol):
+    async def __call__(
+        self,
+        namespace: str,
+        pod: dict[str, Any],
+    ) -> dict[str, Any]:
+        pass
+
+
+@pytest.fixture
+async def kube_pod_factory(kube_client: KubeClient) -> AsyncIterator[KubePodFactory]:
+    pods = []
+
+    async def _create(namespace: str, pod: dict[str, Any]) -> dict[str, Any]:
+        pod = await kube_client.create_raw_pod(namespace, pod)
+        pods.append(pod)
+        return pod
+
+    yield _create
+
+    for pod in pods:
+        metadata = pod["metadata"]
+        await kube_client.delete_pod(metadata["namespace"], metadata["name"])

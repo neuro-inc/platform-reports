@@ -11,6 +11,7 @@ from neuro_sdk import Client as ApiClient
 
 from .prometheus import InstantVector, LabelMatcher, Vector, VectorMatch, parse_query
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +55,7 @@ class AuthService:
     ) -> bool:
         permissions = list(set(permissions))
         if not permissions:
-            logger.warn("user %r doesn't have any permission to check", user_name)
+            logger.warning("user %r doesn't have any permission to check", user_name)
             return True
         logger.info("checking user %r has permissions %r", user_name, permissions)
         missing_permissions = await self._auth_client.get_missing_permissions(
@@ -68,7 +69,7 @@ class AuthService:
             logger.info("user %r has permissions %r", user_name, permissions)
         return not missing_permissions
 
-    async def check_dashboard_permissions(
+    async def check_dashboard_permissions(  # noqa: C901
         self, user_name: str, dashboard_id: str, params: MultiMapping[str]
     ) -> bool:
         permissions_service = PermissionsService(self._api_client, self._cluster_name)

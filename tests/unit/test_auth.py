@@ -12,20 +12,21 @@ from yarl import URL
 
 from platform_reports.auth import AuthService, Dashboard
 
+
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
 
 
-@pytest.fixture
+@pytest.fixture()
 def job_factory() -> Callable[[str], Job]:
-    def _factory(id: str) -> Job:
+    def _factory(id_: str) -> Job:
         return Job(
-            id=id,
+            id=id_,
             owner=None,  # type: ignore
             cluster_name=None,  # type: ignore
             status=None,  # type: ignore
             history=None,  # type: ignore
             container=None,  # type: ignore
-            uri=URL(f"job://default/org/project/{id}"),
+            uri=URL(f"job://default/org/project/{id_}"),
             total_price_credits=Decimal("500"),
             price_credits_per_hour=Decimal("5"),
             pass_config=None,  # type: ignore
@@ -35,17 +36,17 @@ def job_factory() -> Callable[[str], Job]:
     return _factory
 
 
-@pytest.fixture
+@pytest.fixture()
 def auth_client() -> mock.AsyncMock:
     client = mock.AsyncMock(AuthClient)
     client.get_missing_permissions = mock.AsyncMock(return_value=[])
     return client
 
 
-@pytest.fixture
+@pytest.fixture()
 def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
-    async def get_job(id: str) -> Job:
-        return job_factory(id)
+    async def get_job(id_: str) -> Job:
+        return job_factory(id_)
 
     client = mock.AsyncMock(ApiClient)
     client.jobs.status = mock.AsyncMock(side_effect=get_job)
@@ -53,7 +54,7 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
 
 
 class TestDashboards:
-    @pytest.fixture
+    @pytest.fixture()
     def auth_service(
         self, auth_client: AuthClient, api_client: ApiClient
     ) -> AuthService:
@@ -123,7 +124,7 @@ class TestDashboards:
 
 
 class TestAuthService:
-    @pytest.fixture
+    @pytest.fixture()
     def service(self, auth_client: AuthClient, api_client: ApiClient) -> AuthService:
         return AuthService(auth_client, api_client, "default")
 

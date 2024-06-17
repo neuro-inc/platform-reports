@@ -25,7 +25,7 @@ from aiohttp.web import (
 )
 from aiohttp.web_urldispatcher import AbstractRoute
 from jose import jwt
-from multidict import CIMultiDict, CIMultiDictProxy
+from multidict import CIMultiDict, MultiMapping
 from neuro_auth_client import AuthClient, Permission
 from neuro_config_client.client import ConfigClient
 from neuro_logging import init_logging, setup_sentry
@@ -54,7 +54,26 @@ from .metrics import (
     Price,
 )
 
-logger = logging.getLogger(__name__)
+
+LOGGER = logging.getLogger(__name__)
+
+METRICS_CONFIG_APP_KEY = aiohttp.web.AppKey("config", MetricsConfig)
+PROMETHEUS_PROXY_APP_KEY = aiohttp.web.AppKey("config", PrometheusProxyConfig)
+GRAFANA_PROXY_APP_KEY = aiohttp.web.AppKey("config", GrafanaProxyConfig)
+NODE_PRICE_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
+    "node_price_collector", Collector[Price]
+)
+POD_CREDITS_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
+    "pod_credits_collector", Collector[Mapping[str, Decimal]]
+)
+NODE_POWER_CONSUMPTION_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
+    "node_power_consumption_collector", NodeEnergyConsumptionCollector
+)
+PROMETHEUS_CLIENT_APP_KEY = aiohttp.web.AppKey(
+    "prometheus_client", aiohttp.ClientSession
+)
+GRAFANA_CLIENT_APP_KEY = aiohttp.web.AppKey("grafana_client", aiohttp.ClientSession)
+AUTH_SERVICE_APP_KEY = aiohttp.web.AppKey("auth_service", AuthService)
 
 
 class ProbesHandler:
@@ -77,19 +96,19 @@ class MetricsHandler:
 
     @property
     def _node_price_collector(self) -> Collector[Price]:
-        return self._app["node_price_collector"]
+        return self._app[NODE_PRICE_COLLECTOR_APP_KEY]
 
     @property
     def _pod_credits_collector(self) -> Collector[Mapping[str, Decimal]]:
-        return self._app["pod_credits_collector"]
+        return self._app[POD_CREDITS_COLLECTOR_APP_KEY]
 
     @property
     def _node_power_consumption_collector(self) -> NodeEnergyConsumptionCollector:
-        return self._app["node_power_consumption_collector"]
+        return self._app[NODE_POWER_CONSUMPTION_COLLECTOR_APP_KEY]
 
     @property
     def _config(self) -> MetricsConfig:
-        return self._app["config"]
+        return self._app[METRICS_CONFIG_APP_KEY]
 
     async def handle(self, request: Request) -> Response:
         text = [self._get_node_price_total_text()]
@@ -153,15 +172,15 @@ class PrometheusProxyHandler:
 
     @property
     def _config(self) -> PrometheusProxyConfig:
-        return self._app["config"]
+        return self._app[PROMETHEUS_PROXY_APP_KEY]
 
     @property
     def _prometheus_client(self) -> aiohttp.ClientSession:
-        return self._app["prometheus_client"]
+        return self._app[PROMETHEUS_CLIENT_APP_KEY]
 
     @property
     def _auth_service(self) -> AuthService:
-        return self._app["auth_service"]
+        return self._app[AUTH_SERVICE_APP_KEY]
 
     async def handle(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_names)
@@ -209,15 +228,15 @@ class GrafanaProxyHandler:
 
     @property
     def _config(self) -> GrafanaProxyConfig:
-        return self._app["config"]
+        return self._app[GRAFANA_PROXY_APP_KEY]
 
     @property
     def _grafana_client(self) -> aiohttp.ClientSession:
-        return self._app["grafana_client"]
+        return self._app[GRAFANA_CLIENT_APP_KEY]
 
     @property
     def _auth_service(self) -> AuthService:
-        return self._app["auth_service"]
+        return self._app[AUTH_SERVICE_APP_KEY]
 
     async def handle(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_names)
@@ -263,7 +282,8 @@ def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -
         if access_token:
             break
     if not access_token:
-        raise ValueError("Request doesn't have access token cookie")
+        msg = "Request doesn't have access token cookie"
+        raise ValueError(msg)
     claims = jwt.get_unverified_claims(access_token)
     return claims["https://platform.neuromation.io/user"]
 
@@ -292,7 +312,7 @@ async def _proxy_request(
         allow_redirects=False,
         data=data,
     ) as upstream_response:
-        logger.debug("upstream response: %s", upstream_response)
+        LOGGER.debug("upstream response: %s", upstream_response)
 
         response = aiohttp.web.StreamResponse(
             status=upstream_response.status, headers=upstream_response.headers.copy()
@@ -300,7 +320,7 @@ async def _proxy_request(
 
         await response.prepare(request)
 
-        logger.debug("response: %s; headers: %s", response, response.headers)
+        LOGGER.debug("response: %s; headers: %s", response, response.headers)
 
         async for chunk in upstream_response.content.iter_any():
             await response.write(chunk)
@@ -309,10 +329,8 @@ async def _proxy_request(
         return response
 
 
-def _prepare_upstream_request_headers(
-    headers: CIMultiDictProxy[str],
-) -> CIMultiDict[str]:
-    request_headers: CIMultiDict[str] = headers.copy()
+def _prepare_upstream_request_headers(headers: MultiMapping[str]) -> CIMultiDict[str]:
+    request_headers = CIMultiDict(headers)
 
     for name in ("Transfer-Encoding", "Connection"):
         request_headers.pop(name, None)
@@ -385,11 +403,11 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
     ProbesHandler(app).register()
     MetricsHandler(app).register()
 
-    app["config"] = config
+    app[METRICS_CONFIG_APP_KEY] = config
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
-            logger.info("Initializing Config client")
+            LOGGER.info("Initializing Config client")
             config_client = await exit_stack.enter_async_context(
                 ConfigClient(config.platform_config.url, config.platform_config.token)
             )
@@ -399,39 +417,33 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                 )
             )
 
-            logger.info("Initializing Kube client")
+            LOGGER.info("Initializing Kube client")
             kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
+
             node = await kube_client.get_node(config.node_name)
             zone = (
                 node.metadata.labels.get("failure-domain.beta.kubernetes.io/zone")
                 or node.metadata.labels.get("topology.kubernetes.io/zone")
                 or ""
             )
-            app["zone"] = zone
-            logger.info("Node is in zone %s", zone)
+            LOGGER.info("Node zone: %s", zone)
 
             instance_type = (
                 node.metadata.labels.get("node.kubernetes.io/instance-type")
                 or node.metadata.labels.get("beta.kubernetes.io/instance-type")
                 or ""
             )
-            app["instance_type"] = instance_type
-            logger.info("Node instance type is %s", instance_type)
+            LOGGER.info("Node instance type: %s", instance_type)
 
             is_preemptible = Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
-            if is_preemptible:
-                logger.info("Node is preemptible")
-            else:
-                logger.info("Node is not preemptible")
+            LOGGER.info("Node is preemptible: %s", is_preemptible)
 
-            node_pool_name = node.metadata.labels.get(Label.NEURO_NODE_POOL_KEY, "")
-            app["node_pool_name"] = node_pool_name
-            logger.info("Node pool name is %s", node_pool_name)
+            node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
+            LOGGER.info("Node pool name: %s", node_pool_name)
+
+            node_price_collector: Collector[Price]
 
             if config.cloud_provider == "aws":
-                assert config.region
-                assert zone
-                assert instance_type
                 session = aiobotocore.session.get_session()
                 pricing_client = await exit_stack.enter_async_context(
                     session.create_client(
@@ -453,9 +465,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     )
                 )
             elif config.cloud_provider == "gcp":
-                assert config.region
                 assert config.gcp_service_account_key_path
-                assert instance_type
                 node_price_collector = await exit_stack.enter_async_context(
                     GCPNodePriceCollector(
                         cluster_holder=cluster_holder,
@@ -464,11 +474,10 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         node_created_at=node.metadata.creation_timestamp,
                         region=config.region,
                         instance_type=instance_type,
-                        is_preemptible=is_preemptible,
+                        is_preemptive=is_preemptible,
                     )
                 )
             elif config.cloud_provider == "azure":
-                assert instance_type
                 prices_client = await exit_stack.enter_async_context(
                     aiohttp.ClientSession()
                 )
@@ -490,7 +499,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                         node_pool_name=node_pool_name,
                     )
                 )
-            app["node_price_collector"] = node_price_collector
+            app[NODE_PRICE_COLLECTOR_APP_KEY] = node_price_collector
 
             pod_credits_collector = await exit_stack.enter_async_context(
                 PodCreditsCollector(
@@ -499,7 +508,7 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     node_name=config.node_name,
                 )
             )
-            app["pod_credits_collector"] = pod_credits_collector
+            app[POD_CREDITS_COLLECTOR_APP_KEY] = pod_credits_collector
 
             node_power_consumpt_collector = await exit_stack.enter_async_context(
                 NodeEnergyConsumptionCollector(
@@ -507,7 +516,9 @@ def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
                     node_pool_name=node_pool_name,
                 )
             )
-            app["node_power_consumption_collector"] = node_power_consumpt_collector
+            app[NODE_POWER_CONSUMPTION_COLLECTOR_APP_KEY] = (
+                node_power_consumpt_collector
+            )
 
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
@@ -540,28 +551,26 @@ def create_prometheus_proxy_app(
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
-            api_v1_app["config"] = config
+            api_v1_app[PROMETHEUS_PROXY_APP_KEY] = config
 
-            logger.info("Initializing Auth client")
+            LOGGER.info("Initializing Auth client")
             auth_client = await exit_stack.enter_async_context(
                 AuthClient(config.platform_auth.url, config.platform_auth.token)
             )
-            api_v1_app["auth_client"] = auth_client
 
-            logger.info("Initializing Api client")
+            LOGGER.info("Initializing Api client")
             api_client = await exit_stack.enter_async_context(
                 create_api_client(config.platform_api)
             )
-            api_v1_app["api_client"] = auth_client
 
             auth_service = AuthService(auth_client, api_client, config.cluster_name)
-            api_v1_app["auth_service"] = auth_service
+            api_v1_app[AUTH_SERVICE_APP_KEY] = auth_service
 
-            logger.info("Initializing Prometheus client")
+            LOGGER.info("Initializing Prometheus client")
             prometheus_client = await exit_stack.enter_async_context(
                 aiohttp.ClientSession(auto_decompress=False, timeout=config.timeout)
             )
-            api_v1_app["prometheus_client"] = prometheus_client
+            api_v1_app[PROMETHEUS_CLIENT_APP_KEY] = prometheus_client
 
             yield
 
@@ -577,28 +586,26 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
-            app["config"] = config
+            app[GRAFANA_PROXY_APP_KEY] = config
 
-            logger.info("Initializing Auth client")
+            LOGGER.info("Initializing Auth client")
             auth_client = await exit_stack.enter_async_context(
                 AuthClient(config.platform_auth.url, config.platform_auth.token)
             )
-            app["auth_client"] = auth_client
 
-            logger.info("Initializing Api client")
+            LOGGER.info("Initializing Api client")
             api_client = await exit_stack.enter_async_context(
                 create_api_client(config.platform_api)
             )
-            app["api_client"] = auth_client
 
             auth_service = AuthService(auth_client, api_client, config.cluster_name)
-            app["auth_service"] = auth_service
+            app[AUTH_SERVICE_APP_KEY] = auth_service
 
-            logger.info("Initializing Grafana client")
+            LOGGER.info("Initializing Grafana client")
             grafana_client = await exit_stack.enter_async_context(
                 aiohttp.ClientSession(auto_decompress=False, timeout=config.timeout)
             )
-            app["grafana_client"] = grafana_client
+            app[GRAFANA_CLIENT_APP_KEY] = grafana_client
 
             yield
 

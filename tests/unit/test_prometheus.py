@@ -17,7 +17,7 @@ class TestDashboards:
     def test_all_dashboards_expressions(
         self, dashboards_expressions: dict[str, Sequence[str]]
     ) -> None:
-        for key, exprs in dashboards_expressions.items():
+        for _, exprs in dashboards_expressions.items():
             for expr in exprs:
                 parse_query(expr)
 

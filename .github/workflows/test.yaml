@@ -21,9 +21,7 @@ jobs:
     - name: Install dependencies
       run: make setup
     - name: Lint
-      run: |
-        echo "::add-matcher::.github/actionlint-matcher.json"
-        make lint
+      run: make lint
 
   unit:
     name: Unit tests
@@ -43,7 +41,7 @@ jobs:
     - name: Install dependencies
       run: make setup
     - name: Run unit tests
-      run: make test_unit
+      run: make test-unit
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
@@ -82,7 +80,7 @@ jobs:
         ./minikube.sh install
         ./minikube.sh start
     - name: Run integration tests
-      run: make test_integration
+      run: make test-integration
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
@@ -115,7 +113,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ github.token }}
     - name: Build Docker image
-      run: make docker_build
+      run: make build/image
     - name: Upload image artifact
       uses: neuro-inc/upload-image-action@v24.4.0
       with:

@@ -7,6 +7,7 @@ from contextlib import suppress
 
 from neuro_config_client import Cluster, ConfigClient
 
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -58,5 +59,6 @@ class RefreshableClusterHolder(ClusterHolder):
     @property
     def cluster(self) -> Cluster:
         if self._cluster is None:
-            raise ValueError("Cluster not found")
+            msg = "Cluster not found"
+            raise ValueError(msg)
         return self._cluster

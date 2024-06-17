@@ -6,13 +6,13 @@ import logging
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
-from lark import Lark, Transformer, v_args
-from lark.exceptions import LarkError
-from lark.tree import Meta, Tree
+from lark import Lark, LarkError, Token, Transformer, Tree, v_args
+from lark.tree import Meta
 
 from .prometheus_grammars import PROMQL
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class LabelMatcher:
         return cls(name=name, value=value, operator=LabelMatcherOperator.NRE)
 
 
-class Vector(abc.ABC):
+class Vector(abc.ABC):  # noqa: B024
     pass
 
 
@@ -107,12 +107,13 @@ def parse_query(query: str) -> Vector | None:
         ast = promql_parser.parse(query)
     except LarkError as ex:
         logger.warning("Error while parsing PromQL query: %s", ex)
-        raise PromQLException(f"Error while parsing PromQL query: {ex}")
+        msg = f"Error while parsing PromQL query: {ex}"
+        raise PromQLException(msg) from ex
     transformer = VectorTransformer()
     return transformer.transform(ast)
 
 
-class VectorTransformer(Transformer[Optional[Vector]]):
+class VectorTransformer(Transformer[Token, Vector | None]):
     def __default__(self, data: str, children: list[Any], meta: Meta) -> Vector | None:
         for child in children:
             if isinstance(child, Vector):
@@ -120,88 +121,91 @@ class VectorTransformer(Transformer[Optional[Vector]]):
         return None
 
     @v_args(tree=True)
-    def label_matcher_list(self, tree: Tree) -> Tree:
+    def label_matcher_list(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def label_matcher(self, tree: Tree) -> Tree:
+    def label_matcher(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def grouping(self, tree: Tree) -> Tree:
+    def grouping(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def on(self, tree: Tree) -> Tree:
+    def on(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def ignoring(self, tree: Tree) -> Tree:
+    def ignoring(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def group_left(self, tree: Tree) -> Tree:
+    def group_left(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def group_right(self, tree: Tree) -> Tree:
+    def group_right(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
     @v_args(tree=True)
-    def label_name_list(self, tree: Tree) -> Tree:
+    def label_name_list(self, tree: Tree[Token]) -> Tree[Token]:
         return tree
 
-    def instant_query_with_metric(self, children: list[str | Tree]) -> Vector:
-        label_matchers: list[Tree] = []
+    def instant_query_with_metric(self, children: list[Token | Tree[Token]]) -> Vector:
+        label_matchers: list[Tree[Token]] = []
         if len(children) > 1:
             label_matchers = children[1].children  # type: ignore
         return InstantVector(
-            name=children[0].value,  # type: ignore
+            name=children[0],  # type: ignore
             label_matchers=self._get_label_matchers(label_matchers),
         )
 
-    def instant_query_without_metric(self, children: list[str | Tree]) -> Vector:
-        label_matchers: list[Tree] = []
+    def instant_query_without_metric(
+        self, children: list[Token | Tree[Token]]
+    ) -> Vector:
+        label_matchers: list[Tree[Token]] = []
         if children:
             label_matchers = children[0].children  # type: ignore
         return InstantVector(
             name="", label_matchers=self._get_label_matchers(label_matchers)
         )
 
-    def or_match(self, children: list[str | Tree]) -> Vector | None:
+    def or_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
-    def and_unless_match(self, children: list[str | Tree]) -> Vector | None:
+    def and_unless_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
-    def comparison_match(self, children: list[str | Tree]) -> Vector | None:
+    def comparison_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
-    def sum_match(self, children: list[str | Tree]) -> Vector | None:
+    def sum_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
-    def product_match(self, children: list[str | Tree]) -> Vector | None:
+    def product_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
-    def power_match(self, children: list[str | Tree]) -> Vector | None:
+    def power_match(self, children: list[Token | Tree[Token]]) -> Vector | None:
         return self._get_vector_match(children)
 
     @classmethod
-    def _get_label_matchers(cls, label_matchers: list[Tree]) -> dict[str, LabelMatcher]:
+    def _get_label_matchers(
+        cls, label_matchers: list[Tree[Token]]
+    ) -> dict[str, LabelMatcher]:
         result: dict[str, LabelMatcher] = {}
         for label_matcher in label_matchers:
-            name = label_matcher.children[0].value  # type: ignore
+            name = label_matcher.children[0]
+            assert isinstance(name, str)
             result[name] = LabelMatcher(
                 name=name,
-                operator=LabelMatcherOperator(
-                    label_matcher.children[1].value  # type: ignore
-                ),
-                value=label_matcher.children[2].value[1:-1],  # type: ignore
+                operator=LabelMatcherOperator(label_matcher.children[1]),
+                value=label_matcher.children[2][1:-1],  # type: ignore
             )
         return result
 
     @classmethod
-    def _get_vector_match(cls, children: list[str | Tree]) -> Vector | None:
+    def _get_vector_match(cls, children: list[Token | Tree[Token]]) -> Vector | None:
         vectors: list[Vector] = []
         for child in children:
             if isinstance(child, Vector):
@@ -209,44 +213,33 @@ class VectorTransformer(Transformer[Optional[Vector]]):
         if not vectors:
             return None
         if len(vectors) > 2:
-            raise PromQLException("Operation has invalid number of arguments")
+            msg = "Operation has invalid number of arguments"
+            raise PromQLException(msg)
         if len(vectors) == 1:
             return vectors[0]
-        grouping: Tree | None = None
+        grouping: Tree[Token] | None = None
         if len(children) > 3:
             grouping = children[2]  # type: ignore
-        assert not grouping or isinstance(grouping, Tree)
         return VectorMatch(
             left=vectors[0],
             right=vectors[1],
-            operator=children[1].value,  # type: ignore
+            operator=children[1],  # type: ignore
             on=cls._get_on_labels(grouping),
             ignoring=cls._get_ignoring_labels(grouping),
         )
 
     @classmethod
-    def _get_on_labels(cls, grouping: Tree | None) -> Sequence[str]:
+    def _get_on_labels(cls, grouping: Tree[Token] | None) -> list[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "on":  # type: ignore
-            return cls._get_labels(
-                grouping.children[0].children[1].children  # type: ignore
-            )
+            return grouping.children[0].children[1].children  # type: ignore
         return []
 
     @classmethod
-    def _get_ignoring_labels(cls, grouping: Tree | None) -> Sequence[str]:
+    def _get_ignoring_labels(cls, grouping: Tree[Token] | None) -> list[str]:
         if not grouping:
             return []
         if grouping.children[0].data == "ignoring":  # type: ignore
-            return cls._get_labels(
-                grouping.children[0].children[1].children  # type: ignore
-            )
+            return grouping.children[0].children[1].children  # type: ignore
         return []
-
-    @classmethod
-    def _get_labels(cls, labels: list[str | Tree]) -> Sequence[str]:
-        result: list[str] = []
-        for label_name in labels:
-            result.append(label_name.value)  # type: ignore
-        return result

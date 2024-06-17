@@ -9,10 +9,11 @@ from jose import jwt
 from neuro_auth_client import AuthClient, Permission, User
 from yarl import URL
 
+
 _JWT_SECRET = "secret"
 
 
-@pytest.fixture
+@pytest.fixture()
 def token_factory() -> Callable[[str], str]:
     def _create(name: str) -> str:
         payload = {"https://platform.neuromation.io/user": name}
@@ -21,7 +22,10 @@ def token_factory() -> Callable[[str], str]:
     return _create
 
 
-@pytest.fixture
+UserFactory = Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]]
+
+
+@pytest.fixture()
 def user_factory(
     token_factory: Callable[[str], str], platform_auth_server: URL
 ) -> Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]]:
@@ -38,3 +42,53 @@ def user_factory(
                 await client.grant_user_permissions(name, permissions)
 
     return _create
+
+
+@pytest.fixture()
+async def service_token(
+    user_factory: UserFactory, token_factory: Callable[[str], str]
+) -> str:
+    await user_factory("cluster", [Permission(uri="user://", action="read")])
+    return token_factory("cluster")
+
+
+@pytest.fixture()
+async def cluster_admin_token(
+    user_factory: UserFactory, token_factory: Callable[[str], str]
+) -> str:
+    await user_factory(
+        "cluster-admin",
+        [
+            Permission(uri="role://default/manager", action="manage"),
+            Permission(uri="cluster://default/access", action="read"),
+        ],
+    )
+    return token_factory("cluster-admin")
+
+
+@pytest.fixture()
+async def regular_user_token(
+    user_factory: UserFactory, token_factory: Callable[[str], str]
+) -> str:
+    await user_factory(
+        "user",
+        [
+            Permission(uri="cluster://default/access", action="read"),
+            Permission(uri="job://default/user", action="manage"),
+        ],
+    )
+    return token_factory("user")
+
+
+@pytest.fixture()
+async def other_cluster_user_token(
+    user_factory: UserFactory, token_factory: Callable[[str], str]
+) -> str:
+    await user_factory(
+        "other-user",
+        [
+            Permission(uri="cluster://neuro-public/access", action="read"),
+            Permission(uri="job://neuro-public/other-user", action="manage"),
+        ],
+    )
+    return token_factory("other-user")

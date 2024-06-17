@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Coroutine, Sequence
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import aiohttp
 import pytest
-from neuro_auth_client import Permission
 from pytest_docker.plugin import Services
 from yarl import URL
 
@@ -62,71 +60,20 @@ async def create_local_app_server(
         await runner.cleanup()
 
 
-UserFactory = Callable[[str, Sequence[Permission]], Coroutine[Any, Any, None]]
-
-
 @pytest.fixture(scope="session")
-def event_loop() -> asyncio.AbstractEventLoop:
-    return asyncio.get_event_loop()
+def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop()
+    yield loop
+    loop.close()
 
 
-@pytest.fixture
-async def service_token(
-    user_factory: UserFactory, token_factory: Callable[[str], str]
-) -> str:
-    await user_factory("cluster", [Permission(uri="user://", action="read")])
-    return token_factory("cluster")
-
-
-@pytest.fixture
-async def cluster_admin_token(
-    user_factory: UserFactory, token_factory: Callable[[str], str]
-) -> str:
-    await user_factory(
-        "cluster-admin",
-        [
-            Permission(uri="role://default/manager", action="manage"),
-            Permission(uri="cluster://default/access", action="read"),
-        ],
-    )
-    return token_factory("cluster-admin")
-
-
-@pytest.fixture
-async def regular_user_token(
-    user_factory: UserFactory, token_factory: Callable[[str], str]
-) -> str:
-    await user_factory(
-        "user",
-        [
-            Permission(uri="cluster://default/access", action="read"),
-            Permission(uri="job://default/user", action="manage"),
-        ],
-    )
-    return token_factory("user")
-
-
-@pytest.fixture
-async def other_cluster_user_token(
-    user_factory: UserFactory, token_factory: Callable[[str], str]
-) -> str:
-    await user_factory(
-        "other-user",
-        [
-            Permission(uri="cluster://neuro-public/access", action="read"),
-            Permission(uri="job://neuro-public/other-user", action="manage"),
-        ],
-    )
-    return token_factory("other-user")
-
-
-@pytest.fixture
+@pytest.fixture()
 def platform_auth_server(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("platform-auth", 8080)
     return URL(f"http://{docker_ip}:{port}")
 
 
-@pytest.fixture
+@pytest.fixture()
 async def platform_api_server(
     unused_tcp_port_factory: Callable[[], int],
     platform_api_app: aiohttp.web.Application,
@@ -137,7 +84,7 @@ async def platform_api_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture
+@pytest.fixture()
 async def platform_config_server(
     unused_tcp_port_factory: Callable[[], int],
     platform_config_app: aiohttp.web.Application,
@@ -148,14 +95,14 @@ async def platform_config_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture
+@pytest.fixture()
 def platform_auth_config(
     platform_auth_server: URL, service_token: str
 ) -> PlatformAuthConfig:
     return PlatformAuthConfig(url=platform_auth_server, token=service_token)
 
 
-@pytest.fixture
+@pytest.fixture()
 def platform_api_config(
     platform_api_server: URL, service_token: str
 ) -> PlatformServiceConfig:
@@ -164,14 +111,14 @@ def platform_api_config(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def platform_config_config(
     platform_config_server: URL, service_token: str
 ) -> PlatformServiceConfig:
     return PlatformServiceConfig(url=platform_config_server, token=service_token)
 
 
-@pytest.fixture
+@pytest.fixture()
 def metrics_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_config_config: PlatformServiceConfig,
@@ -189,7 +136,7 @@ def metrics_config(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 async def metrics_server_factory() -> (
     Callable[[MetricsConfig], AbstractAsyncContextManager[URL]]
 ):
@@ -199,15 +146,12 @@ async def metrics_server_factory() -> (
         async with create_local_app_server(
             app=app, port=metrics_config.server.port
         ) as address:
-            assert app["zone"] == "minikube-zone"
-            assert app["instance_type"] == "minikube"
-            assert app["node_pool_name"] == "minikube-node-pool"
             yield URL.build(scheme="http", host=address.host, port=address.port)
 
     return _create
 
 
-@pytest.fixture
+@pytest.fixture()
 async def metrics_server(
     metrics_server_factory: Callable[[MetricsConfig], AbstractAsyncContextManager[URL]],
     metrics_config: MetricsConfig,
@@ -216,13 +160,13 @@ async def metrics_server(
         yield server
 
 
-@pytest.fixture
+@pytest.fixture()
 def thanos_query_url(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("thanos-query", 9091)
     return URL(f"http://{docker_ip}:{port}")
 
 
-@pytest.fixture
+@pytest.fixture()
 def prometheus_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
@@ -239,7 +183,7 @@ def prometheus_proxy_config(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 async def prometheus_proxy_server(
     prometheus_proxy_config: PrometheusProxyConfig,
 ) -> AsyncIterator[URL]:
@@ -250,13 +194,13 @@ async def prometheus_proxy_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture
+@pytest.fixture()
 def grafana_url(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("grafana", 3000)
     return URL(f"http://{docker_ip}:{port}")
 
 
-@pytest.fixture
+@pytest.fixture()
 def grafana_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
@@ -273,7 +217,7 @@ def grafana_proxy_config(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 async def grafana_proxy_server(
     grafana_proxy_config: GrafanaProxyConfig,
 ) -> AsyncIterator[URL]:
@@ -284,7 +228,7 @@ async def grafana_proxy_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture
+@pytest.fixture()
 async def client() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session

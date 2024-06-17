@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+
 pytest_plugins = [
     "tests.integration.conftest_platform_auth",
     "tests.integration.conftest_platform_config",

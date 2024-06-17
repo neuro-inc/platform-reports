@@ -10,7 +10,7 @@ from contextlib import (
     contextmanager,
     suppress,
 )
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -37,7 +37,6 @@ from yarl import URL
 
 from platform_reports.cluster import ClusterHolder
 from platform_reports.kube_client import (
-    UTC,
     ContainerStatus,
     KubeClient,
     Metadata,
@@ -66,17 +65,17 @@ class _TestClusterHolder(ClusterHolder):
         return self._cluster
 
 
-@pytest.fixture
+@pytest.fixture()
 def cluster_holder(cluster: Cluster) -> ClusterHolder:
     return _TestClusterHolder(cluster)
 
 
 class TestCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def collector(self) -> Collector[Price]:
         return Collector(Price(), interval_s=0.1)
 
-    @pytest.fixture
+    @pytest.fixture()
     def price_factory(self, collector: Collector[Price]) -> Iterator[mock.Mock]:
         price = Price(currency="USD", value=Decimal(1))
         with mock.patch.object(
@@ -101,7 +100,7 @@ class TestCollector:
 
 
 class TestConfigPriceCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -125,7 +124,7 @@ class TestConfigPriceCollector:
             ),
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     async def collector_factory(
         self, cluster_holder: ClusterHolder
     ) -> Callable[..., AbstractAsyncContextManager[ConfigPriceCollector]]:
@@ -134,7 +133,7 @@ class TestConfigPriceCollector:
             async with ConfigPriceCollector(
                 cluster_holder=cluster_holder,
                 node_pool_name=node_pool_name,
-                node_created_at=datetime.now(timezone.utc) - timedelta(hours=10),
+                node_created_at=datetime.now(UTC) - timedelta(hours=10),
             ) as collector:
                 assert isinstance(collector, ConfigPriceCollector)
                 yield collector
@@ -165,26 +164,26 @@ class TestConfigPriceCollector:
 
 
 class TestAWSNodePriceCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def pricing_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
 
-    @pytest.fixture
+    @pytest.fixture()
     def ec2_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
 
-    @pytest.fixture
+    @pytest.fixture()
     def collector_factory(
         self, pricing_client: AioBaseClient, ec2_client: AioBaseClient
     ) -> Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]]:
         @asynccontextmanager
         async def _create(
-            is_spot: bool = False,
+            is_spot: bool = False,  # noqa: FBT001, FBT002
         ) -> AsyncIterator[AWSNodePriceCollector]:
             async with AWSNodePriceCollector(
                 pricing_client=pricing_client,
                 ec2_client=ec2_client,
-                node_created_at=datetime.now(timezone.utc) - timedelta(hours=10),
+                node_created_at=datetime.now(UTC) - timedelta(hours=10),
                 region="us-east-1",
                 zone="us-east-1a",
                 instance_type="p2.xlarge",
@@ -346,7 +345,7 @@ class TestAWSNodePriceCollector:
 
 
 class TestGCPNodePriceCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -379,7 +378,7 @@ class TestGCPNodePriceCollector:
             ),
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     def google_service_skus(self) -> dict[str, Any]:
         return {
             "skus": [
@@ -601,22 +600,24 @@ class TestGCPNodePriceCollector:
             ]
         }
 
-    @pytest.fixture
+    @pytest.fixture()
     def collector_factory(
         self, cluster_holder: ClusterHolder, google_service_skus: dict[str, Any]
     ) -> Callable[..., AbstractContextManager[GCPNodePriceCollector]]:
         @contextmanager
         def _create(
-            node_pool_name: str, instance_type: str, is_preemptible: bool = False
+            node_pool_name: str,
+            instance_type: str,
+            is_preemptible: bool = False,  # noqa: FBT001, FBT002
         ) -> Iterator[GCPNodePriceCollector]:
             result = GCPNodePriceCollector(
                 cluster_holder=cluster_holder,
                 service_account_path=Path("sa.json"),
-                node_created_at=datetime.now(timezone.utc) - timedelta(hours=10),
+                node_created_at=datetime.now(UTC) - timedelta(hours=10),
                 node_pool_name=node_pool_name,
                 region="us-central1",
                 instance_type=instance_type,
-                is_preemptible=is_preemptible,
+                is_preemptive=is_preemptible,
             )
             with mock.patch.object(result, "_client") as client:
                 request = (
@@ -639,7 +640,9 @@ class TestGCPNodePriceCollector:
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory("n1-highmem-8", "n1-highmem-8", True) as collector:
+        with collector_factory(
+            "n1-highmem-8", "n1-highmem-8", is_preemptible=True
+        ) as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal(1), currency="USD")
 
@@ -655,7 +658,9 @@ class TestGCPNodePriceCollector:
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8", True) as collector:
+        with collector_factory(
+            "n1-highmem-8-4xk80", "n1-highmem-8", is_preemptible=True
+        ) as collector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("6.4"), currency="USD")
 
@@ -664,7 +669,9 @@ class TestGCPNodePriceCollector:
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with (
-            collector_factory("n1-highmem-8", "unknown", True) as collector,
+            collector_factory(
+                "n1-highmem-8", "unknown", is_preemptible=True
+            ) as collector,
             pytest.raises(AssertionError, match=r"Found prices only for: \[\]"),
         ):
             await collector.get_latest_value()
@@ -674,14 +681,16 @@ class TestGCPNodePriceCollector:
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
         with (
-            collector_factory("n1-highmem-8-1xv100", "n1-highmem-8", True) as collector,
+            collector_factory(
+                "n1-highmem-8-1xv100", "n1-highmem-8", is_preemptible=True
+            ) as collector,
             pytest.raises(AssertionError, match=r"Found prices only for: \[CPU, RAM\]"),
         ):
             await collector.get_latest_value()
 
 
 class TestAzureNodePriceCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def prices_client_factory(
         self,
         aiohttp_client: Any,
@@ -700,17 +709,17 @@ class TestAzureNodePriceCollector:
 
         return _create
 
-    @pytest.fixture
+    @pytest.fixture()
     def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
         def _create(
             prices_client: aiohttp.ClientSession,
             instance_type: str,
-            is_spot: bool = False,
+            is_spot: bool = False,  # noqa: FBT001, FBT002
         ) -> AzureNodePriceCollector:
             return AzureNodePriceCollector(
                 prices_client=prices_client,
                 prices_url=URL(""),
-                node_created_at=datetime.now(timezone.utc) - timedelta(hours=10),
+                node_created_at=datetime.now(UTC) - timedelta(hours=10),
                 region="eastus",
                 instance_type=instance_type,
                 is_spot=is_spot,
@@ -839,7 +848,7 @@ class TestAzureNodePriceCollector:
 
 
 class TestPodCreditsCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -862,7 +871,7 @@ class TestPodCreditsCollector:
             ),
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
         def _create(pods: list[Pod]) -> mock.AsyncMock:
             async def get_pods(
@@ -881,7 +890,7 @@ class TestPodCreditsCollector:
 
         return _create
 
-    @pytest.fixture
+    @pytest.fixture()
     def collector_factory(
         self,
         cluster_holder: ClusterHolder,
@@ -1005,13 +1014,13 @@ class TestPodCreditsCollector:
 
 
 class TestNodeEnergyConsumptionCollector:
-    @pytest.fixture
+    @pytest.fixture()
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
             status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
-            timezone=timezone.utc,
+            timezone=UTC,
             cloud_provider=OnPremCloudProvider(
                 storage=None,
                 node_pools=[
@@ -1035,8 +1044,8 @@ class TestNodeEnergyConsumptionCollector:
                         periods=[
                             EnergySchedulePeriod(
                                 1,
-                                start_time=time(0, tzinfo=timezone.utc),
-                                end_time=time(5, 59, tzinfo=timezone.utc),
+                                start_time=time(0, tzinfo=UTC),
+                                end_time=time(5, 59, tzinfo=UTC),
                             )
                         ],
                     ),

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import socket
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -16,8 +15,8 @@ from platform_reports.kube_client import KubeClient, Node
 
 @pytest.fixture(scope="session")
 def _kube_config_payload() -> dict[str, Any]:
-    kube_config_path = os.path.expanduser("~/.kube/config")
-    with open(kube_config_path) as kube_config:
+    kube_config_path = Path("~/.kube/config").expanduser()
+    with Path(kube_config_path).open() as kube_config:
         return yaml.safe_load(kube_config)
 
 
@@ -83,7 +82,7 @@ class KubePodFactory(Protocol):
         pass
 
 
-@pytest.fixture
+@pytest.fixture()
 async def kube_pod_factory(kube_client: KubeClient) -> AsyncIterator[KubePodFactory]:
     pods = []
 

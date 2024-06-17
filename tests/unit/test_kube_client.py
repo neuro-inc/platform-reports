@@ -100,7 +100,7 @@ class TestPodStatus:
         )
 
         with pytest.raises(ValueError, match="Pod has not started yet"):
-            status.start_date
+            status.start_date  # noqa: B018
 
     def test_finish_date__terminated__single_container(self) -> None:
         started_at = datetime.now(UTC) - timedelta(hours=1)
@@ -157,7 +157,7 @@ class TestPodStatus:
         )
 
         with pytest.raises(ValueError, match="Pod has not finished yet"):
-            status.finish_date
+            status.finish_date  # noqa: B018
 
     def test_finish_date__running(self) -> None:
         status = PodStatus(
@@ -170,4 +170,4 @@ class TestPodStatus:
         )
 
         with pytest.raises(ValueError, match="Pod has not finished yet"):
-            status.finish_date
+            status.finish_date  # noqa: B018

@@ -1,6 +1,8 @@
 .PHONY: all test clean
 all test clean:
 
+IMAGE_NAME = platform-reports
+
 venv:
 	python -m venv venv
 	. venv/bin/activate; \
@@ -17,22 +19,31 @@ lint:
 	. venv/bin/activate; \
 	python -m pre_commit run --all-files
 	. venv/bin/activate; \
-	python -m mypy platform_reports tests
+	python -m mypy src tests
 
-test_unit:
+.PHONY: test-unit
+test-unit:
 	. venv/bin/activate; \
 	pytest -vv --log-level=INFO --cov=platform_reports --cov-report xml:.coverage.unit.xml tests/unit
 
-test_integration:
+.PHONY: test-integration
+test-integration:
 	. venv/bin/activate; \
 	pytest -vv --log-level=INFO --cov=platform_reports --cov-report xml:.coverage.integration.xml tests/integration
 
-
-docker_build:
-	rm -rf build dist
+dist: venv setup.cfg pyproject.toml $(shell find src -type f)
+	make clean-dist
 	. venv/bin/activate; \
 	pip install -U build; \
-	python -m build
+	python -m build --wheel ./;
+
+.PHONY: clean-dist
+clean-dist:
+	rm -rf dist
+
+build/image: .dockerignore Dockerfile dist
 	docker build \
-		--build-arg PYTHON_BASE=slim-buster \
-		-t platform-reports:latest .
+		--build-arg PY_VERSION=$$(cat .python-version) \
+		-t $(IMAGE_NAME):latest .
+	mkdir -p build
+	docker image inspect $(IMAGE_NAME):latest -f '{{ .ID }}' > $@

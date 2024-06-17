@@ -2,7 +2,7 @@ import aiohttp.web
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture()
 def platform_api_app() -> aiohttp.web.Application:
     async def _get_config(request: aiohttp.web.Request) -> aiohttp.web.Response:
         return aiohttp.web.json_response(

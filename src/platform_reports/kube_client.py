@@ -7,10 +7,9 @@ import ssl
 from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from types import TracebackType
-from typing import Any
+from typing import Any, Self
 
 import aiohttp
 from dateutil.parser import parse
@@ -18,9 +17,8 @@ from yarl import URL
 
 from .config import KubeClientAuthType, KubeConfig
 
-LOGGER = logging.getLogger(__name__)
 
-UTC = timezone.utc
+LOGGER = logging.getLogger(__name__)
 
 
 class KubeClientError(Exception):
@@ -128,27 +126,32 @@ class PodStatus:
     @property
     def start_date(self) -> datetime:
         if self.is_pending:
-            raise ValueError("Pod has not started yet")
+            msg = "Pod has not started yet"
+            raise ValueError(msg)
         start_date = None
         for container_status in self.container_statuses:
             if started_at := container_status.started_at:
                 start_date = min(start_date or started_at, started_at)
         if start_date is None:
-            raise ValueError("Pod has not started yet")
+            msg = "Pod has not started yet"
+            raise ValueError(msg)
         return start_date.astimezone(UTC)
 
     @property
     def finish_date(self) -> datetime:
         if not self.is_terminated:
-            raise ValueError("Pod has not finished yet")
+            msg = "Pod has not finished yet"
+            raise ValueError(msg)
         finish_date = None
         for container_status in self.container_statuses:
             if finished_at := container_status.finished_at:
                 finish_date = max(finish_date or finished_at, finished_at)
             else:
-                raise ValueError("Pod has not finished yet")
+                msg = "Pod has not finished yet"
+                raise ValueError(msg)
         if finish_date is None:
-            raise ValueError("Pod has not finished yet")
+            msg = "Pod has not finished yet"
+            raise ValueError(msg)
         return finish_date.astimezone(UTC)
 
 
@@ -177,9 +180,9 @@ class KubeClient:
         self._client: aiohttp.ClientSession | None = None
         self._token_updater_task: asyncio.Task[None] | None = None
 
-    def _create_ssl_context(self) -> ssl.SSLContext | None:
+    def _create_ssl_context(self) -> ssl.SSLContext | bool:
         if self._config.url.scheme != "https":
-            return None
+            return False
         ssl_context = ssl.create_default_context(
             cafile=self._config.cert_authority_path,
             cadata=self._config.cert_authority_data_pem,
@@ -191,16 +194,11 @@ class KubeClient:
             )
         return ssl_context
 
-    async def __aenter__(self) -> KubeClient:
+    async def __aenter__(self) -> Self:
         await self._init()
         return self
 
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.aclose()
 
     async def _init(self) -> None:

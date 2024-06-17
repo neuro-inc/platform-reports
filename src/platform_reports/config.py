@@ -10,6 +10,7 @@ from pathlib import Path
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
 from yarl import URL
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,10 +104,7 @@ class EnvironConfigFactory:
 
     def _get_url(self, name: str) -> URL | None:
         value = self._environ[name]
-        if value == "-":
-            return None
-        else:
-            return URL(value)
+        return None if value == "-" else URL(value)
 
     def create_metrics(self) -> MetricsConfig:
         gcp_service_account_key_path = MetricsConfig.gcp_service_account_key_path

@@ -1,4 +1,6 @@
-FROM python:3.9.9-slim-bullseye AS installer
+ARG PY_VERSION=3.11
+
+FROM python:${PY_VERSION}-slim-bookworm AS requirements
 
 ENV PATH=/root/.local/bin:$PATH
 
@@ -9,7 +11,7 @@ COPY dist /tmp/dist
 RUN ls /tmp/dist
 RUN pip install --user --find-links /tmp/dist platform-reports
 
-FROM python:3.9.9-slim-bullseye as service
+FROM python:${PY_VERSION}-slim-bookworm as service
 
 LABEL org.opencontainers.image.source = "https://github.com/neuro-inc/platform-reports"
 
@@ -17,4 +19,4 @@ WORKDIR /app
 
 ENV PATH=/root/.local/bin:$PATH
 
-COPY --from=installer /root/.local/ /root/.local/
+COPY --from=requirements /root/.local/ /root/.local/

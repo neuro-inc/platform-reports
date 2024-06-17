@@ -6,12 +6,12 @@ import logging
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
-from datetime import datetime, time, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, time, timedelta, tzinfo
 from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 from zoneinfo import ZoneInfo
 
 import aiohttp
@@ -26,10 +26,9 @@ from .cluster import ClusterHolder
 from .config import Label
 from .kube_client import KubeClient, Pod
 
+
 logger = logging.getLogger(__name__)
 
-
-UTC = timezone.utc
 
 GOOGLE_COMPUTE_ENGINE_ID = "services/6F81-5844-456A"
 
@@ -93,7 +92,7 @@ class Collector(Generic[_TValue]):
                     "Unexpected error ocurred during value update", exc_info=ex
                 )
 
-    async def __aenter__(self) -> Collector[_TValue]:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
@@ -156,6 +155,7 @@ class ConfigPriceCollector(_NodePriceCollector):
 class AWSNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
+        *,
         pricing_client: AioBaseClient,
         ec2_client: AioBaseClient,
         node_created_at: datetime,
@@ -167,6 +167,16 @@ class AWSNodePriceCollector(_NodePriceCollector):
     ) -> None:
         super().__init__(node_created_at, Price(), interval_s)
 
+        if not region:
+            msg = "Region is required"
+            raise ValueError(msg)
+        if not zone:
+            msg = "Zone is required"
+            raise ValueError(msg)
+        if not instance_type:
+            msg = "Instance type is required"
+            raise ValueError(msg)
+
         self._pricing_client = pricing_client
         self._ec2_client = ec2_client
         self._region = region
@@ -175,7 +185,7 @@ class AWSNodePriceCollector(_NodePriceCollector):
         self._instance_type = instance_type
         self._is_spot = is_spot
 
-    async def __aenter__(self) -> Collector[Price]:
+    async def __aenter__(self) -> Self:
         await super().__aenter__()
         region_long_names = self._get_region_long_names()
         self._region_long_name = region_long_names[self._region]
@@ -265,6 +275,7 @@ class AWSNodePriceCollector(_NodePriceCollector):
 class AzureNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
+        *,
         prices_client: aiohttp.ClientSession,
         prices_url: URL,
         node_created_at: datetime,
@@ -274,6 +285,13 @@ class AzureNodePriceCollector(_NodePriceCollector):
         interval_s: float = 3600,
     ) -> None:
         super().__init__(node_created_at, Price(), interval_s)
+
+        if not region:
+            msg = "Region is required"
+            raise ValueError(msg)
+        if not instance_type:
+            msg = "Instance type is required"
+            raise ValueError(msg)
 
         self._prices_client = prices_client
         self._prices_url = prices_url
@@ -329,27 +347,35 @@ class AzureNodePriceCollector(_NodePriceCollector):
 class GCPNodePriceCollector(_NodePriceCollector):
     def __init__(
         self,
+        *,
         cluster_holder: ClusterHolder,
         service_account_path: Path,
         node_created_at: datetime,
         node_pool_name: str,
         region: str,
         instance_type: str,
-        is_preemptible: bool,
+        is_preemptive: bool,
         interval_s: float = 3600,
     ) -> None:
         super().__init__(node_created_at, Price(), interval_s)
+
+        if not region:
+            msg = "Region is required"
+            raise ValueError(msg)
+        if not instance_type:
+            msg = "Instance type is required"
+            raise ValueError(msg)
 
         self._cluster_holder = cluster_holder
         self._service_account_path = service_account_path
         self._node_pool_name = node_pool_name
         self._region = region
         self._instance_family = self._get_instance_family(instance_type)
-        self._usage_type = self._get_usage_type(is_preemptible)
+        self._usage_type = self._get_usage_type(is_preemptive)
         self._loop = asyncio.get_event_loop()
         self._client: Any = None
 
-    async def __aenter__(self) -> Collector[Price]:
+    async def __aenter__(self) -> Self:
         self._client = await self._loop.run_in_executor(None, self._create_client)
         return self
 
@@ -363,7 +389,7 @@ class GCPNodePriceCollector(_NodePriceCollector):
         # Can be n1, n2, n2d, e2
         return instance_type.split("-")[0].lower()
 
-    def _get_usage_type(self, is_preemptible: bool) -> str:
+    def _get_usage_type(self, is_preemptible: bool) -> str:  # noqa: FBT001
         return "preemptible" if is_preemptible else "ondemand"
 
     async def get_price_per_hour(self) -> Price:

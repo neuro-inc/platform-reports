@@ -2,28 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "platformReports.metricsApi.fullname" . }}
-  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
-    service: platform-metrics-api
+  labels:
+    {{- include "platformReports.metricsApi.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.metricsApi.replicas | default 1 }}
   selector:
     matchLabels:
-      app: {{ include "platformReports.name" . }}
-      release: {{ .Release.Name | quote }}
-      service: platform-metrics-api
+      {{- include "platformReports.metricsApi.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "platformReports.name" . }}
-        release: {{ .Release.Name | quote }}
-        service: platform-metrics-api
-      {{- if .Values.secrets }}
-      annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-      {{- end }}
+        {{- include "platformReports.metricsApi.selectorLabels" . | nindent 8 }}
     spec:
-      {{- if .Values.imagePullSecrets }}
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: metrics-api
@@ -55,7 +48,8 @@ spec:
               value: {{ .Values.sentry.sampleRate | default 0 | quote }}
             {{- end }}
           {{- with .Values.metricsApi.resources }}
-          resources: {{ toYaml . | nindent 12 }}
+          resources:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - containerPort: 8080

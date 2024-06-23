@@ -327,7 +327,6 @@ class MetricsApiHandler:
     @request_schema(PostCreditsConsumptionRequestSchema())
     @response_schema(PostCreditsConsumptionResponseSchema(many=True))
     async def handle_post_credits_consumption(self, request: Request) -> Response:
-        # TODO: Should this be a separate billing:// schema?
         await check_permissions(
             request, [Permission(f"cluster://{self._config.cluster_name}", "read")]
         )

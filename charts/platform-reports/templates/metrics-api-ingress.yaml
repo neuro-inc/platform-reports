@@ -3,7 +3,8 @@ apiVersion: {{ include "k8s.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
   name: {{ include "platformReports.metricsApi.fullname" . }}
-  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+  labels:
+    {{- include "platformReports.metricsApi.labels" . | nindent 4 }}
   {{- with .Values.metricsApi.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -24,12 +25,12 @@ spec:
                 name: {{ include "platformReports.metricsApi.fullname" $ }}
                 port:
                   name: http
-        - path: /api/metrics/
-          pathType: Prefix
-          backend:
-            service:
-              name: {{ include "platformReports.metricsApi.fullname" $ }}
-              port:
-                name: http
+          - path: /api/metrics/
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "platformReports.metricsApi.fullname" $ }}
+                port:
+                  name: http
     {{- end }}
 {{- end }}

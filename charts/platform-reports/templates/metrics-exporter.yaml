@@ -48,8 +48,8 @@ spec:
       containers:
         # Use slim image version to reduce service startup time
         - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          name: platform-metrics-exporter
-          command: ["metrics-server"]
+          name: metrics-exporter
+          command: [metrics-exporter]
           env:
             {{- if .Values.logLevel }}
             - name: LOG_LEVEL

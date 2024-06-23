@@ -80,6 +80,18 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "platformReports.metricsApi.labels" -}}
+{{ include "platformReports.metricsApi.selectorLabels" . }}
+chart: {{ include "platformReports.chart" . }}
+heritage: {{ .Release.Service | quote }}
+{{- end -}}
+
+{{- define "platformReports.metricsApi.selectorLabels" -}}
+app: {{ include "platformReports.name" . }}
+release: {{ .Release.Name | quote }}
+service: platform-metrics-api
+{{- end -}}
+
 {{- define "platformReports.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" -}}
 {{- end -}}

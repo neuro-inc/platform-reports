@@ -67,6 +67,19 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "platformReports.metricsApi.fullname" -}}
+{{- if .Values.metricsApi.fullnameOverride -}}
+{{- .Values.metricsApi.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "metrics-api" .Values.metricsApi.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "platformReports.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" -}}
 {{- end -}}

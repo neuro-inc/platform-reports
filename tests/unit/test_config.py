@@ -1,5 +1,9 @@
+import os
+from collections.abc import Iterator
 from pathlib import Path
 
+import pydantic
+import pytest
 from yarl import URL
 
 from platform_reports.config import (
@@ -7,7 +11,8 @@ from platform_reports.config import (
     GrafanaProxyConfig,
     KubeClientAuthType,
     KubeConfig,
-    MetricsConfig,
+    MetricsApiConfig,
+    MetricsExporterConfig,
     PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -15,8 +20,18 @@ from platform_reports.config import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _reset_os_environ() -> Iterator[None]:
+    environ = os.environ.copy()
+
+    yield
+
+    os.environ.clear()
+    os.environ.update(environ)
+
+
 class TestEnvironConfigFactory:
-    def test_create_metrics_defaults(self) -> None:
+    def test_create_metrics_exporter_defaults(self) -> None:
         env = {
             "NP_CONFIG_URL": "http://dev.neu.ro",
             "NP_API_URL": "http://dev.neu.ro/api/v1",
@@ -28,7 +43,7 @@ class TestEnvironConfigFactory:
 
         result = EnvironConfigFactory(env).create_metrics()
 
-        assert result == MetricsConfig(
+        assert result == MetricsExporterConfig(
             server=ServerConfig(),
             platform_config=PlatformServiceConfig(
                 url=URL("http://dev.neu.ro"), token="token"
@@ -44,7 +59,7 @@ class TestEnvironConfigFactory:
             node_name="node",
         )
 
-    def test_create_metrics_custom(self) -> None:
+    def test_create_metrics__exporter_custom(self) -> None:
         env = {
             "SERVER_HOST": "metrics",
             "SERVER_PORT": "9500",
@@ -62,7 +77,7 @@ class TestEnvironConfigFactory:
 
         result = EnvironConfigFactory(env).create_metrics()
 
-        assert result == MetricsConfig(
+        assert result == MetricsExporterConfig(
             server=ServerConfig(host="metrics", port=9500),
             platform_config=PlatformServiceConfig(
                 url=URL("http://dev.neu.ro"), token="token"
@@ -213,3 +228,27 @@ class TestEnvironConfigFactory:
             conn_pool_size=300,
             conn_keep_alive_timeout_s=400,
         )
+
+    def test_create_metrics_api(self) -> None:
+        os.environ["PLATFORM_AUTH__URL"] = "http://platform-auth.platform"
+        os.environ["PLATFORM_AUTH__TOKEN"] = "test-token"
+        os.environ["PROMETHEUS_URL"] = "http://prometheus.platform"
+        os.environ["CLUSTER_NAME"] = "test-cluster"
+
+        config = MetricsApiConfig()  # type: ignore
+
+        assert config == MetricsApiConfig(
+            platform_auth=MetricsApiConfig.PlatformAuth(
+                url=pydantic.HttpUrl("http://platform-auth.platform"),
+                token="test-token",
+            ),
+            prometheus_url=pydantic.HttpUrl("http://prometheus.platform"),
+            cluster_name="test-cluster",
+        )
+
+        os.environ["SERVER__HOST"] = "127.0.0.1"
+        os.environ["SERVER__PORT"] = "9090"
+
+        config = MetricsApiConfig()  # type: ignore
+
+        assert config.server == MetricsApiConfig.Server(host="127.0.0.1", port=9090)

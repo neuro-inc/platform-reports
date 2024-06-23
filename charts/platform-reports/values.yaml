@@ -14,6 +14,18 @@ imagePullSecrets: []
 
 secrets: []
 
+metricsApi:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  ingress:
+    enabled: false
+    ingressClassName: ""
+    hosts: []
+    annotations: {}
+
 metricsExporter:
   port: 9500
   resources:

@@ -13,10 +13,12 @@ from textwrap import dedent
 import aiobotocore.session
 import aiohttp
 import aiohttp.web
+import uvloop
 from aiohttp.web import (
     HTTPBadRequest,
     HTTPForbidden,
     HTTPInternalServerError,
+    HTTPOk,
     Request,
     Response,
     StreamResponse,
@@ -24,9 +26,17 @@ from aiohttp.web import (
     middleware,
 )
 from aiohttp.web_urldispatcher import AbstractRoute
+from aiohttp_apispec import (
+    docs,
+    request_schema,
+    response_schema,
+    setup_aiohttp_apispec,
+    validation_middleware,
+)
 from jose import jwt
 from multidict import CIMultiDict, MultiMapping
-from neuro_auth_client import AuthClient, Permission
+from neuro_auth_client import AuthClient, Permission, check_permissions
+from neuro_auth_client.security import setup_security
 from neuro_config_client.client import ConfigClient
 from neuro_logging import init_logging, setup_sentry
 from neuro_sdk import Client as ApiClient, Factory as ClientFactory
@@ -38,12 +48,13 @@ from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
     Label,
-    MetricsConfig,
+    MetricsApiConfig,
+    MetricsExporterConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
 )
 from .kube_client import KubeClient
-from .metrics import (
+from .metrics_collector import (
     AWSNodePriceCollector,
     AzureNodePriceCollector,
     Collector,
@@ -53,11 +64,19 @@ from .metrics import (
     PodCreditsCollector,
     Price,
 )
+from .metrics_service import CreditsConsumptionRequest, MetricsService
+from .prometheus_client import PrometheusClient
+from .schema import (
+    ClientErrorSchema,
+    PostCreditsConsumptionRequest,
+    PostCreditsConsumptionRequestSchema,
+    PostCreditsConsumptionResponseSchema,
+)
 
 
 LOGGER = logging.getLogger(__name__)
 
-METRICS_CONFIG_APP_KEY = aiohttp.web.AppKey("config", MetricsConfig)
+METRICS_EXPORTER_CONFIG_APP_KEY = aiohttp.web.AppKey("config", MetricsExporterConfig)
 PROMETHEUS_PROXY_APP_KEY = aiohttp.web.AppKey("config", PrometheusProxyConfig)
 GRAFANA_PROXY_APP_KEY = aiohttp.web.AppKey("config", GrafanaProxyConfig)
 NODE_PRICE_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
@@ -74,6 +93,8 @@ PROMETHEUS_CLIENT_APP_KEY = aiohttp.web.AppKey(
 )
 GRAFANA_CLIENT_APP_KEY = aiohttp.web.AppKey("grafana_client", aiohttp.ClientSession)
 AUTH_SERVICE_APP_KEY = aiohttp.web.AppKey("auth_service", AuthService)
+METRICS_API_CONFIG_APP_KEY = aiohttp.web.AppKey("config", MetricsApiConfig)
+METRICS_SERVICE_APP_KEY = aiohttp.web.AppKey("metrics_service", MetricsService)
 
 
 class ProbesHandler:
@@ -87,7 +108,7 @@ class ProbesHandler:
         return Response(text="Pong")
 
 
-class MetricsHandler:
+class MetricsExporterHandler:
     def __init__(self, app: aiohttp.web.Application) -> None:
         self._app = app
 
@@ -107,8 +128,8 @@ class MetricsHandler:
         return self._app[NODE_POWER_CONSUMPTION_COLLECTOR_APP_KEY]
 
     @property
-    def _config(self) -> MetricsConfig:
-        return self._app[METRICS_CONFIG_APP_KEY]
+    def _config(self) -> MetricsExporterConfig:
+        return self._app[METRICS_EXPORTER_CONFIG_APP_KEY]
 
     async def handle(self, request: Request) -> Response:
         text = [self._get_node_price_total_text()]
@@ -275,6 +296,57 @@ class GrafanaProxyHandler:
         )
 
 
+class MetricsApiHandler:
+    def __init__(self, app: aiohttp.web.Application) -> None:
+        self._app = app
+
+    def register(self) -> None:
+        self._app.router.add_post(
+            "/v1/metrics/credits/consumption", self.handle_post_credits_consumption
+        )
+
+    @property
+    def _config(self) -> MetricsApiConfig:
+        return self._app[METRICS_API_CONFIG_APP_KEY]
+
+    @property
+    def _metrics_service(self) -> MetricsService:
+        return self._app[METRICS_SERVICE_APP_KEY]
+
+    @docs(
+        tags=["Metrics"],
+        summary="Evaluate credits consumption.",
+        responses={
+            HTTPOk.status_code: {},
+            HTTPInternalServerError.status_code: {
+                "description": "Unhandled error",
+                "schema": ClientErrorSchema(),
+            },
+        },
+    )
+    @request_schema(PostCreditsConsumptionRequestSchema())
+    @response_schema(PostCreditsConsumptionResponseSchema(many=True))
+    async def handle_post_credits_consumption(self, request: Request) -> Response:
+        # TODO: Should this be a separate billing:// schema?
+        await check_permissions(
+            request, [Permission(f"cluster://{self._config.cluster_name}", "read")]
+        )
+        request_data: PostCreditsConsumptionRequest = request["data"]
+        consumptions = await self._metrics_service.get_credits_consumption(
+            CreditsConsumptionRequest(
+                category_name=request_data.category_name,
+                org_name=request_data.org_name,
+                project_name=request_data.project_name,
+                start_date=request_data.start_date,
+                end_date=request_data.end_date,
+            )
+        )
+        response_schema = PostCreditsConsumptionResponseSchema(many=True)
+        return json_response(
+            response_schema.dump(consumptions), status=HTTPOk.status_code
+        )
+
+
 def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -> str:
     access_token: str = ""
     for cookie_name in access_token_cookie_names:
@@ -398,12 +470,14 @@ async def add_version_to_header(request: Request, response: StreamResponse) -> N
     response.headers["X-Service-Version"] = f"platform-reports/{package_version}"
 
 
-def create_metrics_app(config: MetricsConfig) -> aiohttp.web.Application:
+def create_metrics_exporter_app(
+    config: MetricsExporterConfig,
+) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     ProbesHandler(app).register()
-    MetricsHandler(app).register()
+    MetricsExporterHandler(app).register()
 
-    app[METRICS_CONFIG_APP_KEY] = config
+    app[METRICS_EXPORTER_CONFIG_APP_KEY] = config
 
     async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
         async with AsyncExitStack() as exit_stack:
@@ -616,13 +690,76 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
     return app
 
 
-def run_metrics_server() -> None:  # pragma: no coverage
+def create_metrics_api_app(config: MetricsApiConfig) -> aiohttp.web.Application:
+    async def _init_app(app: aiohttp.web.Application) -> AsyncIterator[None]:
+        async with AsyncExitStack() as exit_stack:
+            app[METRICS_API_CONFIG_APP_KEY] = config
+
+            LOGGER.info("Initializing Auth client")
+            auth_client = await exit_stack.enter_async_context(
+                AuthClient(config.platform_auth.yarl_url, config.platform_auth.token)
+            )
+            await setup_security(app, auth_client)
+
+            LOGGER.info("Initializing Prometheus client")
+            raw_client = await exit_stack.enter_async_context(aiohttp.ClientSession())
+            prometheus_client = PrometheusClient(
+                client=raw_client, prometheus_url=config.prometheus_yarl_url
+            )
+
+            LOGGER.info("Initializing Metrics service")
+            metrics_service = MetricsService(prometheus_client=prometheus_client)
+            app[METRICS_SERVICE_APP_KEY] = metrics_service
+
+            yield
+
+    app = aiohttp.web.Application(
+        middlewares=[handle_exceptions, validation_middleware]
+    )
+    app.on_response_prepare.append(add_version_to_header)
+    ProbesHandler(app).register()
+
+    metrics_app = aiohttp.web.Application()
+    metrics_app.cleanup_ctx.append(_init_app)
+    MetricsApiHandler(metrics_app).register()
+
+    app.add_subapp("/api", metrics_app)
+
+    prefix = "/api/metrics/docs"
+    setup_aiohttp_apispec(
+        app=app,
+        title="Metrics API documentation",
+        url=f"{prefix}/swagger.json",
+        static_path=f"{prefix}/static",
+        swagger_path=prefix,
+        security=[{"bearerAuth": []}],
+        securityDefinitions={
+            "bearerAuth": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": (
+                    "Enter the token with the `Bearer: ` prefix, "
+                    'e.g. "Bearer <token>".'
+                ),
+            },
+        },
+    )
+
+    return app
+
+
+def run_metrics_exporter() -> None:  # pragma: no coverage
     init_logging(health_check_url_path="/ping")
     config = EnvironConfigFactory().create_metrics()
     logging.info("Loaded config: %r", config)
     setup_sentry(health_check_url_path="/ping")
+    loop = uvloop.new_event_loop()
     aiohttp.web.run_app(
-        create_metrics_app(config), host=config.server.host, port=config.server.port
+        create_metrics_exporter_app(config),
+        host=config.server.host,
+        port=config.server.port,
+        loop=loop,
     )
 
 
@@ -631,10 +768,13 @@ def run_prometheus_proxy() -> None:  # pragma: no coverage
     config = EnvironConfigFactory().create_prometheus_proxy()
     logging.info("Loaded config: %r", config)
     setup_sentry()
+    loop = uvloop.new_event_loop()
     aiohttp.web.run_app(
         create_prometheus_proxy_app(config),
         host=config.server.host,
         port=config.server.port,
+        handler_cancellation=True,
+        loop=loop,
     )
 
 
@@ -643,8 +783,26 @@ def run_grafana_proxy() -> None:  # pragma: no coverage
     config = EnvironConfigFactory().create_grafana_proxy()
     logging.info("Loaded config: %r", config)
     setup_sentry(health_check_url_path="/ping")
+    loop = uvloop.new_event_loop()
     aiohttp.web.run_app(
         create_grafana_proxy_app(config),
         host=config.server.host,
         port=config.server.port,
+        handler_cancellation=True,
+        loop=loop,
+    )
+
+
+def run_metrics_api() -> None:  # pragma: no coverage
+    init_logging(health_check_url_path="/ping")
+    config = MetricsApiConfig()  # type: ignore
+    logging.info("Loaded config: %r", config)
+    setup_sentry(health_check_url_path="/ping")
+    loop = uvloop.new_event_loop()
+    aiohttp.web.run_app(
+        create_metrics_api_app(config),
+        host=config.server.host,
+        port=config.server.port,
+        handler_cancellation=True,
+        loop=loop,
     )

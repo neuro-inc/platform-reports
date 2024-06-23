@@ -1,24 +1,47 @@
 from __future__ import annotations
 
 import enum
-import logging
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
+import pydantic
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from yarl import URL
 
 
-logger = logging.getLogger(__name__)
-
-
 class Label:
-    NEURO_NODE_POOL_KEY = "platform.neuromation.io/nodepool"
-    NEURO_PREEMPTIBLE_KEY = "platform.neuromation.io/preemptible"
-    NEURO_PRESET_KEY = "platform.neuromation.io/preset"
-    APOLO_PRESET_KEY = "platform.apolo.us/preset"
+    class Key(str): ...
+
+    NEURO_NODE_POOL_KEY = Key("platform.neuromation.io/nodepool")
+    NEURO_PREEMPTIBLE_KEY = Key("platform.neuromation.io/preemptible")
+    NEURO_PRESET_KEY = Key("platform.neuromation.io/preset")
+    NEURO_ORG_KEY = Key("platform.neuromation.io/org")
+    NEURO_PROJECT_KEY = Key("platform.neuromation.io/project")
+    NEURO_JOB_KEY = Key("platform.neuromation.io/job")
+
+    APOLO_ORG_KEY = Key("platform.apolo.us/org")
+    APOLO_PROJECT_KEY = Key("platform.apolo.us/project")
+    APOLO_PRESET_KEY = Key("platform.apolo.us/preset")
+    APOLO_APP_KEY = Key("platform.apolo.us/app")
+
+
+class PrometheusLabelMeta(type):
+    def __new__(cls, *args: Any, **kwargs: Any) -> type[PrometheusLabel]:
+        instance = super().__new__(cls, *args, **kwargs)
+        for name in dir(instance):
+            value = getattr(instance, name)
+            if isinstance(value, Label.Key):
+                value = "label_" + value.replace(".", "_").replace("/", "_")
+                setattr(instance, name, value)
+        return instance
+
+
+class PrometheusLabel(Label, metaclass=PrometheusLabelMeta):
+    pass
 
 
 class KubeClientAuthType(enum.Enum):
@@ -31,11 +54,11 @@ class KubeClientAuthType(enum.Enum):
 class KubeConfig:
     url: URL
     cert_authority_path: str | None = None
-    cert_authority_data_pem: str | None = None
+    cert_authority_data_pem: str | None = field(repr=False, default=None)
     auth_type: KubeClientAuthType = KubeClientAuthType.NONE
     client_cert_path: str | None = None
     client_key_path: str | None = None
-    token: str | None = None
+    token: str | None = field(repr=False, default=None)
     token_path: str | None = None
     token_update_interval_s: int = 300
     conn_timeout_s: int = 300
@@ -63,7 +86,7 @@ class PlatformServiceConfig:
 
 
 @dataclass(frozen=True)
-class MetricsConfig:
+class MetricsExporterConfig:
     server: ServerConfig
     kube: KubeConfig
     platform_config: PlatformServiceConfig
@@ -74,6 +97,31 @@ class MetricsConfig:
     region: str = ""
     gcp_service_account_key_path: Path | None = None
     azure_prices_url: URL = URL("https://prices.azure.com")
+
+
+class MetricsApiConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_nested_delimiter="__")
+
+    class Server(pydantic.BaseModel):
+        host: str = "0.0.0.0"
+        port: int = 8080
+
+    class PlatformAuth(pydantic.BaseModel):
+        url: pydantic.HttpUrl | None
+        token: str = pydantic.Field(repr=False)
+
+        @property
+        def yarl_url(self) -> URL | None:
+            return URL(str(self.url)) if self.url else None
+
+    server: Server = Server()
+    platform_auth: PlatformAuth
+    prometheus_url: pydantic.HttpUrl
+    cluster_name: str
+
+    @property
+    def prometheus_yarl_url(self) -> URL:
+        return URL(str(self.prometheus_url))
 
 
 @dataclass(frozen=True)
@@ -106,13 +154,15 @@ class EnvironConfigFactory:
         value = self._environ[name]
         return None if value == "-" else URL(value)
 
-    def create_metrics(self) -> MetricsConfig:
-        gcp_service_account_key_path = MetricsConfig.gcp_service_account_key_path
+    def create_metrics(self) -> MetricsExporterConfig:
+        gcp_service_account_key_path = (
+            MetricsExporterConfig.gcp_service_account_key_path
+        )
         if self._environ.get("NP_GCP_SERVICE_ACCOUNT_KEY_PATH"):
             gcp_service_account_key_path = Path(
                 self._environ["NP_GCP_SERVICE_ACCOUNT_KEY_PATH"]
             )
-        return MetricsConfig(
+        return MetricsExporterConfig(
             server=self._create_server(),
             kube=self.create_kube(),
             platform_config=self._create_platform_config(),
@@ -120,13 +170,13 @@ class EnvironConfigFactory:
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             node_name=self._environ["NP_NODE_NAME"],
             cloud_provider=self._environ.get(
-                "NP_CLOUD_PROVIDER", MetricsConfig.cloud_provider
+                "NP_CLOUD_PROVIDER", MetricsExporterConfig.cloud_provider
             ),
-            region=self._environ.get("NP_REGION", MetricsConfig.region),
+            region=self._environ.get("NP_REGION", MetricsExporterConfig.region),
             gcp_service_account_key_path=gcp_service_account_key_path,
             azure_prices_url=URL(
                 self._environ.get(
-                    "NP_AZURE_PRICES_URL", str(MetricsConfig.azure_prices_url)
+                    "NP_AZURE_PRICES_URL", str(MetricsExporterConfig.azure_prices_url)
                 )
             ),
         )

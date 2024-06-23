@@ -12,7 +12,7 @@ from neuro_config_client import (
 
 from platform_reports.cluster import ClusterHolder
 from platform_reports.kube_client import KubeClient, Node
-from platform_reports.metrics import PodCreditsCollector
+from platform_reports.metrics_collector import PodCreditsCollector
 
 from .conftest_kube import KubePodFactory
 

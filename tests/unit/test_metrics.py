@@ -44,7 +44,7 @@ from platform_reports.kube_client import (
     PodPhase,
     PodStatus,
 )
-from platform_reports.metrics import (
+from platform_reports.metrics_collector import (
     AWSNodePriceCollector,
     AzureNodePriceCollector,
     Collector,

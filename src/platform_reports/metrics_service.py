@@ -44,7 +44,7 @@ class PrometheusQueryFactory:
                 f'label_platform_neuromation_io_project="{project_name}"'
             )
         query = [
-            "max by(pod) (kube_pod_credits_total) * on(pod) group_right ",
+            "max by(pod) (kube_pod_credits_total) * on(pod) group_right",
         ]
         if org_name or project_name:
             jobs_label_matchers = cls._get_jobs_label_matchers(
@@ -54,11 +54,11 @@ class PrometheusQueryFactory:
                 org_name=org_name, project_name=project_name
             )
             query.append(
-                f"(kube_pod_labels{{{jobs_label_matchers}}} or "
+                f"() (kube_pod_labels{{{jobs_label_matchers}}} or "
                 f"kube_pod_labels{{{apps_label_matchers}}})"
             )
         else:
-            query.append("kube_pod_labels")
+            query.append(" kube_pod_labels")
         return "".join(query)
 
     @classmethod

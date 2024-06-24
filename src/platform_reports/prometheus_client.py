@@ -62,4 +62,8 @@ class PrometheusClient:
                 raise PrometheusException(msg)
             response_json = await response.json()
         adapter = pydantic.TypeAdapter(list[Metric])
-        return adapter.validate_python(response_json.get("data", {}).get("result", []))
+        metrics = adapter.validate_python(
+            response_json.get("data", {}).get("result", [])
+        )
+        LOGGER.debug("Prometheus metrics: %s", metrics)
+        return metrics

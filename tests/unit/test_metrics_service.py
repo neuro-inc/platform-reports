@@ -25,7 +25,7 @@ class TestPrometheusQueryFactory:
         )
 
         assert query == (
-            "max by(pod) (kube_pod_credits_total) * on(pod) group_right "
+            "max by(pod) (kube_pod_credits_total) * on(pod) group_right() "
             '(kube_pod_labels{label_platform_neuromation_io_org="test-org",'
             'label_platform_neuromation_io_project="test-project"} or '
             'kube_pod_labels{label_platform_apolo_us_org="test-org",'

@@ -401,6 +401,21 @@ class TestMetricsApi:
         ) as response:
             assert response.status == HTTPOk.status_code, await response.text()
 
+    async def test_post_credits_consumption__with_org_and_project(
+        self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
+    ) -> None:
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={
+                "org_name": "test-org",
+                "project_name": "test-project",
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert response.status == HTTPOk.status_code, await response.text()
+
     async def test_post_credits_consumption__mocked(
         self,
         client: aiohttp.ClientSession,

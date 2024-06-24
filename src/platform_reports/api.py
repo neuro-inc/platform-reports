@@ -420,7 +420,9 @@ async def handle_exceptions(
         return json_response(payload, status=HTTPBadRequest.status_code)
     except aiohttp.web.HTTPException:
         raise
-    except Exception as e:
+    except (Exception, ExceptionGroup) as e:
+        if isinstance(e, ExceptionGroup):
+            e = e.exceptions[0]
         msg_str = (
             f"Unexpected exception: {str(e)}. " f"Path with query: {request.path_qs}."
         )

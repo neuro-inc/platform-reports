@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platformReports.metricsApi.fullname" . }}
+  labels:
+    {{- include "platformReports.metricsApi.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.metricsApi.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "platformReports.metricsApi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "platformReports.metricsApi.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: metrics-api
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          command: [metrics-api]
+          env:
+            {{- if .Values.logLevel }}
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel }}
+            {{- end }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.platform.clusterName | quote }}
+            - name: PROMETHEUS_URL
+              value: http://thanos-query-http:10902
+            - name: PLATFORM_AUTH__URL
+              value: {{ .Values.platform.authUrl | quote }}
+            - name: PLATFORM_AUTH__TOKEN
+            {{- if .Values.platform.token }}
+            {{- toYaml .Values.platform.token | nindent 14 }}
+            {{- end }}
+            {{- if .Values.sentry }}
+            - name: SENTRY_DSN
+              value: {{ .Values.sentry.dsn }}
+            - name: SENTRY_CLUSTER_NAME
+              value: {{ .Values.sentry.clusterName }}
+            - name: SENTRY_APP_NAME
+              value: platform-metrics-api
+            - name: SENTRY_SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | default 0 | quote }}
+            {{- end }}
+          {{- with .Values.metricsApi.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 3
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}

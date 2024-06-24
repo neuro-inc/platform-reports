@@ -2,30 +2,44 @@ from __future__ import annotations
 
 import re
 import time
+import uuid
 from collections.abc import Callable
-from contextlib import AbstractAsyncContextManager
+from contextlib import AbstractAsyncContextManager, AsyncExitStack
+from datetime import datetime, timedelta
+from decimal import Decimal
+from unittest import mock
 
 import aiohttp
-from aiohttp.web import HTTPForbidden, HTTPOk
+import pytest
+from aiohttp.web import HTTPForbidden, HTTPOk, HTTPUnauthorized, HTTPUnprocessableEntity
+from neuro_auth_client import Permission
 from yarl import URL
 
-from platform_reports.config import MetricsConfig
+from platform_reports.api import create_metrics_api_app
+from platform_reports.config import MetricsApiConfig, MetricsExporterConfig
 from platform_reports.kube_client import Node
+from platform_reports.metrics_service import CreditsConsumption, MetricsService
+from platform_reports.schema import CategoryName
 
+from .conftest import create_local_app_server
 from .conftest_kube import KubeClient, KubePodFactory
+from .conftest_platform_auth import User, UserFactory
 
 
-class TestMetrics:
+class TestMetricsExporterApi:
     async def test_ping(
-        self, client: aiohttp.ClientSession, metrics_server: URL
+        self, client: aiohttp.ClientSession, metrics_exporter_server: URL
     ) -> None:
-        async with client.get(metrics_server / "ping") as response:
+        async with client.get(metrics_exporter_server / "ping") as response:
             assert response.status == HTTPOk.status_code
 
     async def test_node_price_metrics(
-        self, client: aiohttp.ClientSession, metrics_server: URL, kube_node: Node
+        self,
+        client: aiohttp.ClientSession,
+        metrics_exporter_server: URL,
+        kube_node: Node,
     ) -> None:
-        async with client.get(metrics_server / "metrics") as response:
+        async with client.get(metrics_exporter_server / "metrics") as response:
             text = await response.text()
             assert response.status == HTTPOk.status_code, text
             assert (
@@ -39,10 +53,10 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
     async def test_pod_credits_metrics(
         self,
         client: aiohttp.ClientSession,
-        metrics_server_factory: Callable[
-            [MetricsConfig], AbstractAsyncContextManager[URL]
+        metrics_exporter_server_factory: Callable[
+            [MetricsExporterConfig], AbstractAsyncContextManager[URL]
         ],
-        metrics_config: MetricsConfig,
+        metrics_exporter_config: MetricsExporterConfig,
         kube_client: KubeClient,
         kube_pod_factory: KubePodFactory,
     ) -> None:
@@ -72,7 +86,7 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
             pod["metadata"]["namespace"], pod["metadata"]["name"]
         )
 
-        async with metrics_server_factory(metrics_config) as server:
+        async with metrics_exporter_server_factory(metrics_exporter_config) as server:
             async with client.get(server / "metrics") as response:
                 text = await response.text()
                 assert response.status == HTTPOk.status_code, text
@@ -87,13 +101,13 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
     async def test_node_power_metrics(
         self,
         client: aiohttp.ClientSession,
-        metrics_server_factory: Callable[
-            [MetricsConfig], AbstractAsyncContextManager[URL]
+        metrics_exporter_server_factory: Callable[
+            [MetricsExporterConfig], AbstractAsyncContextManager[URL]
         ],
-        metrics_config: MetricsConfig,
+        metrics_exporter_config: MetricsExporterConfig,
         kube_node: Node,
     ) -> None:
-        async with metrics_server_factory(metrics_config) as server:
+        async with metrics_exporter_server_factory(metrics_exporter_config) as server:
             async with client.get(server / "metrics") as response:
                 text = await response.text()
                 assert response.status == HTTPOk.status_code, text
@@ -316,3 +330,134 @@ class TestGrafanaProxy:
             cookies={"dat": regular_user_token},
         ) as response:
             assert response.status == HTTPForbidden.status_code
+
+
+class TestMetricsApi:
+    @pytest.fixture()
+    async def user(self, user_factory: UserFactory) -> User:
+        return await user_factory(
+            str(uuid.uuid4()), [Permission("cluster://default", "read")]
+        )
+
+    async def test_ping(
+        self, client: aiohttp.ClientSession, metrics_api_server: URL
+    ) -> None:
+        async with client.get(metrics_api_server / "ping") as response:
+            assert response.status == HTTPOk.status_code, await response.text()
+
+    async def test_post_credits_consumption__unauthorized(
+        self, client: aiohttp.ClientSession, metrics_api_server: URL
+    ) -> None:
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            json={
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert (
+                response.status == HTTPUnauthorized.status_code
+            ), await response.text()
+
+    async def test_post_credits_consumption__forbidden(
+        self,
+        client: aiohttp.ClientSession,
+        metrics_api_server: URL,
+        user_factory: UserFactory,
+    ) -> None:
+        user = await user_factory(str(uuid.uuid4()), [])
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert response.status == HTTPForbidden.status_code, await response.text()
+
+    async def test_post_credits_consumption__bad_request(
+        self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
+    ) -> None:
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={},
+        ) as response:
+            assert (
+                response.status == HTTPUnprocessableEntity.status_code
+            ), await response.text()
+
+    async def test_post_credits_consumption(
+        self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
+    ) -> None:
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert response.status == HTTPOk.status_code, await response.text()
+
+    async def test_post_credits_consumption__with_org_and_project(
+        self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
+    ) -> None:
+        async with client.post(
+            metrics_api_server / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={
+                "org_name": "test-org",
+                "project_name": "test-project",
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert response.status == HTTPOk.status_code, await response.text()
+
+    async def test_post_credits_consumption__mocked(
+        self,
+        client: aiohttp.ClientSession,
+        user: User,
+        metrics_api_config: MetricsApiConfig,
+        exit_stack: AsyncExitStack,
+    ) -> None:
+        mocked_service_cls = exit_stack.enter_context(
+            mock.patch("platform_reports.api.MetricsService", spec=MetricsService)
+        )
+        mocked_service = mocked_service_cls.return_value
+        mocked_service.get_credits_consumption.return_value = [
+            CreditsConsumption(
+                category_name=CategoryName.JOBS,
+                project_name="test-project",
+                resource_id="test-job",
+                credits=Decimal(1),
+            )
+        ]
+
+        server_address = await exit_stack.enter_async_context(
+            create_local_app_server(
+                app=create_metrics_api_app(metrics_api_config),
+                port=metrics_api_config.server.port,
+            )
+        )
+
+        async with client.post(
+            server_address.http_url / "api/v1/metrics/credits/consumption",
+            headers={"Authorization": f"Bearer {user.token}"},
+            json={
+                "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
+        ) as response:
+            assert response.status == HTTPOk.status_code, await response.text()
+            assert await response.json() == [
+                {
+                    "category_name": "jobs",
+                    "org_name": None,
+                    "project_name": "test-project",
+                    "resource_id": "test-job",
+                    "credits": "1",
+                }
+            ]

@@ -17,6 +17,15 @@ platform:
         name: platformservices-secret
         key: cluster_token
 
+metricsApi:
+  nameOverride: platform-metrics-api
+  fullnameOverride: platform-metrics-api
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [dev.neu.ro]
+
 metricsExporter:
   nameOverride: platform-metrics-exporter
   fullnameOverride: platform-metrics-exporter
@@ -25,21 +34,17 @@ prometheusProxy:
   nameOverride: platform-prometheus-proxy
   fullnameOverride: platform-prometheus-proxy
 
-  replicas: 2
-
 grafanaProxy:
   nameOverride: platform-grafana-proxy
   fullnameOverride: platform-grafana-proxy
 
-  replicas: 2
   ingress:
     enabled: true
     ingressClassName: traefik
-    hosts: [metrics-dev.neu.ro]
+    hosts: [grafana-dev.neu.ro, metrics-dev.neu.ro]
     annotations:
       traefik.ingress.kubernetes.io/router.pathmatcher: PathPrefix
       traefik.ingress.kubernetes.io/router.middlewares: platform-platform-ingress-auth@kubernetescrd
-      external-dns.platform.neuromation.io: "true"
 
 secrets:
   - name: alertmanager-config

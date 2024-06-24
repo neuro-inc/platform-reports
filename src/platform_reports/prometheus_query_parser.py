@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 promql_parser = Lark(PROMQL, parser="lalr")
 
 
-class PromQLException(Exception):
+class PromQLException(ValueError):
     pass
 
 
@@ -106,8 +106,8 @@ def parse_query(query: str) -> Vector | None:
     try:
         ast = promql_parser.parse(query)
     except LarkError as ex:
-        logger.warning("Error while parsing PromQL query: %s", ex)
-        msg = f"Error while parsing PromQL query: {ex}"
+        logger.info("Failed to parse PromQL query: %s", ex, exc_info=True)
+        msg = "Failed to parse PromQL query"
         raise PromQLException(msg) from ex
     transformer = VectorTransformer()
     return transformer.transform(ast)

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platformReports.metricsApi.fullname" . }}
+  labels:
+    {{- include "platformReports.metricsApi.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+  selector:
+    {{- include "platformReports.metricsApi.selectorLabels" . | nindent 4 }}

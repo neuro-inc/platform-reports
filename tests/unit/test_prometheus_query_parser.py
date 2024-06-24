@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from platform_reports.prometheus import (
+from platform_reports.prometheus_query_parser import (
     InstantVector,
     LabelMatcher,
     PromQLException,

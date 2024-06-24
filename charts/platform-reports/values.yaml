@@ -14,6 +14,20 @@ imagePullSecrets: []
 
 secrets: []
 
+metricsApi:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  ingress:
+    enabled: false
+    ingressClassName: ""
+    hosts: []
+    annotations: {}
+
 metricsExporter:
   port: 9500
   resources:
@@ -25,6 +39,7 @@ metricsExporter:
 
 prometheusProxy:
   replicas: 2
+
   resources:
     requests:
       cpu: 100m
@@ -32,6 +47,7 @@ prometheusProxy:
 
 grafanaProxy:
   replicas: 2
+
   resources:
     requests:
       cpu: 100m
@@ -115,7 +131,7 @@ kube-prometheus-stack:
 
     metricLabelsAllowlist:
       - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
-      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/gpu-model,platform.apolo.us/preset]
+      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/job,platform.apolo.us/org,platform.apolo.us/project,platform.apolo.us/preset,platform.apolo.us/app]
 
     priorityClassName: ""
 

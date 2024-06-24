@@ -2,24 +2,27 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from contextlib import AbstractAsyncContextManager, AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
 import aiohttp
+import pydantic
 import pytest
 from pytest_docker.plugin import Services
 from yarl import URL
 
 from platform_reports.api import (
     create_grafana_proxy_app,
-    create_metrics_app,
+    create_metrics_api_app,
+    create_metrics_exporter_app,
     create_prometheus_proxy_app,
 )
 from platform_reports.config import (
     GrafanaProxyConfig,
     KubeConfig,
-    MetricsConfig,
+    MetricsApiConfig,
+    MetricsExporterConfig,
     PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -43,6 +46,10 @@ class Address:
     host: str
     port: int
 
+    @property
+    def http_url(self) -> URL:
+        return URL.build(scheme="http", host=self.host, port=self.port)
+
 
 @asynccontextmanager
 async def create_local_app_server(
@@ -51,7 +58,7 @@ async def create_local_app_server(
     runner = aiohttp.web.AppRunner(app)
     try:
         await runner.setup()
-        addres = Address("0.0.0.0", port)
+        addres = Address("127.0.0.1", port)
         site = aiohttp.web.TCPSite(runner, addres.host, addres.port)
         await site.start()
         yield addres
@@ -119,14 +126,14 @@ def platform_config_config(
 
 
 @pytest.fixture()
-def metrics_config(
+def metrics_exporter_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_config_config: PlatformServiceConfig,
     platform_api_config: PlatformServiceConfig,
     kube_config: KubeConfig,
     kube_node: Node,
-) -> MetricsConfig:
-    return MetricsConfig(
+) -> MetricsExporterConfig:
+    return MetricsExporterConfig(
         server=ServerConfig(port=unused_tcp_port_factory()),
         platform_config=platform_config_config,
         platform_api=platform_api_config,
@@ -137,14 +144,16 @@ def metrics_config(
 
 
 @pytest.fixture()
-async def metrics_server_factory() -> (
-    Callable[[MetricsConfig], AbstractAsyncContextManager[URL]]
+async def metrics_exporter_server_factory() -> (
+    Callable[[MetricsExporterConfig], AbstractAsyncContextManager[URL]]
 ):
     @asynccontextmanager
-    async def _create(metrics_config: MetricsConfig) -> AsyncIterator[URL]:
-        app = create_metrics_app(metrics_config)
+    async def _create(
+        metrics_exporter_config: MetricsExporterConfig,
+    ) -> AsyncIterator[URL]:
+        app = create_metrics_exporter_app(metrics_exporter_config)
         async with create_local_app_server(
-            app=app, port=metrics_config.server.port
+            app=app, port=metrics_exporter_config.server.port
         ) as address:
             yield URL.build(scheme="http", host=address.host, port=address.port)
 
@@ -152,11 +161,13 @@ async def metrics_server_factory() -> (
 
 
 @pytest.fixture()
-async def metrics_server(
-    metrics_server_factory: Callable[[MetricsConfig], AbstractAsyncContextManager[URL]],
-    metrics_config: MetricsConfig,
+async def metrics_exporter_server(
+    metrics_exporter_server_factory: Callable[
+        [MetricsExporterConfig], AbstractAsyncContextManager[URL]
+    ],
+    metrics_exporter_config: MetricsExporterConfig,
 ) -> AsyncIterator[URL]:
-    async with metrics_server_factory(metrics_config) as server:
+    async with metrics_exporter_server_factory(metrics_exporter_config) as server:
         yield server
 
 
@@ -232,3 +243,37 @@ async def grafana_proxy_server(
 async def client() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session
+
+
+@pytest.fixture()
+def metrics_api_config(
+    unused_tcp_port_factory: Callable[[], int],
+    platform_auth_config: PlatformAuthConfig,
+    thanos_query_url: URL,
+) -> MetricsApiConfig:
+    return MetricsApiConfig(
+        server=MetricsApiConfig.Server(port=unused_tcp_port_factory()),
+        prometheus_url=pydantic.HttpUrl(str(thanos_query_url)),
+        platform_auth=MetricsApiConfig.PlatformAuth(
+            url=pydantic.HttpUrl(str(platform_auth_config.url)),
+            token=platform_auth_config.token,
+        ),
+        cluster_name="default",
+    )
+
+
+@pytest.fixture()
+async def metrics_api_server(
+    metrics_api_config: MetricsApiConfig,
+) -> AsyncIterator[URL]:
+    app = create_metrics_api_app(metrics_api_config)
+    async with create_local_app_server(
+        app=app, port=metrics_api_config.server.port
+    ) as address:
+        yield address.http_url
+
+
+@pytest.fixture()
+async def exit_stack() -> AsyncIterator[AsyncExitStack]:
+    async with AsyncExitStack() as stack:
+        yield stack

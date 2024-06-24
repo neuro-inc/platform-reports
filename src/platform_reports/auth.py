@@ -9,7 +9,13 @@ from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
 from neuro_sdk import Client as ApiClient
 
-from .prometheus import InstantVector, LabelMatcher, Vector, VectorMatch, parse_query
+from .prometheus_query_parser import (
+    InstantVector,
+    LabelMatcher,
+    Vector,
+    VectorMatch,
+    parse_query,
+)
 
 
 logger = logging.getLogger(__name__)

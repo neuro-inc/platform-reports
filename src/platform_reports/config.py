@@ -36,7 +36,7 @@ class PrometheusLabelMeta(type):
             value = getattr(instance, name)
             if isinstance(value, Label.Key):
                 value = "label_" + value.replace(".", "_").replace("/", "_")
-                setattr(instance, name, value)
+                setattr(instance, name, Label.Key(value))
         return instance
 
 

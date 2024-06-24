@@ -21,8 +21,6 @@ metricsApi:
   nameOverride: platform-metrics-api
   fullnameOverride: platform-metrics-api
 
-  replicas: 2
-
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -36,13 +34,10 @@ prometheusProxy:
   nameOverride: platform-prometheus-proxy
   fullnameOverride: platform-prometheus-proxy
 
-  replicas: 2
-
 grafanaProxy:
   nameOverride: platform-grafana-proxy
   fullnameOverride: platform-grafana-proxy
 
-  replicas: 2
   ingress:
     enabled: true
     ingressClassName: traefik

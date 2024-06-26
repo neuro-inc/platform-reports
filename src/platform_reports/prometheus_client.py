@@ -44,7 +44,7 @@ class PrometheusClient:
         self._prometheus_url = URL(prometheus_url)
 
     async def evaluate_range_query(
-        self, *, query: str, start_date: datetime, end_date: datetime, step: float
+        self, *, query: str, start_date: datetime, end_date: datetime, step: float = 15
     ) -> list[Metric]:
         url = self._prometheus_url / "api/v1/query_range"
         data = {

@@ -162,10 +162,7 @@ class MetricsService:
             org_name=request.org_name, project_name=request.project_name
         )
         metrics = await self._prometheus_client.evaluate_range_query(
-            query=query,
-            start_date=request.start_date,
-            end_date=request.end_date,
-            step=60,
+            query=query, start_date=request.start_date, end_date=request.end_date
         )
         consumptions = []
         for metric in metrics:

@@ -2,8 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 
 from platform_reports.metrics_service import (
-    CreditsConsumption,
-    CreditsConsumptionFactory,
+    CreditsUsage,
+    CreditsUsageFactory,
     PrometheusQueryFactory,
 )
 from platform_reports.prometheus_client import Metric
@@ -33,7 +33,7 @@ class TestPrometheusQueryFactory:
         )
 
 
-class TestCreditsConsumptionFactory:
+class TestCreditsUsageFactory:
     def test_create_for_compute__job(self) -> None:
         metric = Metric(
             labels={
@@ -47,9 +47,9 @@ class TestCreditsConsumptionFactory:
             ],
         )
 
-        consumption = CreditsConsumptionFactory().create_for_compute(metric)
+        usage = CreditsUsageFactory().create_for_compute(metric)
 
-        assert consumption == CreditsConsumption(
+        assert usage == CreditsUsage(
             category_name=CategoryName.JOBS,
             project_name="test-project",
             resource_id="test-job",
@@ -70,9 +70,9 @@ class TestCreditsConsumptionFactory:
             ],
         )
 
-        consumption = CreditsConsumptionFactory().create_for_compute(metric)
+        usage = CreditsUsageFactory().create_for_compute(metric)
 
-        assert consumption == CreditsConsumption(
+        assert usage == CreditsUsage(
             category_name=CategoryName.JOBS,
             org_name="test-org",
             project_name="test-project",
@@ -94,9 +94,9 @@ class TestCreditsConsumptionFactory:
             ],
         )
 
-        consumption = CreditsConsumptionFactory().create_for_compute(metric)
+        usage = CreditsUsageFactory().create_for_compute(metric)
 
-        assert consumption == CreditsConsumption(
+        assert usage == CreditsUsage(
             category_name=CategoryName.APPS,
             org_name="test-org",
             project_name="test-project",
@@ -115,9 +115,9 @@ class TestCreditsConsumptionFactory:
             ],
         )
 
-        consumption = CreditsConsumptionFactory().create_for_compute(metric)
+        usage = CreditsUsageFactory().create_for_compute(metric)
 
-        assert consumption is None
+        assert usage is None
 
     def test_create_for_compute__unknown(self) -> None:
         metric = Metric(
@@ -128,6 +128,6 @@ class TestCreditsConsumptionFactory:
             ],
         )
 
-        consumption = CreditsConsumptionFactory().create_for_compute(metric)
+        usage = CreditsUsageFactory().create_for_compute(metric)
 
-        assert consumption is None
+        assert usage is None

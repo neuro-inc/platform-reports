@@ -8,8 +8,8 @@ import pytest
 from aiohttp.test_utils import TestClient
 
 from platform_reports.metrics_service import (
-    CreditsConsumption,
-    CreditsConsumptionRequest,
+    CreditsUsage,
+    GetCreditsUsageRequest,
     MetricsService,
 )
 from platform_reports.prometheus_client import PrometheusClient
@@ -66,10 +66,10 @@ class TestMetricsService:
     def metrics_service(self, prometheus_client: PrometheusClient) -> MetricsService:
         return MetricsService(prometheus_client=prometheus_client)
 
-    async def test_get_credits_consumption(
+    async def test_get_credits_usage(
         self, metrics_service: MetricsService, prometheus_handler: PrometheusHandler
     ) -> None:
-        consumption_request = CreditsConsumptionRequest(
+        consumption_request = GetCreditsUsageRequest(
             start_date=datetime.now(UTC) - timedelta(hours=1),
             end_date=datetime.now(UTC),
         )
@@ -109,12 +109,10 @@ class TestMetricsService:
 
         prometheus_handler.post_query_range = post_query_range
 
-        consumptions = await metrics_service.get_credits_consumption(
-            consumption_request
-        )
+        consumptions = await metrics_service.get_credits_usage(consumption_request)
 
         assert consumptions == [
-            CreditsConsumption(
+            CreditsUsage(
                 category_name=CategoryName.JOBS,
                 project_name="test-project",
                 resource_id="test-job",

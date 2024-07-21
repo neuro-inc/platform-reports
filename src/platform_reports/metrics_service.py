@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class CreditsConsumptionRequest:
+class GetCreditsUsageRequest:
     start_date: datetime
     end_date: datetime
     category_name: CategoryName | None = None
@@ -23,7 +23,7 @@ class CreditsConsumptionRequest:
 
 
 @dataclass(frozen=True)
-class CreditsConsumption:
+class CreditsUsage:
     category_name: CategoryName
     project_name: str
     resource_id: str
@@ -88,9 +88,9 @@ class PrometheusQueryFactory:
         return ",".join(label_matchers)
 
 
-class CreditsConsumptionFactory:
+class CreditsUsageFactory:
     @classmethod
-    def create_for_compute(cls, metric: Metric) -> CreditsConsumption | None:
+    def create_for_compute(cls, metric: Metric) -> CreditsUsage | None:
         if len(metric.values) < 2:
             return None
         if job_id := metric.labels.get(PrometheusLabel.NEURO_JOB_KEY):
@@ -103,8 +103,8 @@ class CreditsConsumptionFactory:
         return None
 
     @classmethod
-    def _create_for_job(cls, metric: Metric, *, job_id: str) -> CreditsConsumption:
-        return CreditsConsumption(
+    def _create_for_job(cls, metric: Metric, *, job_id: str) -> CreditsUsage:
+        return CreditsUsage(
             category_name=CategoryName.JOBS,
             org_name=cls._get_org_name(metric),
             project_name=cls._get_project_name(metric),
@@ -113,8 +113,8 @@ class CreditsConsumptionFactory:
         )
 
     @classmethod
-    def _create_for_app(cls, metric: Metric, *, app_id: str) -> CreditsConsumption:
-        return CreditsConsumption(
+    def _create_for_app(cls, metric: Metric, *, app_id: str) -> CreditsUsage:
+        return CreditsUsage(
             category_name=CategoryName.APPS,
             org_name=cls._get_org_name(metric),
             project_name=cls._get_project_name(metric),
@@ -141,22 +141,22 @@ class MetricsService:
     def __init__(self, *, prometheus_client: PrometheusClient) -> None:
         self._prometheus_client = prometheus_client
         self._prometheus_query_factory = PrometheusQueryFactory()
-        self._credits_consumption_factory = CreditsConsumptionFactory()
+        self._credits_usage_factory = CreditsUsageFactory()
 
-    async def get_credits_consumption(
-        self, request: CreditsConsumptionRequest
-    ) -> list[CreditsConsumption]:
+    async def get_credits_usage(
+        self, request: GetCreditsUsageRequest
+    ) -> list[CreditsUsage]:
         async with asyncio.TaskGroup() as tg:
             tasks = []
             if request.category_name in (None, CategoryName.JOBS, CategoryName.APPS):
                 tasks.append(
-                    tg.create_task(self._get_compute_credits_consumption(request))
+                    tg.create_task(self._get_compute_credits_usage(request))
                 )
         return list(itertools.chain.from_iterable(t.result() for t in tasks))
 
-    async def _get_compute_credits_consumption(
-        self, request: CreditsConsumptionRequest
-    ) -> list[CreditsConsumption]:
+    async def _get_compute_credits_usage(
+        self, request: GetCreditsUsageRequest
+    ) -> list[CreditsUsage]:
         LOGGER.debug("Requesting compute credits consumption: %s", request)
         query = self._prometheus_query_factory.create_compute_credits(
             org_name=request.org_name, project_name=request.project_name
@@ -166,7 +166,7 @@ class MetricsService:
         )
         consumptions = []
         for metric in metrics:
-            if c := self._credits_consumption_factory.create_for_compute(metric):
+            if c := self._credits_usage_factory.create_for_compute(metric):
                 LOGGER.debug("Compute consumption: %s", c)
                 consumptions.append(c)
         return consumptions

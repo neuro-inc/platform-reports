@@ -18,7 +18,7 @@ from yarl import URL
 from platform_reports.api import create_metrics_api_app
 from platform_reports.config import MetricsApiConfig, MetricsExporterConfig
 from platform_reports.kube_client import Node
-from platform_reports.metrics_service import CreditsConsumption, MetricsService
+from platform_reports.metrics_service import CreditsUsage, MetricsService
 from platform_reports.schema import CategoryName
 
 from .conftest import create_local_app_server
@@ -345,7 +345,7 @@ class TestMetricsApi:
         async with client.get(metrics_api_server / "ping") as response:
             assert response.status == HTTPOk.status_code, await response.text()
 
-    async def test_post_credits_consumption__unauthorized(
+    async def test_post_credits_usage__unauthorized(
         self, client: aiohttp.ClientSession, metrics_api_server: URL
     ) -> None:
         async with client.post(
@@ -359,7 +359,7 @@ class TestMetricsApi:
                 response.status == HTTPUnauthorized.status_code
             ), await response.text()
 
-    async def test_post_credits_consumption__forbidden(
+    async def test_post_credits_usage__forbidden(
         self,
         client: aiohttp.ClientSession,
         metrics_api_server: URL,
@@ -376,7 +376,7 @@ class TestMetricsApi:
         ) as response:
             assert response.status == HTTPForbidden.status_code, await response.text()
 
-    async def test_post_credits_consumption__bad_request(
+    async def test_post_credits_usage__bad_request(
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
@@ -388,7 +388,7 @@ class TestMetricsApi:
                 response.status == HTTPUnprocessableEntity.status_code
             ), await response.text()
 
-    async def test_post_credits_consumption(
+    async def test_post_credits_usage(
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
@@ -401,7 +401,7 @@ class TestMetricsApi:
         ) as response:
             assert response.status == HTTPOk.status_code, await response.text()
 
-    async def test_post_credits_consumption__with_org_and_project(
+    async def test_post_credits_usage__with_org_and_project(
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
@@ -416,7 +416,7 @@ class TestMetricsApi:
         ) as response:
             assert response.status == HTTPOk.status_code, await response.text()
 
-    async def test_post_credits_consumption__mocked(
+    async def test_post_credits_usage__mocked(
         self,
         client: aiohttp.ClientSession,
         user: User,
@@ -427,8 +427,8 @@ class TestMetricsApi:
             mock.patch("platform_reports.api.MetricsService", spec=MetricsService)
         )
         mocked_service = mocked_service_cls.return_value
-        mocked_service.get_credits_consumption.return_value = [
-            CreditsConsumption(
+        mocked_service.get_credits_usage.return_value = [
+            CreditsUsage(
                 category_name=CategoryName.JOBS,
                 project_name="test-project",
                 resource_id="test-job",

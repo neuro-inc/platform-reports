@@ -19,7 +19,7 @@ class CategoryName(StrEnum):
 
 
 @dataclass(frozen=True)
-class PostCreditsConsumptionRequest:
+class PostCreditsUsageRequest:
     start_date: datetime
     end_date: datetime
     category_name: CategoryName | None = None
@@ -27,7 +27,7 @@ class PostCreditsConsumptionRequest:
     project_name: str | None = None
 
 
-class PostCreditsConsumptionRequestSchema(Schema):
+class PostCreditsUsageRequestSchema(Schema):
     category_name = fields.Enum(CategoryName, by_value=True)
     org_name = fields.String(validate=[Length(min=1)])
     project_name = fields.String(validate=[Length(min=1)])
@@ -44,11 +44,11 @@ class PostCreditsConsumptionRequestSchema(Schema):
     @post_load
     def make_object(
         self, data: Mapping[str, Any], **kwargs: Any
-    ) -> PostCreditsConsumptionRequest:
-        return PostCreditsConsumptionRequest(**data)
+    ) -> PostCreditsUsageRequest:
+        return PostCreditsUsageRequest(**data)
 
 
-class PostCreditsConsumptionResponseSchema(Schema):
+class PostCreditsUsageResponseSchema(Schema):
     category_name = fields.Enum(CategoryName, by_value=True)
     org_name = fields.String()
     project_name = fields.String()

@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from platform_reports.schema import PostCreditsConsumptionRequestSchema
+from platform_reports.schema import PostCreditsUsageRequestSchema
 
 
-class TestPostCreditsConsumptionRequestSchema:
+class TestPostCreditsUsageRequestSchema:
     def test__required_fields(self) -> None:
-        errors = PostCreditsConsumptionRequestSchema().validate({})
+        errors = PostCreditsUsageRequestSchema().validate({})
 
         assert errors == {
             "end_date": ["Missing data for required field."],
@@ -13,25 +13,23 @@ class TestPostCreditsConsumptionRequestSchema:
         }
 
     def test_category_name__incorrect(self) -> None:
-        errors = PostCreditsConsumptionRequestSchema().validate(
-            {"category_name": "unknown"}
-        )
+        errors = PostCreditsUsageRequestSchema().validate({"category_name": "unknown"})
 
         assert errors["category_name"][0].startswith("Must be one of:")
 
     def test_category_name__empty_org(self) -> None:
-        errors = PostCreditsConsumptionRequestSchema().validate({"org_name": ""})
+        errors = PostCreditsUsageRequestSchema().validate({"org_name": ""})
 
         assert errors["org_name"] == ["Shorter than minimum length 1."]
 
     def test_category_name__empty_project(self) -> None:
-        errors = PostCreditsConsumptionRequestSchema().validate({"project_name": ""})
+        errors = PostCreditsUsageRequestSchema().validate({"project_name": ""})
 
         assert errors["project_name"] == ["Shorter than minimum length 1."]
 
     def test_category_name__incorrect_dates(self) -> None:
         start_date = datetime.now()
-        errors = PostCreditsConsumptionRequestSchema().validate(
+        errors = PostCreditsUsageRequestSchema().validate(
             {
                 "start_date": start_date.isoformat(),
                 "end_date": start_date.isoformat(),

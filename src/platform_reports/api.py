@@ -64,13 +64,13 @@ from .metrics_collector import (
     PodCreditsCollector,
     Price,
 )
-from .metrics_service import CreditsConsumptionRequest, MetricsService
+from .metrics_service import GetCreditsUsageRequest, MetricsService
 from .prometheus_client import PrometheusClient
 from .schema import (
     ClientErrorSchema,
-    PostCreditsConsumptionRequest,
-    PostCreditsConsumptionRequestSchema,
-    PostCreditsConsumptionResponseSchema,
+    PostCreditsUsageRequest,
+    PostCreditsUsageRequestSchema,
+    PostCreditsUsageResponseSchema,
 )
 
 
@@ -302,7 +302,7 @@ class MetricsApiHandler:
 
     def register(self) -> None:
         self._app.router.add_post(
-            "/v1/metrics/credits/consumption", self.handle_post_credits_consumption
+            "/v1/metrics/credits/usage", self.handle_post_credits_usage
         )
 
     @property
@@ -324,15 +324,15 @@ class MetricsApiHandler:
             },
         },
     )
-    @request_schema(PostCreditsConsumptionRequestSchema())
-    @response_schema(PostCreditsConsumptionResponseSchema(many=True))
-    async def handle_post_credits_consumption(self, request: Request) -> Response:
+    @request_schema(PostCreditsUsageRequestSchema())
+    @response_schema(PostCreditsUsageResponseSchema(many=True))
+    async def handle_post_credits_usage(self, request: Request) -> Response:
         await check_permissions(
             request, [Permission(f"cluster://{self._config.cluster_name}", "read")]
         )
-        request_data: PostCreditsConsumptionRequest = request["data"]
-        consumptions = await self._metrics_service.get_credits_consumption(
-            CreditsConsumptionRequest(
+        request_data: PostCreditsUsageRequest = request["data"]
+        consumptions = await self._metrics_service.get_credits_usage(
+            GetCreditsUsageRequest(
                 category_name=request_data.category_name,
                 org_name=request_data.org_name,
                 project_name=request_data.project_name,
@@ -340,7 +340,7 @@ class MetricsApiHandler:
                 end_date=request_data.end_date,
             )
         )
-        response_schema = PostCreditsConsumptionResponseSchema(many=True)
+        response_schema = PostCreditsUsageResponseSchema(many=True)
         return json_response(
             response_schema.dump(consumptions), status=HTTPOk.status_code
         )

@@ -349,7 +349,7 @@ class TestMetricsApi:
         self, client: aiohttp.ClientSession, metrics_api_server: URL
     ) -> None:
         async with client.post(
-            metrics_api_server / "api/v1/metrics/credits/consumption",
+            metrics_api_server / "api/v1/metrics/credits/usage",
             json={
                 "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
                 "end_date": datetime.now().isoformat(),
@@ -367,7 +367,7 @@ class TestMetricsApi:
     ) -> None:
         user = await user_factory(str(uuid.uuid4()), [])
         async with client.post(
-            metrics_api_server / "api/v1/metrics/credits/consumption",
+            metrics_api_server / "api/v1/metrics/credits/usage",
             headers={"Authorization": f"Bearer {user.token}"},
             json={
                 "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
@@ -380,7 +380,7 @@ class TestMetricsApi:
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
-            metrics_api_server / "api/v1/metrics/credits/consumption",
+            metrics_api_server / "api/v1/metrics/credits/usage",
             headers={"Authorization": f"Bearer {user.token}"},
             json={},
         ) as response:
@@ -392,7 +392,7 @@ class TestMetricsApi:
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
-            metrics_api_server / "api/v1/metrics/credits/consumption",
+            metrics_api_server / "api/v1/metrics/credits/usage",
             headers={"Authorization": f"Bearer {user.token}"},
             json={
                 "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),
@@ -405,7 +405,7 @@ class TestMetricsApi:
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL
     ) -> None:
         async with client.post(
-            metrics_api_server / "api/v1/metrics/credits/consumption",
+            metrics_api_server / "api/v1/metrics/credits/usage",
             headers={"Authorization": f"Bearer {user.token}"},
             json={
                 "org_name": "test-org",
@@ -444,7 +444,7 @@ class TestMetricsApi:
         )
 
         async with client.post(
-            server_address.http_url / "api/v1/metrics/credits/consumption",
+            server_address.http_url / "api/v1/metrics/credits/usage",
             headers={"Authorization": f"Bearer {user.token}"},
             json={
                 "start_date": (datetime.now() - timedelta(hours=1)).isoformat(),

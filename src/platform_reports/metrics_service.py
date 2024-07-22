@@ -98,7 +98,8 @@ class CreditsUsageFactory:
         if app_id := metric.labels.get(PrometheusLabel.APOLO_APP_KEY):
             return cls._create_for_app(metric, app_id=app_id)
         LOGGER.warning(
-            "Failed to create compute consumption from metric labels: %s", metric.labels
+            "Failed to create compute credits usage from metric labels: %s",
+            metric.labels,
         )
         return None
 
@@ -149,24 +150,22 @@ class MetricsService:
         async with asyncio.TaskGroup() as tg:
             tasks = []
             if request.category_name in (None, CategoryName.JOBS, CategoryName.APPS):
-                tasks.append(
-                    tg.create_task(self._get_compute_credits_usage(request))
-                )
+                tasks.append(tg.create_task(self._get_compute_credits_usage(request)))
         return list(itertools.chain.from_iterable(t.result() for t in tasks))
 
     async def _get_compute_credits_usage(
         self, request: GetCreditsUsageRequest
     ) -> list[CreditsUsage]:
-        LOGGER.debug("Requesting compute credits consumption: %s", request)
+        LOGGER.debug("Requesting compute credits usage: %s", request)
         query = self._prometheus_query_factory.create_compute_credits(
             org_name=request.org_name, project_name=request.project_name
         )
         metrics = await self._prometheus_client.evaluate_range_query(
             query=query, start_date=request.start_date, end_date=request.end_date
         )
-        consumptions = []
+        usage = []
         for metric in metrics:
             if c := self._credits_usage_factory.create_for_compute(metric):
-                LOGGER.debug("Compute consumption: %s", c)
-                consumptions.append(c)
-        return consumptions
+                LOGGER.debug("Compute credits usage: %s", c)
+                usage.append(c)
+        return usage

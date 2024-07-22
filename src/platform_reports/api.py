@@ -315,7 +315,7 @@ class MetricsApiHandler:
 
     @docs(
         tags=["Metrics"],
-        summary="Evaluate credits consumption.",
+        summary="Evaluate credits usage.",
         responses={
             HTTPOk.status_code: {},
             HTTPInternalServerError.status_code: {
@@ -331,7 +331,7 @@ class MetricsApiHandler:
             request, [Permission(f"cluster://{self._config.cluster_name}", "read")]
         )
         request_data: PostCreditsUsageRequest = request["data"]
-        consumptions = await self._metrics_service.get_credits_usage(
+        usage = await self._metrics_service.get_credits_usage(
             GetCreditsUsageRequest(
                 category_name=request_data.category_name,
                 org_name=request_data.org_name,
@@ -341,9 +341,7 @@ class MetricsApiHandler:
             )
         )
         response_schema = PostCreditsUsageResponseSchema(many=True)
-        return json_response(
-            response_schema.dump(consumptions), status=HTTPOk.status_code
-        )
+        return json_response(response_schema.dump(usage), status=HTTPOk.status_code)
 
 
 def _get_user_name(request: Request, access_token_cookie_names: Sequence[str]) -> str:

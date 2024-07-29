@@ -56,7 +56,7 @@ class TestCreditsUsageFactory:
             credits=Decimal(2),
         )
 
-    def test_create_for_compute__job__with_org(self) -> None:
+    def test_create_for_compute__job__with_org_label(self) -> None:
         metric = Metric(
             labels={
                 "label_platform_neuromation_io_org": "test-org",
@@ -79,6 +79,22 @@ class TestCreditsUsageFactory:
             resource_id="test-job",
             credits=Decimal(2),
         )
+
+    def test_create_for_compute__job__no_project_label(self) -> None:
+        metric = Metric(
+            labels={
+                "label_platform_neuromation_io_job": "test-job",
+            },
+            values=[
+                Metric.Value(datetime.now(), Decimal(1)),
+                Metric.Value(datetime.now(), Decimal(2)),
+                Metric.Value(datetime.now(), Decimal(3)),
+            ],
+        )
+
+        usage = CreditsUsageFactory().create_for_compute(metric)
+
+        assert usage is None
 
     def test_create_for_compute__app(self) -> None:
         metric = Metric(
@@ -104,7 +120,23 @@ class TestCreditsUsageFactory:
             credits=Decimal(2),
         )
 
-    def test_create_for_compute__none(self) -> None:
+    def test_create_for_compute__app__no_project_label(self) -> None:
+        metric = Metric(
+            labels={
+                "label_platform_apolo_us_app": "test-app",
+            },
+            values=[
+                Metric.Value(datetime.now(), Decimal(1)),
+                Metric.Value(datetime.now(), Decimal(2)),
+                Metric.Value(datetime.now(), Decimal(3)),
+            ],
+        )
+
+        usage = CreditsUsageFactory().create_for_compute(metric)
+
+        assert usage is None
+
+    def test_create_for_compute__not_enough_metrics(self) -> None:
         metric = Metric(
             labels={
                 "label_platform_neuromation_io_project": "test-project",

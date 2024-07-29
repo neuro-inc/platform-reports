@@ -30,7 +30,7 @@ spec:
             - name: CLUSTER_NAME
               value: {{ .Values.platform.clusterName | quote }}
             - name: PROMETHEUS_URL
-              value: http://thanos-query-http:10902
+              value: {{ .Values.prometheus.url }}
             - name: PLATFORM_AUTH__URL
               value: {{ .Values.platform.authUrl | quote }}
             - name: PLATFORM_AUTH__TOKEN

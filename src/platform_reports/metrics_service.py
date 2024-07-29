@@ -104,21 +104,25 @@ class CreditsUsageFactory:
         return None
 
     @classmethod
-    def _create_for_job(cls, metric: Metric, *, job_id: str) -> CreditsUsage:
+    def _create_for_job(cls, metric: Metric, *, job_id: str) -> CreditsUsage | None:
+        if not (project_name := cls._get_project_name(metric)):
+            return None
         return CreditsUsage(
             category_name=CategoryName.JOBS,
             org_name=cls._get_org_name(metric),
-            project_name=cls._get_project_name(metric),
+            project_name=project_name,
             resource_id=job_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )
 
     @classmethod
-    def _create_for_app(cls, metric: Metric, *, app_id: str) -> CreditsUsage:
+    def _create_for_app(cls, metric: Metric, *, app_id: str) -> CreditsUsage | None:
+        if not (project_name := cls._get_project_name(metric)):
+            return None
         return CreditsUsage(
             category_name=CategoryName.APPS,
             org_name=cls._get_org_name(metric),
-            project_name=cls._get_project_name(metric),
+            project_name=project_name,
             resource_id=app_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )
@@ -131,11 +135,10 @@ class CreditsUsageFactory:
         return None if org_name == "no_org" else org_name
 
     @classmethod
-    def _get_project_name(cls, metric: Metric) -> str:
-        return (
-            metric.labels.get(PrometheusLabel.APOLO_PROJECT_KEY)
-            or metric.labels[PrometheusLabel.NEURO_PROJECT_KEY]
-        )
+    def _get_project_name(cls, metric: Metric) -> str | None:
+        return metric.labels.get(
+            PrometheusLabel.APOLO_PROJECT_KEY
+        ) or metric.labels.get(PrometheusLabel.NEURO_PROJECT_KEY)
 
 
 class MetricsService:

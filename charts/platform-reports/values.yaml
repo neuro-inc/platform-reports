@@ -52,13 +52,17 @@ grafanaProxy:
     requests:
       cpu: 100m
       memory: 256Mi
+
   ingress:
     enabled: false
     ingressClassName: ""
     hosts: []
     annotations: {}
 
-prometheusRemoteStorageEnabled: true
+prometheus:
+  url: http://thanos-query-http:10902
+
+  remoteStorageEnabled: true
 
 kube-prometheus-stack:
   nameOverride: prometheus

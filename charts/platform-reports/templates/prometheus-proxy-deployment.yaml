@@ -37,7 +37,7 @@ spec:
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName | quote }}
             - name: PROMETHEUS_URL
-              value: http://thanos-query-http:10902
+              value: {{ .Values.prometheus.url }}
             - name: NP_AUTH_URL
               value: {{ .Values.platform.authUrl | quote }}
             - name: NP_API_URL

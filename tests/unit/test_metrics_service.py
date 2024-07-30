@@ -15,8 +15,9 @@ class TestPrometheusQueryFactory:
         query = PrometheusQueryFactory().create_compute_credits()
 
         assert query == (
-            "max by(pod) (kube_pod_credits_total) * "
-            "on(pod) group_right kube_pod_labels"
+            "max by(pod) (kube_pod_credits_total) * on(pod) group_right() "
+            '(kube_pod_labels{label_platform_neuromation_io_project!=""} or '
+            'kube_pod_labels{label_platform_apolo_us_project!=""})'
         )
 
     def test_create_compute_credits__filter_by_org_project(self) -> None:

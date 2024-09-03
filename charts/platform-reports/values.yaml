@@ -74,8 +74,16 @@ kube-prometheus-stack:
   kubeApiServer:
     enabled: true
 
+    serviceMonitor:
+      additionalLabels:
+        platform.apolo.us/scrape-metrics: "true"
+
   kubelet:
     enabled: true
+
+    serviceMonitor:
+      additionalLabels:
+        platform.apolo.us/scrape-metrics: "true"
 
   kubeControllerManager:
     enabled: false
@@ -139,6 +147,11 @@ kube-prometheus-stack:
 
     priorityClassName: ""
 
+    prometheus:
+      monitor:
+        additionalLabels:
+          platform.apolo.us/scrape-metrics: "true"
+
   nodeExporter:
     enabled: true
 
@@ -163,6 +176,11 @@ kube-prometheus-stack:
       type: RollingUpdate
       rollingUpdate:
         maxUnavailable: 100%
+
+    prometheus:
+      monitor:
+        additionalLabels:
+          platform.apolo.us/scrape-metrics: "true"
 
   prometheusOperator:
     image:
@@ -193,6 +211,10 @@ kube-prometheus-stack:
         priorityClassName: ""
 
     priorityClassName: ""
+
+    serviceMonitor:
+      additionalLabels:
+        platform.apolo.us/scrape-metrics: "true"
 
   prometheus:
     prometheusSpec:
@@ -227,10 +249,18 @@ kube-prometheus-stack:
               requests:
                 storage: 10Gi
 
+      serviceMonitorSelector:
+        matchLabels:
+          platform.apolo.us/scrape-metrics: "true"
+
       externalLabels:
         cluster: ""
 
       priorityClassName: ""
+
+    serviceMonitor:
+      additionalLabels:
+        platform.apolo.us/scrape-metrics: "true"
 
   alertmanager:
     alertmanagerSpec:
@@ -244,6 +274,10 @@ kube-prometheus-stack:
           service: alert-manager
 
       priorityClassName: ""
+
+    serviceMonitor:
+      additionalLabels:
+        platform.apolo.us/scrape-metrics: "true"
 
   grafana:
     enabled: false

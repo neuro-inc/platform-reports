@@ -183,6 +183,7 @@ metadata:
   name: {{ include "platformReports.metricsExporter.fullname" . }}
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     service: platform-metrics-exporter
+    platform.apolo.us/scrape-metrics: "true"
 spec:
   selector:
     matchLabels:

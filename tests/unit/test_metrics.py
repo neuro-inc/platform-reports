@@ -723,7 +723,7 @@ class TestAzureNodePriceCollector:
         ) -> AzureNodePriceCollector:
             return AzureNodePriceCollector(
                 prices_client=prices_client,
-                prices_url=URL(""),
+                prices_url=URL("/"),
                 node_created_at=datetime.now(UTC) - timedelta(hours=10),
                 region="eastus",
                 instance_type=instance_type,

@@ -6,7 +6,10 @@ import aiohttp
 import aiohttp.web
 import pytest
 from aiohttp.test_utils import TestClient
+from neuro_config_client import Cluster, ClusterStatus, StorageConfig, VolumeConfig
+from yarl import URL
 
+from platform_reports.cluster import ClusterHolder
 from platform_reports.metrics_service import (
     CreditsUsage,
     GetCreditsUsageRequest,
@@ -61,10 +64,39 @@ def prometheus_client(
     )
 
 
+class _TestClusterHolder(ClusterHolder):
+    def __init__(self, cluster: Cluster) -> None:
+        self._cluster = cluster
+
+    @property
+    def cluster(self) -> Cluster:
+        return self._cluster
+
+
+@pytest.fixture()
+def cluster() -> Cluster:
+    return Cluster(
+        name="default",
+        status=ClusterStatus.DEPLOYED,
+        created_at=datetime.now(),
+        storage=StorageConfig(
+            url=URL("http://platform-storage.platform"),
+            volumes=[
+                VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))
+            ],
+        ),
+    )
+
+
 class TestMetricsService:
     @pytest.fixture()
-    def metrics_service(self, prometheus_client: PrometheusClient) -> MetricsService:
-        return MetricsService(prometheus_client=prometheus_client)
+    def metrics_service(
+        self, prometheus_client: PrometheusClient, cluster: Cluster
+    ) -> MetricsService:
+        return MetricsService(
+            prometheus_client=prometheus_client,
+            cluster_holder=_TestClusterHolder(cluster),
+        )
 
     async def test_get_credits_usage(
         self, metrics_service: MetricsService, prometheus_handler: PrometheusHandler
@@ -103,6 +135,28 @@ class TestMetricsService:
                     }
                 )
 
+            if "storage_used_bytes" in request_text:
+                return aiohttp.web.json_response(
+                    {
+                        "status": "success",
+                        "data": {
+                            "resultType": "matrix",
+                            "result": [
+                                {
+                                    "metric": {
+                                        "org_name": "test-org",
+                                        "project_name": "test-project",
+                                    },
+                                    "values": [
+                                        [1719075883, str(1000**3)],
+                                        [1719079483, str(1000**3)],
+                                    ],
+                                },
+                            ],
+                        },
+                    }
+                )
+
             return aiohttp.web.json_response(
                 {"status": "success", "data": {"resultType": "matrix", "result": []}}
             )
@@ -118,5 +172,12 @@ class TestMetricsService:
                 resource_id="test-job",
                 credits=Decimal("1"),
                 org_name="test-org",
-            )
+            ),
+            CreditsUsage(
+                category_name=CategoryName.STORAGE,
+                project_name="test-project",
+                resource_id="default",
+                credits=Decimal("100"),
+                org_name="test-org",
+            ),
         ]

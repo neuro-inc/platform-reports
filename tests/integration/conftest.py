@@ -249,13 +249,15 @@ async def client() -> AsyncIterator[aiohttp.ClientSession]:
 def metrics_api_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
+    platform_config_config: PlatformServiceConfig,
     thanos_query_url: URL,
 ) -> MetricsApiConfig:
     return MetricsApiConfig(
         server=MetricsApiConfig.Server(port=unused_tcp_port_factory()),
         prometheus_url=pydantic.HttpUrl(str(thanos_query_url)),
-        platform_auth=MetricsApiConfig.PlatformAuth(
-            url=pydantic.HttpUrl(str(platform_auth_config.url)),
+        platform=MetricsApiConfig.PlatformConfig(
+            auth_url=pydantic.HttpUrl(str(platform_auth_config.url)),
+            config_url=pydantic.HttpUrl(str(platform_config_config.url)),
             token=platform_auth_config.token,
         ),
         cluster_name="default",

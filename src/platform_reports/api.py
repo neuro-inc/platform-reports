@@ -696,9 +696,21 @@ def create_metrics_api_app(config: MetricsApiConfig) -> aiohttp.web.Application:
 
             LOGGER.info("Initializing Auth client")
             auth_client = await exit_stack.enter_async_context(
-                AuthClient(config.platform_auth.yarl_url, config.platform_auth.token)
+                AuthClient(config.platform.auth_yarl_url, config.platform.token)
             )
             await setup_security(app, auth_client)
+
+            LOGGER.info("Initializing Config client")
+            config_client = await exit_stack.enter_async_context(
+                ConfigClient(
+                    config.platform.config_yarl_url, token=config.platform.token
+                )
+            )
+            cluster_holder = await exit_stack.enter_async_context(
+                RefreshableClusterHolder(
+                    config_client=config_client, cluster_name=config.cluster_name
+                )
+            )
 
             LOGGER.info("Initializing Prometheus client")
             raw_client = await exit_stack.enter_async_context(aiohttp.ClientSession())
@@ -707,7 +719,9 @@ def create_metrics_api_app(config: MetricsApiConfig) -> aiohttp.web.Application:
             )
 
             LOGGER.info("Initializing Metrics service")
-            metrics_service = MetricsService(prometheus_client=prometheus_client)
+            metrics_service = MetricsService(
+                prometheus_client=prometheus_client, cluster_holder=cluster_holder
+            )
             app[METRICS_SERVICE_APP_KEY] = metrics_service
 
             yield

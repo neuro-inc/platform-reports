@@ -402,8 +402,10 @@ class GCPNodePriceCollector(_NodePriceCollector):
         return await self._get_instance_price_per_hour(
             resource_pool.cpu,
             resource_pool.memory,
-            resource_pool.gpu or 0,
-            resource_pool.gpu_model or "",
+            resource_pool.nvidia_gpu or 0,
+            "",
+            # TODO: uncomment once nvidia_gpu_model is added
+            # resource_pool.gpu_model or "",
         )
 
     async def _get_instance_price_per_hour(

@@ -1,12 +1,22 @@
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from neuro_config_client import VolumeConfig
+from neuro_config_client import (
+    Cluster as ClientCluster,
+    ClusterStatus,
+    StorageConfig,
+    VolumeConfig,
+)
+from yarl import URL
 
 from platform_reports.metrics_service import (
+    Cluster,
     CreditsUsage,
     CreditsUsageFactory,
+    PodCreditsMetric,
     PrometheusQueryFactory,
+    StorageUsedMetric,
 )
 from platform_reports.prometheus_client import Metric
 from platform_reports.schema import CategoryName
@@ -39,7 +49,7 @@ class TestPrometheusQueryFactory:
 
 class TestCreditsUsageFactory:
     def test_create_for_compute__job(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_neuromation_io_project": "test-project",
                 "label_platform_neuromation_io_job": "test-job",
@@ -61,7 +71,7 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_compute__job__with_org_label(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_neuromation_io_org": "test-org",
                 "label_platform_neuromation_io_project": "test-project",
@@ -85,7 +95,7 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_compute__job__no_project_label(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_neuromation_io_job": "test-job",
             },
@@ -101,7 +111,7 @@ class TestCreditsUsageFactory:
         assert usage is None
 
     def test_create_for_compute__app(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_apolo_us_org": "test-org",
                 "label_platform_apolo_us_project": "test-project",
@@ -125,7 +135,7 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_compute__app__no_project_label(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_apolo_us_app": "test-app",
             },
@@ -141,7 +151,7 @@ class TestCreditsUsageFactory:
         assert usage is None
 
     def test_create_for_compute__not_enough_metrics(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={
                 "label_platform_neuromation_io_project": "test-project",
                 "label_platform_neuromation_io_job": "test-job",
@@ -156,7 +166,7 @@ class TestCreditsUsageFactory:
         assert usage is None
 
     def test_create_for_compute__unknown(self) -> None:
-        metric = Metric(
+        metric = PodCreditsMetric(
             labels={},
             values=[
                 Metric.Value(datetime.now(), Decimal(1)),
@@ -168,12 +178,23 @@ class TestCreditsUsageFactory:
 
         assert usage is None
 
+    def _create_cluster(self, storage_volumes: Sequence[VolumeConfig]) -> Cluster:
+        client_cluster = ClientCluster(
+            name="default",
+            status=ClusterStatus.DEPLOYED,
+            created_at=datetime.now(),
+            storage=StorageConfig(
+                url=URL("http://platform-storage.platform"), volumes=storage_volumes
+            ),
+        )
+        return Cluster(client_cluster)
+
     def test_create_for_storage(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))
-        }
+        cluster = self._create_cluster(
+            [VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))]
+        )
         now = datetime.now()
-        metric = Metric(
+        metric = StorageUsedMetric(
             labels={"org_name": "test-org", "project_name": "test-project"},
             values=[
                 Metric.Value(now, Decimal(1 * 1000**3)),
@@ -182,7 +203,7 @@ class TestCreditsUsageFactory:
             ],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage == CreditsUsage(
             category_name=CategoryName.STORAGE,
@@ -193,14 +214,14 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_storage__select_project_volume(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
-            "/test-org/test-project": VolumeConfig(
-                name="test-volume", credits_per_hour_per_gb=Decimal(50)
-            ),
-        }
+        cluster = self._create_cluster(
+            [
+                VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
+                VolumeConfig(name="test-volume", credits_per_hour_per_gb=Decimal(50)),
+            ]
+        )
         now = datetime.now()
-        metric = Metric(
+        metric = StorageUsedMetric(
             labels={"org_name": "test-org", "project_name": "test-project"},
             values=[
                 Metric.Value(now, Decimal(1 * 1000**3)),
@@ -209,7 +230,7 @@ class TestCreditsUsageFactory:
             ],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage == CreditsUsage(
             category_name=CategoryName.STORAGE,
@@ -220,14 +241,14 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_storage__select_org_volume(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
-            "/test-org": VolumeConfig(
-                name="test-volume", credits_per_hour_per_gb=Decimal(50)
-            ),
-        }
+        cluster = self._create_cluster(
+            [
+                VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
+                VolumeConfig(name="test-volume", credits_per_hour_per_gb=Decimal(50)),
+            ]
+        )
         now = datetime.now()
-        metric = Metric(
+        metric = StorageUsedMetric(
             labels={"org_name": "test-org", "project_name": "test-project"},
             values=[
                 Metric.Value(now, Decimal(1 * 1000**3)),
@@ -236,7 +257,7 @@ class TestCreditsUsageFactory:
             ],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage == CreditsUsage(
             category_name=CategoryName.STORAGE,
@@ -247,11 +268,11 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_storage__no_org(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))
-        }
+        cluster = self._create_cluster(
+            [VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))]
+        )
         now = datetime.now()
-        metric = Metric(
+        metric = StorageUsedMetric(
             labels={"org_name": "no_org", "project_name": "test-project"},
             values=[
                 Metric.Value(now, Decimal(1 * 1000**3)),
@@ -260,7 +281,7 @@ class TestCreditsUsageFactory:
             ],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage == CreditsUsage(
             category_name=CategoryName.STORAGE,
@@ -270,16 +291,18 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_storage__no_org__select_project_volume(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
-            "/test-project": VolumeConfig(
-                name="test-volume",
-                path="/test-project",
-                credits_per_hour_per_gb=Decimal(50),
-            ),
-        }
+        cluster = self._create_cluster(
+            [
+                VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
+                VolumeConfig(
+                    name="test-volume",
+                    path="/test-project",
+                    credits_per_hour_per_gb=Decimal(50),
+                ),
+            ]
+        )
         now = datetime.now()
-        metric = Metric(
+        metric = StorageUsedMetric(
             labels={"org_name": "no_org", "project_name": "test-project"},
             values=[
                 Metric.Value(now, Decimal(1 * 1000**3)),
@@ -288,7 +311,7 @@ class TestCreditsUsageFactory:
             ],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage == CreditsUsage(
             category_name=CategoryName.STORAGE,
@@ -298,24 +321,27 @@ class TestCreditsUsageFactory:
         )
 
     def test_create_for_storage__not_enough_metrics(self) -> None:
-        volumes: dict[str | None, VolumeConfig] = {
-            None: VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))
-        }
-        metric = Metric(
+        cluster = self._create_cluster(
+            [
+                VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100)),
+            ]
+        )
+        metric = StorageUsedMetric(
             labels={"org_name": "no_org", "project_name": "test-project"},
             values=[Metric.Value(datetime.now(), Decimal(1 * 1000**3))],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, volumes)
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage is None
 
     def test_create_for_storage__no_volumes(self) -> None:
-        metric = Metric(
+        cluster = self._create_cluster([])
+        metric = StorageUsedMetric(
             labels={"org_name": "no_org", "project_name": "test-project"},
             values=[Metric.Value(datetime.now(), Decimal(1 * 1000**3))],
         )
 
-        usage = CreditsUsageFactory().create_for_storage(metric, {})
+        usage = CreditsUsageFactory().create_for_storage(metric, cluster)
 
         assert usage is None

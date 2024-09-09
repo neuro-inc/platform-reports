@@ -1,12 +1,11 @@
 import asyncio
 import itertools
 import logging
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from neuro_config_client import VolumeConfig
+from neuro_config_client import Cluster as ClientCluster, VolumeConfig
 
 from .cluster import ClusterHolder
 from .config import PrometheusLabel
@@ -110,9 +109,63 @@ class PrometheusQueryFactory:
         return ",".join(label_matchers)
 
 
+class Cluster:
+    def __init__(self, cluster: ClientCluster) -> None:
+        self._volumes = {}
+
+        if not cluster.storage:
+            LOGGER.warning("Cluster storage is not available, check token permissions")
+            return
+
+        for volume in cluster.storage.volumes:
+            self._volumes[volume.path or None] = volume
+
+    @property
+    def has_volumes(self) -> bool:
+        return len(self._volumes) > 0
+
+    def get_project_volume(
+        self, *, org_name: str | None = None, project_name: str
+    ) -> VolumeConfig | None:
+        if org_name:
+            if volume := self._volumes.get(f"/{org_name}/{project_name}"):
+                return volume
+            if volume := self._volumes.get(f"/{org_name}"):
+                return volume
+        elif volume := self._volumes.get(f"/{project_name}"):
+            return volume
+        return self._volumes.get(None)
+
+
+class PodCreditsMetric(Metric):
+    @property
+    def org_name(self) -> str | None:
+        org_name = self.labels.get(PrometheusLabel.APOLO_ORG_KEY) or self.labels.get(
+            PrometheusLabel.NEURO_ORG_KEY
+        )
+        return None if org_name == "no_org" else org_name
+
+    @property
+    def project_name(self) -> str | None:
+        return self.labels.get(PrometheusLabel.APOLO_PROJECT_KEY) or self.labels.get(
+            PrometheusLabel.NEURO_PROJECT_KEY
+        )
+
+
+class StorageUsedMetric(Metric):
+    @property
+    def org_name(self) -> str | None:
+        org_name = self.labels["org_name"]
+        return None if org_name == "no_org" else org_name
+
+    @property
+    def project_name(self) -> str:
+        return self.labels["project_name"]
+
+
 class CreditsUsageFactory:
     @classmethod
-    def create_for_compute(cls, metric: Metric) -> CreditsUsage | None:
+    def create_for_compute(cls, metric: PodCreditsMetric) -> CreditsUsage | None:
         if len(metric.values) < 2:
             return None
         if job_id := metric.labels.get(PrometheusLabel.NEURO_JOB_KEY):
@@ -126,52 +179,41 @@ class CreditsUsageFactory:
         return None
 
     @classmethod
-    def _create_for_job(cls, metric: Metric, *, job_id: str) -> CreditsUsage | None:
-        if not (project_name := cls._get_project_name_from_pod_metric(metric)):
+    def _create_for_job(
+        cls, metric: PodCreditsMetric, *, job_id: str
+    ) -> CreditsUsage | None:
+        if not (project_name := metric.project_name):
             return None
         return CreditsUsage(
             category_name=CategoryName.JOBS,
-            org_name=cls._get_org_name_from_pod_metric(metric),
+            org_name=metric.org_name,
             project_name=project_name,
             resource_id=job_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )
 
     @classmethod
-    def _create_for_app(cls, metric: Metric, *, app_id: str) -> CreditsUsage | None:
-        if not (project_name := cls._get_project_name_from_pod_metric(metric)):
+    def _create_for_app(
+        cls, metric: PodCreditsMetric, *, app_id: str
+    ) -> CreditsUsage | None:
+        if not (project_name := metric.project_name):
             return None
         return CreditsUsage(
             category_name=CategoryName.APPS,
-            org_name=cls._get_org_name_from_pod_metric(metric),
+            org_name=metric.org_name,
             project_name=project_name,
             resource_id=app_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )
 
     @classmethod
-    def _get_org_name_from_pod_metric(cls, metric: Metric) -> str | None:
-        org_name = metric.labels.get(
-            PrometheusLabel.APOLO_ORG_KEY
-        ) or metric.labels.get(PrometheusLabel.NEURO_ORG_KEY)
-        return None if org_name == "no_org" else org_name
-
-    @classmethod
-    def _get_project_name_from_pod_metric(cls, metric: Metric) -> str | None:
-        return metric.labels.get(
-            PrometheusLabel.APOLO_PROJECT_KEY
-        ) or metric.labels.get(PrometheusLabel.NEURO_PROJECT_KEY)
-
-    @classmethod
     def create_for_storage(
-        cls, metric: Metric, volumes: Mapping[str | None, VolumeConfig]
+        cls, metric: StorageUsedMetric, cluster: Cluster
     ) -> CreditsUsage | None:
         if len(metric.values) < 2:
             return None
-        project_name = metric.labels["project_name"]
-        org_name = cls._get_org_name_from_storage_used_metric(metric)
-        volume = cls._get_storage_volume(
-            volumes=volumes, org_name=org_name, project_name=project_name
+        volume = cluster.get_project_volume(
+            org_name=metric.org_name, project_name=metric.project_name
         )
         if not volume:
             return None
@@ -186,33 +228,11 @@ class CreditsUsageFactory:
             prev_value = curr_value
         return CreditsUsage(
             category_name=CategoryName.STORAGE,
-            org_name=org_name,
-            project_name=project_name,
+            org_name=metric.org_name,
+            project_name=metric.project_name,
             resource_id=volume.name,
             credits=credits_sum,
         )
-
-    @classmethod
-    def _get_org_name_from_storage_used_metric(cls, metric: Metric) -> str | None:
-        org_name = metric.labels["org_name"]
-        return None if org_name == "no_org" else org_name
-
-    @classmethod
-    def _get_storage_volume(
-        cls,
-        *,
-        volumes: Mapping[str | None, VolumeConfig],
-        org_name: str | None,
-        project_name: str,
-    ) -> VolumeConfig | None:
-        if org_name:
-            if volume := volumes.get(f"/{org_name}/{project_name}"):
-                return volume
-            if volume := volumes.get(f"/{org_name}"):
-                return volume
-        elif volume := volumes.get(f"/{project_name}"):
-            return volume
-        return volumes.get(None)
 
 
 class MetricsService:
@@ -243,7 +263,10 @@ class MetricsService:
             org_name=request.org_name, project_name=request.project_name
         )
         metrics = await self._prometheus_client.evaluate_range_query(
-            query=query, start_date=request.start_date, end_date=request.end_date
+            query=query,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            metric_cls=PodCreditsMetric,
         )
         usage = []
         for metric in metrics:
@@ -255,7 +278,8 @@ class MetricsService:
     async def _get_storage_credits_usage(
         self, request: GetCreditsUsageRequest
     ) -> list[CreditsUsage]:
-        if not (volumes := self._get_cluster_storage_volumes_by_path()):
+        storage = Cluster(self._cluster_holder.cluster)
+        if not storage.has_volumes:
             return []
 
         LOGGER.debug("Requesting storage credits usage: %s", request)
@@ -263,20 +287,14 @@ class MetricsService:
             org_name=request.org_name, project_name=request.project_name
         )
         metrics = await self._prometheus_client.evaluate_range_query(
-            query=query, start_date=request.start_date, end_date=request.end_date
+            query=query,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            metric_cls=StorageUsedMetric,
         )
         usage = []
         for metric in metrics:
-            if c := self._credits_usage_factory.create_for_storage(metric, volumes):
+            if c := self._credits_usage_factory.create_for_storage(metric, storage):
                 LOGGER.debug("Storage credits usage: %s", c)
                 usage.append(c)
         return usage
-
-    def _get_cluster_storage_volumes_by_path(self) -> dict[str | None, VolumeConfig]:
-        if not self._cluster_holder.cluster.storage:
-            LOGGER.warning("Cluster storage is not available, check token permissions")
-            return {}
-        result = {}
-        for volume in self._cluster_holder.cluster.storage.volumes:
-            result[volume.path or None] = volume
-        return result

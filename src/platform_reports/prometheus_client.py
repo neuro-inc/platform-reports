@@ -2,7 +2,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, Self, TypeVar
 
 import aiohttp
 import pydantic
@@ -36,6 +36,9 @@ class Metric(pydantic.BaseModel):
     values: Sequence[Annotated[Value, pydantic.BeforeValidator(Value.validate)]]
 
 
+TMetric = TypeVar("TMetric", bound=Metric)
+
+
 class PrometheusClient:
     def __init__(
         self, *, client: aiohttp.ClientSession, prometheus_url: str | URL
@@ -44,8 +47,14 @@ class PrometheusClient:
         self._prometheus_url = URL(prometheus_url)
 
     async def evaluate_range_query(
-        self, *, query: str, start_date: datetime, end_date: datetime, step: float = 15
-    ) -> list[Metric]:
+        self,
+        *,
+        query: str,
+        start_date: datetime,
+        end_date: datetime,
+        step: float = 15,
+        metric_cls: type[TMetric],
+    ) -> list[TMetric]:
         url = self._prometheus_url / "api/v1/query_range"
         data = {
             "query": query,
@@ -61,9 +70,9 @@ class PrometheusClient:
                 LOGGER.error(msg)
                 raise PrometheusException(msg)
             response_json = await response.json()
-        adapter = pydantic.TypeAdapter(list[Metric])
-        metrics = adapter.validate_python(
-            response_json.get("data", {}).get("result", [])
-        )
+        metrics = [
+            metric_cls.model_validate(m)
+            for m in response_json.get("data", {}).get("result", [])
+        ]
         LOGGER.debug("Prometheus metrics: %s", metrics)
         return metrics

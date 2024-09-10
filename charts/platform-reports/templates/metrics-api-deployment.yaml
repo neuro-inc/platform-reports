@@ -31,9 +31,11 @@ spec:
               value: {{ .Values.platform.clusterName | quote }}
             - name: PROMETHEUS_URL
               value: {{ .Values.prometheus.url }}
-            - name: PLATFORM_AUTH__URL
+            - name: PLATFORM__AUTH_URL
               value: {{ .Values.platform.authUrl | quote }}
-            - name: PLATFORM_AUTH__TOKEN
+            - name: PLATFORM__CONFIG_URL
+              value: {{ .Values.platform.configUrl | quote }}
+            - name: PLATFORM__TOKEN
             {{- if .Values.platform.token }}
             {{- toYaml .Values.platform.token | nindent 14 }}
             {{- end }}

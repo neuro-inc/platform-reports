@@ -230,16 +230,18 @@ class TestEnvironConfigFactory:
         )
 
     def test_create_metrics_api(self) -> None:
-        os.environ["PLATFORM_AUTH__URL"] = "http://platform-auth.platform"
-        os.environ["PLATFORM_AUTH__TOKEN"] = "test-token"
+        os.environ["PLATFORM__AUTH_URL"] = "http://platform-auth.platform"
+        os.environ["PLATFORM__CONFIG_URL"] = "http://platform-config.platform"
+        os.environ["PLATFORM__TOKEN"] = "test-token"
         os.environ["PROMETHEUS_URL"] = "http://prometheus.platform"
         os.environ["CLUSTER_NAME"] = "test-cluster"
 
         config = MetricsApiConfig()  # type: ignore
 
         assert config == MetricsApiConfig(
-            platform_auth=MetricsApiConfig.PlatformAuth(
-                url=pydantic.HttpUrl("http://platform-auth.platform"),
+            platform=MetricsApiConfig.PlatformConfig(
+                auth_url=pydantic.HttpUrl("http://platform-auth.platform"),
+                config_url=pydantic.HttpUrl("http://platform-config.platform"),
                 token="test-token",
             ),
             prometheus_url=pydantic.HttpUrl("http://prometheus.platform"),

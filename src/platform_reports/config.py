@@ -106,16 +106,21 @@ class MetricsApiConfig(BaseSettings):
         host: str = "0.0.0.0"
         port: int = 8080
 
-    class PlatformAuth(pydantic.BaseModel):
-        url: pydantic.HttpUrl | None
+    class PlatformConfig(pydantic.BaseModel):
+        auth_url: pydantic.HttpUrl | None
+        config_url: pydantic.HttpUrl | None
         token: str = pydantic.Field(repr=False)
 
         @property
-        def yarl_url(self) -> URL | None:
-            return URL(str(self.url)) if self.url else None
+        def auth_yarl_url(self) -> URL | None:
+            return URL(str(self.auth_url)) if self.auth_url else None
+
+        @property
+        def config_yarl_url(self) -> URL:
+            return URL(str(self.config_url))
 
     server: Server = Server()
-    platform_auth: PlatformAuth
+    platform: PlatformConfig
     prometheus_url: pydantic.HttpUrl
     cluster_name: str
 

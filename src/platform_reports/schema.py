@@ -16,6 +16,7 @@ class ClientErrorSchema(Schema):
 class CategoryName(StrEnum):
     JOBS = auto()
     APPS = auto()
+    STORAGE = auto()
 
 
 @dataclass(frozen=True)

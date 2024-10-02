@@ -21,10 +21,12 @@ class Label:
     NEURO_PRESET_KEY = Key("platform.neuromation.io/preset")
     NEURO_ORG_KEY = Key("platform.neuromation.io/org")
     NEURO_PROJECT_KEY = Key("platform.neuromation.io/project")
+    NEURO_USER_KEY = Key("platform.neuromation.io/user")
     NEURO_JOB_KEY = Key("platform.neuromation.io/job")
 
     APOLO_ORG_KEY = Key("platform.apolo.us/org")
     APOLO_PROJECT_KEY = Key("platform.apolo.us/project")
+    APOLO_USER_KEY = Key("platform.apolo.us/user")
     APOLO_PRESET_KEY = Key("platform.apolo.us/preset")
     APOLO_APP_KEY = Key("platform.apolo.us/app")
 

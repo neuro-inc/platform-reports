@@ -52,6 +52,7 @@ class TestCreditsUsageFactory:
         metric = PodCreditsMetric(
             labels={
                 "label_platform_neuromation_io_project": "test-project",
+                "label_platform_neuromation_io_user": "test-user",
                 "label_platform_neuromation_io_job": "test-job",
             },
             values=[
@@ -66,6 +67,7 @@ class TestCreditsUsageFactory:
         assert usage == CreditsUsage(
             category_name=CategoryName.JOBS,
             project_name="test-project",
+            user_name="test-user",
             resource_id="test-job",
             credits=Decimal(2),
         )
@@ -115,6 +117,7 @@ class TestCreditsUsageFactory:
             labels={
                 "label_platform_apolo_us_org": "test-org",
                 "label_platform_apolo_us_project": "test-project",
+                "label_platform_apolo_us_user": "test-user",
                 "label_platform_apolo_us_app": "test-app",
             },
             values=[
@@ -130,6 +133,7 @@ class TestCreditsUsageFactory:
             category_name=CategoryName.APPS,
             org_name="test-org",
             project_name="test-project",
+            user_name="test-user",
             resource_id="test-app",
             credits=Decimal(2),
         )

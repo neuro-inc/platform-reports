@@ -32,6 +32,7 @@ class CreditsUsage:
     resource_id: str
     credits: Decimal
     org_name: str | None = None
+    user_name: str | None = None
 
 
 class PrometheusQueryFactory:
@@ -151,6 +152,12 @@ class PodCreditsMetric(Metric):
             PrometheusLabel.NEURO_PROJECT_KEY
         )
 
+    @property
+    def user_name(self) -> str | None:
+        return self.labels.get(PrometheusLabel.APOLO_USER_KEY) or self.labels.get(
+            PrometheusLabel.NEURO_USER_KEY
+        )
+
 
 class StorageUsedMetric(Metric):
     @property
@@ -188,6 +195,7 @@ class CreditsUsageFactory:
             category_name=CategoryName.JOBS,
             org_name=metric.org_name,
             project_name=project_name,
+            user_name=metric.user_name,
             resource_id=job_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )
@@ -202,6 +210,7 @@ class CreditsUsageFactory:
             category_name=CategoryName.APPS,
             org_name=metric.org_name,
             project_name=project_name,
+            user_name=metric.user_name,
             resource_id=app_id,
             credits=metric.values[-1].value - metric.values[0].value,
         )

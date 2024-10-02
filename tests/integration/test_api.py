@@ -431,6 +431,7 @@ class TestMetricsApi:
             CreditsUsage(
                 category_name=CategoryName.JOBS,
                 project_name="test-project",
+                user_name="test-user",
                 resource_id="test-job",
                 credits=Decimal(1),
             )
@@ -457,6 +458,7 @@ class TestMetricsApi:
                     "category_name": "jobs",
                     "org_name": None,
                     "project_name": "test-project",
+                    "user_name": "test-user",
                     "resource_id": "test-job",
                     "credits": "1",
                 }

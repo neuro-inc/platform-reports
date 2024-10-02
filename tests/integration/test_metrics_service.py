@@ -147,7 +147,6 @@ class TestMetricsService:
                                     "metric": {
                                         "org_name": "test-org",
                                         "project_name": "test-project",
-                                        "user_name": "test-user",
                                     },
                                     "values": [
                                         [1719075883, str(1000**3)],
@@ -171,6 +170,7 @@ class TestMetricsService:
             CreditsUsage(
                 category_name=CategoryName.JOBS,
                 project_name="test-project",
+                user_name="test-user",
                 resource_id="test-job",
                 credits=Decimal("1"),
                 org_name="test-org",

@@ -50,8 +50,9 @@ class PostCreditsUsageRequestSchema(Schema):
 
 
 class PostCreditsUsageResponseSchema(Schema):
-    category_name = fields.Enum(CategoryName, by_value=True)
+    category_name = fields.Enum(CategoryName, by_value=True, required=True)
     org_name = fields.String()
-    project_name = fields.String()
+    project_name = fields.String(required=True)
+    user_name = fields.String()
     resource_id = fields.String(required=True)
     credits = fields.Decimal(required=True, as_string=True)

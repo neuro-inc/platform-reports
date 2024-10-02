@@ -126,6 +126,7 @@ class TestMetricsService:
                                     "metric": {
                                         "label_platform_neuromation_io_org": "test-org",
                                         "label_platform_neuromation_io_project": "test-project",  # noqa: E501
+                                        "label_platform_neuromation_io_user": "test-user",  # noqa: E501
                                         "label_platform_neuromation_io_job": "test-job",
                                     },
                                     "values": [[1719075883, "1"], [1719075898, "2"]],
@@ -169,6 +170,7 @@ class TestMetricsService:
             CreditsUsage(
                 category_name=CategoryName.JOBS,
                 project_name="test-project",
+                user_name="test-user",
                 resource_id="test-job",
                 credits=Decimal("1"),
                 org_name="test-org",

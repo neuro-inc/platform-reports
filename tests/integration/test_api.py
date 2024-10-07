@@ -333,7 +333,7 @@ class TestGrafanaProxy:
 
 
 class TestMetricsApi:
-    @pytest.fixture()
+    @pytest.fixture
     async def user(self, user_factory: UserFactory) -> User:
         return await user_factory(
             str(uuid.uuid4()), [Permission("cluster://default", "read")]

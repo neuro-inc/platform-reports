@@ -10,7 +10,7 @@ dependencies:
     repository: "https://prometheus-community.github.io/helm-charts"
   - name: thanos
     version: "0.3.23"
-    repository: "https://kubernetes-charts.banzaicloud.com"
+    repository: "https://neuro-inc.github.io/helm-charts"
     condition: prometheus.remoteStorageEnabled
   - name: grafana
     version: "7.0.11"

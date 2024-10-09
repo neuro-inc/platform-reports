@@ -3,7 +3,7 @@ dependencies:
   repository: https://prometheus-community.github.io/helm-charts
   version: 54.2.2
 - name: thanos
-  repository: https://kubernetes-charts.banzaicloud.com
+  repository: https://neuro-inc.github.io/helm-charts
   version: 0.3.23
 - name: grafana
   repository: https://grafana.github.io/helm-charts
@@ -11,5 +11,5 @@ dependencies:
 - name: k8s-resources
   repository: https://neuro-inc.github.io/helm-charts
   version: 1.0.1
-digest: sha256:2b600ad528ed1ed4c5fb06ed20ac718faf9d3213a7ff706b932c5e3a1bfd8314
-generated: "2023-11-30T11:51:27.16429011+02:00"
+digest: sha256:f55328481f222588962c69ee8c6c62af8a2f792ba34035c9049e6f87f8431c56
+generated: "2024-10-09T08:56:44.606615003+02:00"

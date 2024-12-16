@@ -65,17 +65,17 @@ class _TestClusterHolder(ClusterHolder):
         return self._cluster
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster_holder(cluster: Cluster) -> ClusterHolder:
     return _TestClusterHolder(cluster)
 
 
 class TestCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def collector(self) -> Collector[Price]:
         return Collector(Price(), interval_s=0.1)
 
-    @pytest.fixture()
+    @pytest.fixture
     def price_factory(self, collector: Collector[Price]) -> Iterator[mock.Mock]:
         price = Price(currency="USD", value=Decimal(1))
         with mock.patch.object(
@@ -100,7 +100,7 @@ class TestCollector:
 
 
 class TestConfigPriceCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -124,7 +124,7 @@ class TestConfigPriceCollector:
             ),
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     async def collector_factory(
         self, cluster_holder: ClusterHolder
     ) -> Callable[..., AbstractAsyncContextManager[ConfigPriceCollector]]:
@@ -164,15 +164,15 @@ class TestConfigPriceCollector:
 
 
 class TestAWSNodePriceCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def pricing_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
 
-    @pytest.fixture()
+    @pytest.fixture
     def ec2_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
 
-    @pytest.fixture()
+    @pytest.fixture
     def collector_factory(
         self, pricing_client: AioBaseClient, ec2_client: AioBaseClient
     ) -> Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]]:
@@ -345,7 +345,7 @@ class TestAWSNodePriceCollector:
 
 
 class TestGCPNodePriceCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -380,7 +380,7 @@ class TestGCPNodePriceCollector:
             ),
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def google_service_skus(self) -> dict[str, Any]:
         return {
             "skus": [
@@ -602,7 +602,7 @@ class TestGCPNodePriceCollector:
             ]
         }
 
-    @pytest.fixture()
+    @pytest.fixture
     def collector_factory(
         self, cluster_holder: ClusterHolder, google_service_skus: dict[str, Any]
     ) -> Callable[..., AbstractContextManager[GCPNodePriceCollector]]:
@@ -648,7 +648,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal(1), currency="USD")
 
-    @pytest.mark.xfail()
+    @pytest.mark.xfail
     async def test_get_latest_value_gpu_instance(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
@@ -657,7 +657,7 @@ class TestGCPNodePriceCollector:
             result = await collector.get_latest_value()
             assert result == Price(value=Decimal("22.73"), currency="USD")
 
-    @pytest.mark.xfail()
+    @pytest.mark.xfail
     async def test_get_latest_value_gpu_instance_preemptible(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
@@ -680,7 +680,7 @@ class TestGCPNodePriceCollector:
         ):
             await collector.get_latest_value()
 
-    @pytest.mark.xfail()
+    @pytest.mark.xfail
     async def test_get_latest_value_unknown_gpu(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
@@ -695,7 +695,7 @@ class TestGCPNodePriceCollector:
 
 
 class TestAzureNodePriceCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def prices_client_factory(
         self,
         aiohttp_client: Any,
@@ -714,7 +714,7 @@ class TestAzureNodePriceCollector:
 
         return _create
 
-    @pytest.fixture()
+    @pytest.fixture
     def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
         def _create(
             prices_client: aiohttp.ClientSession,
@@ -853,7 +853,7 @@ class TestAzureNodePriceCollector:
 
 
 class TestPodCreditsCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
@@ -876,7 +876,7 @@ class TestPodCreditsCollector:
             ),
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
         def _create(pods: list[Pod]) -> mock.AsyncMock:
             async def get_pods(
@@ -895,7 +895,7 @@ class TestPodCreditsCollector:
 
         return _create
 
-    @pytest.fixture()
+    @pytest.fixture
     def collector_factory(
         self,
         cluster_holder: ClusterHolder,
@@ -1019,7 +1019,7 @@ class TestPodCreditsCollector:
 
 
 class TestNodeEnergyConsumptionCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",

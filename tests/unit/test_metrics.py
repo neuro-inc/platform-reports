@@ -1031,6 +1031,12 @@ class TestNodeEnergyConsumptionCollector:
                 node_pools=[
                     NodePool(
                         name="node-pool",
+                        cpu=1,
+                        available_cpu=1,
+                        memory=4 * 2**30,
+                        available_memory=4 * 2**30,
+                        disk_size=100 * 2**30,
+                        available_disk_size=100 * 2**30,
                         cpu_min_watts=10.5,
                         cpu_max_watts=110.0,
                     ),

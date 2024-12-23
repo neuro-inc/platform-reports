@@ -82,7 +82,7 @@ class KubePodFactory(Protocol):
         pass
 
 
-@pytest.fixture()
+@pytest.fixture
 async def kube_pod_factory(kube_client: KubeClient) -> AsyncIterator[KubePodFactory]:
     pods = []
 

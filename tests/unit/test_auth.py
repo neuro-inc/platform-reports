@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from decimal import Decimal
 from unittest import mock
 
 import pytest
 from multidict import MultiDict
 from neuro_auth_client import AuthClient, Permission
-from neuro_sdk import Client as ApiClient, JobDescription as Job
 from yarl import URL
 
 from platform_reports.auth import AuthService, Dashboard
+from platform_reports.platform_api_client import ApiClient, Job
 
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
@@ -21,16 +20,7 @@ def job_factory() -> Callable[[str], Job]:
     def _factory(id_: str) -> Job:
         return Job(
             id=id_,
-            owner=None,  # type: ignore
-            cluster_name=None,  # type: ignore
-            status=None,  # type: ignore
-            history=None,  # type: ignore
-            container=None,  # type: ignore
             uri=URL(f"job://default/org/project/{id_}"),
-            total_price_credits=Decimal("500"),
-            price_credits_per_hour=Decimal("5"),
-            pass_config=None,  # type: ignore
-            scheduler_enabled=False,
         )
 
     return _factory
@@ -49,7 +39,7 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
         return job_factory(id_)
 
     client = mock.AsyncMock(ApiClient)
-    client.jobs.status = mock.AsyncMock(side_effect=get_job)
+    client.get_job = mock.AsyncMock(side_effect=get_job)
     return client
 
 
@@ -200,7 +190,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_project_jobs_dashboard_without_project_name_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
@@ -386,7 +376,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_kube_state_metrics_query_with_service_pod_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
@@ -455,7 +445,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_kubelet_query_with_service_pod_permissions(
         self,
@@ -527,7 +517,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_neuro_metrics_exporter_query_without_pod_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock
@@ -582,7 +572,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_without_job_matcher(self, service: AuthService) -> None:
         result = await service.check_query_permissions(
@@ -613,7 +603,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_ignoring_join_for_all_jobs_permissions(
         self,
@@ -635,7 +625,7 @@ class TestAuthService:
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="role://default/manager", action="read")]
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_join_platform_api_called_once(
         self,
@@ -658,7 +648,7 @@ class TestAuthService:
             "user",
             [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
         )
-        api_client.jobs.status.assert_awaited_once_with(JOB_ID)
+        api_client.get_job.assert_awaited_once_with(JOB_ID)
 
     async def test_check_join_for_project_jobs_permissions(
         self, service: AuthService, auth_client: mock.AsyncMock

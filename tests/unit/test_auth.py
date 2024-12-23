@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from decimal import Decimal
 from unittest import mock
 
 import pytest
 from multidict import MultiDict
 from neuro_auth_client import AuthClient, Permission
-from neuro_sdk import Client as ApiClient, JobDescription as Job
 from yarl import URL
 
 from platform_reports.auth import AuthService, Dashboard
+from platform_reports.platform_api_client import ApiClient, Job
 
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
@@ -21,16 +20,7 @@ def job_factory() -> Callable[[str], Job]:
     def _factory(id_: str) -> Job:
         return Job(
             id=id_,
-            owner=None,  # type: ignore
-            cluster_name=None,  # type: ignore
-            status=None,  # type: ignore
-            history=None,  # type: ignore
-            container=None,  # type: ignore
             uri=URL(f"job://default/org/project/{id_}"),
-            total_price_credits=Decimal("500"),
-            price_credits_per_hour=Decimal("5"),
-            pass_config=None,  # type: ignore
-            scheduler_enabled=False,
         )
 
     return _factory
@@ -49,7 +39,7 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
         return job_factory(id_)
 
     client = mock.AsyncMock(ApiClient)
-    client.jobs.status = mock.AsyncMock(side_effect=get_job)
+    client.get_job = mock.AsyncMock(side_effect=get_job)
     return client
 
 

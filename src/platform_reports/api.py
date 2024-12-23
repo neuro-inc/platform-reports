@@ -6,8 +6,6 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequenc
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
 from importlib.metadata import version
-from pathlib import Path
-from tempfile import mktemp
 from textwrap import dedent
 
 import aiobotocore.session
@@ -39,7 +37,6 @@ from neuro_auth_client import AuthClient, Permission, check_permissions
 from neuro_auth_client.security import setup_security
 from neuro_config_client.client import ConfigClient
 from neuro_logging import init_logging, setup_sentry
-from neuro_sdk import Client as ApiClient, Factory as ClientFactory
 from yarl import URL
 
 from .auth import AuthService
@@ -65,6 +62,7 @@ from .metrics_collector import (
     Price,
 )
 from .metrics_service import GetCreditsUsageRequest, MetricsService
+from .platform_api_client import ApiClient
 from .prometheus_client import PrometheusClient
 from .schema import (
     ClientErrorSchema,
@@ -442,16 +440,8 @@ async def run_task(coro: Awaitable[None]) -> AsyncIterator[None]:
 
 @asynccontextmanager
 async def create_api_client(config: PlatformServiceConfig) -> AsyncIterator[ApiClient]:
-    tmp_config = Path(mktemp())
-    platform_api_factory = ClientFactory(tmp_config)
-    await platform_api_factory.login_with_token(url=config.url, token=config.token)
-    client = None
-    try:
-        client = await platform_api_factory.get()
+    async with ApiClient(url=config.url, token=config.token) as client:
         yield client
-    finally:
-        if client:
-            await client.close()
 
 
 def get_aws_pricing_api_region(region: str) -> str:

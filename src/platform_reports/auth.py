@@ -7,8 +7,8 @@ from collections.abc import Iterable, Sequence
 
 from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
-from neuro_sdk import Client as ApiClient
 
+from .platform_api_client import ApiClient
 from .prometheus_query_parser import (
     InstantVector,
     LabelMatcher,
@@ -382,7 +382,7 @@ class PermissionsService:
             if job_id in self._job_permissions:
                 result.append(self._job_permissions[job_id])
             else:
-                job = await self._api_client.jobs.status(job_id)
+                job = await self._api_client.get_job(job_id)
                 permission = Permission(uri=str(job.uri), action="read")
                 self._job_permissions[job_id] = permission
                 result.append(permission)

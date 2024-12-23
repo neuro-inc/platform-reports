@@ -530,20 +530,26 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         )
         result: dict[str, Decimal] = {}
         for pod in pods:
-            pod_name = pod.metadata.name
-            preset_name = pod.metadata.labels.get(
-                Label.APOLO_PRESET_KEY
-            ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
-            if not preset_name:
-                continue
-            if not (preset := presets.get(preset_name)):
-                logger.warning(
-                    "Pod %s resource preset %s not found", pod_name, preset_name
+            try:
+                # TODO: handle pods in CrashLoopBackOff status
+                pod_name = pod.metadata.name
+                preset_name = pod.metadata.labels.get(
+                    Label.APOLO_PRESET_KEY
+                ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
+                if not preset_name:
+                    continue
+                if not (preset := presets.get(preset_name)):
+                    logger.warning(
+                        "Pod %s resource preset %s not found", pod_name, preset_name
+                    )
+                    continue
+                credits_total = self._get_pod_credits_total(
+                    pod, preset.credits_per_hour
                 )
-                continue
-            credits_total = self._get_pod_credits_total(pod, preset.credits_per_hour)
-            logger.debug("Pod %r credits total: %s", pod_name, credits_total)
-            result[pod_name] = credits_total
+                logger.debug("Pod %r credits total: %s", pod_name, credits_total)
+                result[pod_name] = credits_total
+            except Exception as ex:
+                logger.exception(str(ex))
         return result
 
     @classmethod

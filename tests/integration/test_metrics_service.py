@@ -34,19 +34,19 @@ class PrometheusHandler:
         return aiohttp.web.json_response({})
 
 
-@pytest.fixture()
+@pytest.fixture
 def prometheus_handler() -> PrometheusHandler:
     return PrometheusHandler()
 
 
-@pytest.fixture()
+@pytest.fixture
 def prometheus_app(prometheus_handler: PrometheusHandler) -> aiohttp.web.Application:
     app = aiohttp.web.Application()
     app.router.add_post("/api/v1/query_range", prometheus_handler.do_post_query_range)
     return app
 
 
-@pytest.fixture()
+@pytest.fixture
 async def prometheus_test_client(
     aiohttp_client: Callable[[aiohttp.web.Application], Awaitable[TestClient]],
     prometheus_app: aiohttp.web.Application,
@@ -54,7 +54,7 @@ async def prometheus_test_client(
     return await aiohttp_client(prometheus_app)
 
 
-@pytest.fixture()
+@pytest.fixture
 def prometheus_client(
     prometheus_test_client: TestClient,
 ) -> PrometheusClient:
@@ -73,7 +73,7 @@ class _TestClusterHolder(ClusterHolder):
         return self._cluster
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster() -> Cluster:
     return Cluster(
         name="default",
@@ -89,7 +89,7 @@ def cluster() -> Cluster:
 
 
 class TestMetricsService:
-    @pytest.fixture()
+    @pytest.fixture
     def metrics_service(
         self, prometheus_client: PrometheusClient, cluster: Cluster
     ) -> MetricsService:

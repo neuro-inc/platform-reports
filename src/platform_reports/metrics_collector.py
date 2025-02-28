@@ -450,9 +450,9 @@ class GCPNodePriceCollector(_NodePriceCollector):
 
             if len(prices_in_nanos) == expected_prices_count:
                 break
-        assert (
-            len(prices_in_nanos) == expected_prices_count
-        ), f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
+        assert len(prices_in_nanos) == expected_prices_count, (
+            f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
+        )
         return Price(
             value=sum(prices_in_nanos.values(), Decimal()) / 10**9, currency="USD"
         )
@@ -549,7 +549,8 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                 logger.debug("Pod %r credits total: %s", pod_name, credits_total)
                 result[pod_name] = credits_total
             except Exception as ex:
-                logger.exception(str(ex))
+                # NOTE: Do not log exception since they are sent to Sentry
+                logger.info(str(ex))
         return result
 
     @classmethod

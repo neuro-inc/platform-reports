@@ -2,21 +2,13 @@ version: "3"
 services:
 
   platform-auth:
-    image: platform-auth
+    image: ghcr.io/neuro-inc/platformauthapi:latest
     container_name: platform-auth
-    build:
-      context: ./platform-auth
-      dockerfile: Dockerfile
     environment:
       - NP_AUTH_API_PORT=8080
       - NP_JWT_SECRET=secret
     ports:
       - 8080
-    healthcheck:
-      test: curl --fail http://localhost:8080/api/v1/ping
-      interval: 1s
-      timeout: 5s
-      retries: 10
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.0.0

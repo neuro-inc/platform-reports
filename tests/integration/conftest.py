@@ -75,12 +75,6 @@ def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture()
-def platform_auth_server(docker_ip: str, docker_services: Services) -> URL:
-    port = docker_services.port_for("platform-auth", 8080)
-    return URL(f"http://{docker_ip}:{port}")
-
-
-@pytest.fixture()
 async def platform_api_server(
     unused_tcp_port_factory: Callable[[], int],
     platform_api_app: aiohttp.web.Application,
@@ -144,9 +138,9 @@ def metrics_exporter_config(
 
 
 @pytest.fixture()
-async def metrics_exporter_server_factory() -> (
-    Callable[[MetricsExporterConfig], AbstractAsyncContextManager[URL]]
-):
+async def metrics_exporter_server_factory() -> Callable[
+    [MetricsExporterConfig], AbstractAsyncContextManager[URL]
+]:
     @asynccontextmanager
     async def _create(
         metrics_exporter_config: MetricsExporterConfig,

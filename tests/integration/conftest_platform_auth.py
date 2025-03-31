@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 _JWT_SECRET = "secret"
 
 
-@pytest.fixture()
+@pytest.fixture
 async def platform_auth_server(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("platform-auth", 8080)
     url = URL(f"http://{docker_ip}:{port}")
@@ -48,7 +48,7 @@ async def wait_for_auth_server(
     await asyncio.wait_for(_wait(), timeout=timeout_s)
 
 
-@pytest.fixture()
+@pytest.fixture
 def token_factory() -> Callable[[str], str]:
     def _create(name: str) -> str:
         payload = {"https://platform.neuromation.io/user": name}
@@ -65,7 +65,7 @@ class User(AuthUser):
 UserFactory = Callable[[str, Sequence[Permission]], Awaitable[User]]
 
 
-@pytest.fixture()
+@pytest.fixture
 def user_factory(
     token_factory: Callable[[str], str], platform_auth_server: URL
 ) -> UserFactory:
@@ -85,7 +85,7 @@ def user_factory(
     return _create
 
 
-@pytest.fixture()
+@pytest.fixture
 async def service_token(
     user_factory: UserFactory, token_factory: Callable[[str], str]
 ) -> str:
@@ -93,7 +93,7 @@ async def service_token(
     return token_factory("cluster")
 
 
-@pytest.fixture()
+@pytest.fixture
 async def cluster_admin_token(user_factory: UserFactory) -> str:
     user = await user_factory(
         "cluster-admin",
@@ -105,7 +105,7 @@ async def cluster_admin_token(user_factory: UserFactory) -> str:
     return user.token
 
 
-@pytest.fixture()
+@pytest.fixture
 async def regular_user_token(user_factory: UserFactory) -> str:
     user = await user_factory(
         "user",
@@ -117,7 +117,7 @@ async def regular_user_token(user_factory: UserFactory) -> str:
     return user.token
 
 
-@pytest.fixture()
+@pytest.fixture
 async def other_cluster_user_token(user_factory: UserFactory) -> str:
     user = await user_factory(
         "other-user",

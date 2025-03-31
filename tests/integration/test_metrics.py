@@ -26,7 +26,7 @@ class _TestClusterHolder(ClusterHolder):
         return self._cluster
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster() -> Cluster:
     return Cluster(
         name="default",
@@ -50,13 +50,13 @@ def cluster() -> Cluster:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster_holder(cluster: Cluster) -> ClusterHolder:
     return _TestClusterHolder(cluster)
 
 
 class TestPodCreditsCollector:
-    @pytest.fixture()
+    @pytest.fixture
     def collector(
         self, kube_client: KubeClient, kube_node: Node, cluster_holder: ClusterHolder
     ) -> PodCreditsCollector:

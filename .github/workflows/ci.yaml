@@ -41,15 +41,20 @@ jobs:
     name: Create release
     needs: test
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    uses: neuro-inc/reuse/.github/workflows/release-service.yaml@v24.9.0
+    uses: neuro-inc/reuse/.github/workflows/release-service.yaml@v24.10.0
     with:
       image: platform-reports
       helm_charts: platform-reports
 
-  deploy_dev:
-    name: Deploy on dev
+  deploy:
+    name: Deploy
     needs: release
-    uses: neuro-inc/reuse/.github/workflows/deploy-dev.yaml@v24.9.0
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    uses: neuro-inc/reuse/.github/workflows/deploy-service.yaml@v25.4.0
+    secrets:
+      tf_api_token: ${{ secrets.TF_API_TOKEN }}
     with:
-      helm_charts: platform-reports
-      version: ${{ needs.release.outputs.version }}
+      environment: dev
+      dev_workspace: ${{ vars.DEV_TFC_WORKSPACE_JSON }}
+      variables: |
+        platform_reports_version=${{ needs.release.outputs.version }}

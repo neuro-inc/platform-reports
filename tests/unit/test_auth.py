@@ -15,7 +15,7 @@ from platform_reports.platform_api_client import ApiClient, Job
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
 
 
-@pytest.fixture()
+@pytest.fixture
 def job_factory() -> Callable[[str], Job]:
     def _factory(id_: str) -> Job:
         return Job(
@@ -26,14 +26,14 @@ def job_factory() -> Callable[[str], Job]:
     return _factory
 
 
-@pytest.fixture()
+@pytest.fixture
 def auth_client() -> mock.AsyncMock:
     client = mock.AsyncMock(AuthClient)
     client.get_missing_permissions = mock.AsyncMock(return_value=[])
     return client
 
 
-@pytest.fixture()
+@pytest.fixture
 def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
     async def get_job(id_: str) -> Job:
         return job_factory(id_)
@@ -44,7 +44,7 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
 
 
 class TestDashboards:
-    @pytest.fixture()
+    @pytest.fixture
     def auth_service(
         self, auth_client: AuthClient, api_client: ApiClient
     ) -> AuthService:
@@ -114,7 +114,7 @@ class TestDashboards:
 
 
 class TestAuthService:
-    @pytest.fixture()
+    @pytest.fixture
     def service(self, auth_client: AuthClient, api_client: ApiClient) -> AuthService:
         return AuthService(auth_client, api_client, "default")
 

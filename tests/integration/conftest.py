@@ -113,7 +113,7 @@ def platform_api_config(
 
 
 @pytest.fixture
-async def platform_config_config(
+def platform_config_config(
     platform_config_server: URL, service_token: str
 ) -> PlatformServiceConfig:
     return PlatformServiceConfig(url=platform_config_server, token=service_token)

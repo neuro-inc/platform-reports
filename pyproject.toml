@@ -21,7 +21,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4.0"
+python = ">=3.11"
 aiobotocore = "2.21.1"
 aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.10.10", extras = ["speedups"] }
@@ -35,7 +35,8 @@ pydantic = "2.11.3"
 pydantic-settings = "2.9.1"
 python-dateutil = "2.9.0.post0"
 python-jose = "3.3.0"
-uvloop = "*"
+uvloop = "0.21.0"
+yarl = "1.20.0"
 
 [tool.poetry.scripts]
 metrics-api = "platform_reports.api:run_metrics_api"
@@ -44,16 +45,16 @@ prometheus-proxy = "platform_reports.api:run_prometheus_proxy"
 grafana-proxy = "platform_reports.api:run_grafana_proxy"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "*"
-pre-commit = "*"
+mypy = "1.15.0"
+pre-commit = "4.2.0"
 pytest = "8.3.5"
 pytest-aiohttp = "1.0.5"
 pytest-asyncio = "0.21.2"
 pytest-cov = "6.1.1"
-pytest-docker = "*"
-ruff = "*"
-types-PyYAML = "*"
-types-python-dateutil = "*"
+pytest-docker = "3.2.1"
+ruff ="0.11.2"
+types-PyYAML = "6.0.12.20250402"
+types-python-dateutil = "2.9.0.20241206"
 
 [tool.poetry-dynamic-versioning]
 enable = true

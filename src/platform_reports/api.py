@@ -452,7 +452,7 @@ def get_aws_pricing_api_region(region: str) -> str:
 
 
 async def add_version_to_header(request: Request, response: StreamResponse) -> None:
-    response.headers["X-Service-Version"] = f"platform-payments/{__version__}"
+    response.headers["X-Service-Version"] = f"platform-reports/{__version__}"
 
 
 def create_metrics_exporter_app(

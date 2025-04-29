@@ -1,5 +1,16 @@
+cloudProvider:
+  type: gcp
+  region: us-central1
+  serviceAccountSecret:
+    name: gcp-key
+    key: key_json
+
 platform:
-  accessTokenCookieNames: sat,dat
+  authUrl: ""
+  configUrl: ""
+  apiUrl: ""
+  accessTokenCookieName: ""
+  clusterName: ""
   token: {}
 
   nodeLabels:
@@ -16,6 +27,8 @@ secrets: []
 
 metricsApi:
   replicas: 2
+  nameOverride: ""
+  fullnameOverride: ""
 
   resources:
     requests:
@@ -36,9 +49,13 @@ metricsExporter:
       memory: 256Mi
   podMetadata:
     annotations: {}
+  nameOverride: ""
+  fullnameOverride: ""
 
 prometheusProxy:
   replicas: 2
+  nameOverride: ""
+  fullnameOverride: ""
 
   resources:
     requests:
@@ -47,6 +64,8 @@ prometheusProxy:
 
 grafanaProxy:
   replicas: 2
+  nameOverride: ""
+  fullnameOverride: ""
 
   resources:
     requests:
@@ -80,6 +99,7 @@ kube-prometheus-stack:
 
   kubelet:
     enabled: true
+    namespace: ""
 
     serviceMonitor:
       additionalLabels:
@@ -126,13 +146,6 @@ kube-prometheus-stack:
         cpu: 100m
         memory: 200Mi
 
-    prometheus:
-      monitor:
-        metricRelabelings:
-          - sourceLabels:
-              - label_beta_kubernetes_io_instance_type
-            targetLabel: label_node_kubernetes_io_instance_type
-
     collectors:
       - nodes
       - pods
@@ -149,6 +162,10 @@ kube-prometheus-stack:
 
     prometheus:
       monitor:
+        metricRelabelings:
+        - sourceLabels:
+          - label_beta_kubernetes_io_instance_type
+          targetLabel: label_node_kubernetes_io_instance_type
         additionalLabels:
           platform.apolo.us/scrape-metrics: "true"
 
@@ -183,6 +200,9 @@ kube-prometheus-stack:
           platform.apolo.us/scrape-metrics: "true"
 
   prometheusOperator:
+    kubeletService:
+      namespace: ""
+
     image:
       registry: quay.io
       repository: prometheus-operator/prometheus-operator
@@ -223,6 +243,12 @@ kube-prometheus-stack:
         repository: prometheus/prometheus
         tag: v2.48.0
 
+      thanos:
+        objectStorageConfig:
+          existingSecret:
+            name: ""
+            key: ""
+
       podMetadata:
         labels:
           service: prometheus
@@ -244,6 +270,7 @@ kube-prometheus-stack:
           metadata:
             name: prometheus
           spec:
+            storageClassName: ""
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
@@ -264,6 +291,8 @@ kube-prometheus-stack:
 
   alertmanager:
     alertmanagerSpec:
+      configSecret: ""
+      secrets:
       image:
         registry: quay.io
         repository: prometheus/alertmanager
@@ -281,6 +310,8 @@ kube-prometheus-stack:
 
   grafana:
     enabled: false
+    adminPassword: ""
+    priorityClassName: ""
 
 thanos:
   nameOverride: thanos
@@ -303,6 +334,7 @@ thanos:
     persistentVolumeClaim:
       name: thanos-store
       spec:
+        storageClassName: ""
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
@@ -329,6 +361,7 @@ thanos:
     persistentVolumeClaim:
       name: thanos-compact
       spec:
+        storageClassName: ""
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
@@ -354,6 +387,7 @@ thanos:
       app: null
       app.kubernetes.io/name: prometheus
 
+  objstoreSecretOverride: ""
   priorityClassName: ""
 
 grafana:
@@ -445,6 +479,9 @@ grafana:
 
   priorityClassName: ""
 
-sentry: {}
+sentry:
+  dsn: ""
+  clusterName: ""
+  sampleRate: ""
 
 priorityClassName: ""

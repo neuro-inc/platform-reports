@@ -289,7 +289,12 @@ class KubeClient:
         )
 
     async def wait_pod_is_running(
-        self, namespace: str, name: str, *, timeout: float = 60, interval: float = 1
+        self,
+        namespace: str,
+        name: str,
+        *,
+        timeout: float = 60,  # noqa: ASYNC109
+        interval: float = 1,
     ) -> None:
         await asyncio.wait_for(
             self._wait_pod_is_running(namespace, name, interval=interval), timeout
@@ -305,7 +310,12 @@ class KubeClient:
             await asyncio.sleep(interval)
 
     async def wait_pod_is_terminated(
-        self, namespace: str, name: str, *, timeout: float = 60, interval: float = 1
+        self,
+        namespace: str,
+        name: str,
+        *,
+        timeout: float = 60,  # noqa: ASYNC109
+        interval: float = 1,
     ) -> None:
         await asyncio.wait_for(
             self._wait_pod_is_terminated(namespace, name, interval=interval), timeout

@@ -5,7 +5,7 @@ import pytest
 from neuro_config_client.factories import NodeRole
 
 
-@pytest.fixture()
+@pytest.fixture
 def platform_config_app() -> aiohttp.web.Application:
     async def _get_cluster(request: aiohttp.web.Request) -> aiohttp.web.Response:
         name = request.match_info["cluster_name"]

@@ -5,9 +5,7 @@ import logging
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
-from importlib.metadata import version
 from textwrap import dedent
-from platform_payments import __version__
 
 import aiobotocore.session
 import aiohttp
@@ -39,6 +37,8 @@ from neuro_auth_client.security import setup_security
 from neuro_config_client.client import ConfigClient
 from neuro_logging import init_logging, setup_sentry
 from yarl import URL
+
+from platform_reports import __version__
 
 from .auth import AuthService
 from .cluster import RefreshableClusterHolder
@@ -420,9 +420,7 @@ async def handle_exceptions(
     except (Exception, ExceptionGroup) as e:
         if isinstance(e, ExceptionGroup):
             e = e.exceptions[0]
-        msg_str = (
-            f"Unexpected exception: {str(e)}. " f"Path with query: {request.path_qs}."
-        )
+        msg_str = f"Unexpected exception: {str(e)}. Path with query: {request.path_qs}."
         logging.exception(msg_str)
         payload = {"error": msg_str}
         return json_response(payload, status=HTTPInternalServerError.status_code)
@@ -740,8 +738,7 @@ def create_metrics_api_app(config: MetricsApiConfig) -> aiohttp.web.Application:
                 "name": "Authorization",
                 "in": "header",
                 "description": (
-                    "Enter the token with the `Bearer: ` prefix, "
-                    'e.g. "Bearer <token>".'
+                    'Enter the token with the `Bearer: ` prefix, e.g. "Bearer <token>".'
                 ),
             },
         },

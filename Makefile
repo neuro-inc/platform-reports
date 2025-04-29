@@ -20,6 +20,7 @@ poetry-plugins:
 setup: venv
 	poetry run pre-commit install;
 
+.PHONY: lint
 lint: format
 	poetry run mypy --show-error-codes src tests
 

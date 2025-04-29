@@ -69,8 +69,7 @@ select = [
 ]
 ignore = [
     "A003",  # Class attribute "..." is shadowing a Python builtin
-    "N818",
-    "PT005"
+    "N818"
 ]
 
 [tool.ruff.lint.isort]

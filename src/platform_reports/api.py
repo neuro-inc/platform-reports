@@ -7,6 +7,7 @@ from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from decimal import Decimal
 from importlib.metadata import version
 from textwrap import dedent
+from platform_payments import __version__
 
 import aiobotocore.session
 import aiohttp
@@ -452,11 +453,8 @@ def get_aws_pricing_api_region(region: str) -> str:
     return "us-east-1"
 
 
-package_version = version(__package__)
-
-
 async def add_version_to_header(request: Request, response: StreamResponse) -> None:
-    response.headers["X-Service-Version"] = f"platform-reports/{package_version}"
+    response.headers["X-Service-Version"] = f"platform-payments/{__version__}"
 
 
 def create_metrics_exporter_app(

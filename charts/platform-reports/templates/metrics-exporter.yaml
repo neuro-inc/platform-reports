@@ -49,6 +49,13 @@ spec:
         # Use slim image version to reduce service startup time
         - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: metrics-exporter
+          securityContext:
+                     {{- if .Values.securityContext.enabled }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+                     {{- end }}
           command: [metrics-exporter]
           env:
             {{- if .Values.logLevel }}

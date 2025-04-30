@@ -36,7 +36,6 @@ repos:
   rev: '2.1.1'
   hooks:
   - id: poetry-check
-  - id: poetry-lock
   - id: poetry-install
 ci:
   skip:

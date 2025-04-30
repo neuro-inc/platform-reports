@@ -355,9 +355,9 @@ class TestMetricsApi:
                 "end_date": datetime.now().isoformat(),
             },
         ) as response:
-            assert (
-                response.status == HTTPUnauthorized.status_code
-            ), await response.text()
+            assert response.status == HTTPUnauthorized.status_code, (
+                await response.text()
+            )
 
     async def test_post_credits_usage__forbidden(
         self,
@@ -384,9 +384,9 @@ class TestMetricsApi:
             headers={"Authorization": f"Bearer {user.token}"},
             json={},
         ) as response:
-            assert (
-                response.status == HTTPUnprocessableEntity.status_code
-            ), await response.text()
+            assert response.status == HTTPUnprocessableEntity.status_code, (
+                await response.text()
+            )
 
     async def test_post_credits_usage(
         self, client: aiohttp.ClientSession, user: User, metrics_api_server: URL

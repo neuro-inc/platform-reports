@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 temp_deploy/
+.idea

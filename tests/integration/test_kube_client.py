@@ -105,9 +105,9 @@ class TestKubeClient:
         assert pods
 
         for pod in pods:
-            assert pod.metadata.name.startswith(
-                "kube-proxy"
-            ), f"Found pod {pod.metadata.name}"
+            assert pod.metadata.name.startswith("kube-proxy"), (
+                f"Found pod {pod.metadata.name}"
+            )
 
     async def test_get_pods_with_field_selector(
         self, kube_client: KubeClient, kube_node: Node

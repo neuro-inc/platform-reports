@@ -49,8 +49,6 @@ build/image: .python-version dist
 	docker build \
 		--build-arg PY_VERSION=$$(cat .python-version) \
 		-t $(IMAGE_NAME):latest .
-	mkdir -p build
-	docker image inspect $(IMAGE_NAME):latest -f '{{ .ID }}' > $@
 
 .python-version:
 	@echo "Error: .python-version file is missing!" && exit 1

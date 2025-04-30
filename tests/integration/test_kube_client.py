@@ -18,7 +18,7 @@ from .conftest import create_local_app_server
 
 
 class TestKubeClientTokenUpdater:
-    @pytest.fixture()
+    @pytest.fixture
     async def kube_app(self) -> aiohttp.web.Application:
         async def _get_pods(request: aiohttp.web.Request) -> aiohttp.web.Response:
             auth = request.headers["Authorization"]
@@ -33,7 +33,7 @@ class TestKubeClientTokenUpdater:
         )
         return app
 
-    @pytest.fixture()
+    @pytest.fixture
     async def kube_server(
         self, kube_app: aiohttp.web.Application, unused_tcp_port_factory: Any
     ) -> AsyncIterator[str]:
@@ -42,14 +42,14 @@ class TestKubeClientTokenUpdater:
         ) as address:
             yield f"http://{address.host}:{address.port}"
 
-    @pytest.fixture()
+    @pytest.fixture
     def kube_token_path(self) -> Iterator[str]:
         _, path = tempfile.mkstemp()
         Path(path).write_text("token-1")
         yield path
         Path(path).unlink()
 
-    @pytest.fixture()
+    @pytest.fixture
     async def kube_client(
         self, kube_server: str, kube_token_path: str
     ) -> AsyncIterator[KubeClient]:
@@ -105,9 +105,9 @@ class TestKubeClient:
         assert pods
 
         for pod in pods:
-            assert pod.metadata.name.startswith(
-                "kube-proxy"
-            ), f"Found pod {pod.metadata.name}"
+            assert pod.metadata.name.startswith("kube-proxy"), (
+                f"Found pod {pod.metadata.name}"
+            )
 
     async def test_get_pods_with_field_selector(
         self, kube_client: KubeClient, kube_node: Node

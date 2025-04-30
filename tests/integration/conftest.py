@@ -74,7 +74,7 @@ def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
     loop.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 async def platform_api_server(
     unused_tcp_port_factory: Callable[[], int],
     platform_api_app: aiohttp.web.Application,
@@ -85,7 +85,7 @@ async def platform_api_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture()
+@pytest.fixture
 async def platform_config_server(
     unused_tcp_port_factory: Callable[[], int],
     platform_config_app: aiohttp.web.Application,
@@ -96,14 +96,14 @@ async def platform_config_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture()
+@pytest.fixture
 def platform_auth_config(
     platform_auth_server: URL, service_token: str
 ) -> PlatformAuthConfig:
     return PlatformAuthConfig(url=platform_auth_server, token=service_token)
 
 
-@pytest.fixture()
+@pytest.fixture
 def platform_api_config(
     platform_api_server: URL, service_token: str
 ) -> PlatformServiceConfig:
@@ -112,14 +112,14 @@ def platform_api_config(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def platform_config_config(
     platform_config_server: URL, service_token: str
 ) -> PlatformServiceConfig:
     return PlatformServiceConfig(url=platform_config_server, token=service_token)
 
 
-@pytest.fixture()
+@pytest.fixture
 def metrics_exporter_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_config_config: PlatformServiceConfig,
@@ -137,7 +137,7 @@ def metrics_exporter_config(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 async def metrics_exporter_server_factory() -> Callable[
     [MetricsExporterConfig], AbstractAsyncContextManager[URL]
 ]:
@@ -154,7 +154,7 @@ async def metrics_exporter_server_factory() -> Callable[
     return _create
 
 
-@pytest.fixture()
+@pytest.fixture
 async def metrics_exporter_server(
     metrics_exporter_server_factory: Callable[
         [MetricsExporterConfig], AbstractAsyncContextManager[URL]
@@ -165,13 +165,13 @@ async def metrics_exporter_server(
         yield server
 
 
-@pytest.fixture()
+@pytest.fixture
 def thanos_query_url(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("thanos-query", 9091)
     return URL(f"http://{docker_ip}:{port}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def prometheus_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
@@ -188,7 +188,7 @@ def prometheus_proxy_config(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 async def prometheus_proxy_server(
     prometheus_proxy_config: PrometheusProxyConfig,
 ) -> AsyncIterator[URL]:
@@ -199,13 +199,13 @@ async def prometheus_proxy_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture()
+@pytest.fixture
 def grafana_url(docker_ip: str, docker_services: Services) -> URL:
     port = docker_services.port_for("grafana", 3000)
     return URL(f"http://{docker_ip}:{port}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def grafana_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
@@ -222,7 +222,7 @@ def grafana_proxy_config(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 async def grafana_proxy_server(
     grafana_proxy_config: GrafanaProxyConfig,
 ) -> AsyncIterator[URL]:
@@ -233,13 +233,13 @@ async def grafana_proxy_server(
         yield URL.build(scheme="http", host=address.host, port=address.port)
 
 
-@pytest.fixture()
+@pytest.fixture
 async def client() -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession() as session:
         yield session
 
 
-@pytest.fixture()
+@pytest.fixture
 def metrics_api_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
@@ -258,7 +258,7 @@ def metrics_api_config(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 async def metrics_api_server(
     metrics_api_config: MetricsApiConfig,
 ) -> AsyncIterator[URL]:
@@ -269,7 +269,7 @@ async def metrics_api_server(
         yield address.http_url
 
 
-@pytest.fixture()
+@pytest.fixture
 async def exit_stack() -> AsyncIterator[AsyncExitStack]:
     async with AsyncExitStack() as stack:
         yield stack

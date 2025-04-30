@@ -21,6 +21,13 @@ spec:
       containers:
         - name: metrics-api
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          securityContext:
+                     {{- if .Values.securityContext.enabled }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+                     {{- end }}
           command: [metrics-api]
           env:
             {{- if .Values.logLevel }}

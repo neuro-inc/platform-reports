@@ -6,6 +6,7 @@ import aiohttp
 import aiohttp.web
 import pytest
 from aiohttp.test_utils import TestClient
+from aiohttp.web import Application, Request
 from neuro_config_client import Cluster, ClusterStatus, StorageConfig, VolumeConfig
 from yarl import URL
 
@@ -48,15 +49,17 @@ def prometheus_app(prometheus_handler: PrometheusHandler) -> aiohttp.web.Applica
 
 @pytest.fixture
 async def prometheus_test_client(
-    aiohttp_client: Callable[[aiohttp.web.Application], Awaitable[TestClient]],
+    aiohttp_client: Callable[
+        [aiohttp.web.Application], Awaitable[TestClient[Request, Application]]
+    ],
     prometheus_app: aiohttp.web.Application,
-) -> TestClient:
+) -> TestClient[Request, Application]:
     return await aiohttp_client(prometheus_app)
 
 
 @pytest.fixture
 def prometheus_client(
-    prometheus_test_client: TestClient,
+    prometheus_test_client: TestClient[Request, Application],
 ) -> PrometheusClient:
     return PrometheusClient(
         client=prometheus_test_client.session,

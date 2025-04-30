@@ -24,7 +24,7 @@ include = [
 python = ">=3.11"
 aiobotocore = "2.21.1"
 aiohttp-apispec = "2.2.3"
-aiohttp = { version = "3.10.10", extras = ["speedups"] }
+aiohttp = { version = "3.11.18", extras = ["speedups"] }
 google-api-python-client = "2.169.0"
 lark = "1.2.2"
 marshmallow = "3.26.1"

@@ -1429,14 +1429,14 @@ files = [
 
 [[package]]
 name = "neuro-auth-client"
-version = "24.8.0"
+version = "25.5.1"
 description = "Internal client for Neu.ro auth service"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "neuro_auth_client-24.8.0-py3-none-any.whl", hash = "sha256:913e64cfddb45243c2f616ed69a319d7d59385363606892bcb05d734b352d9cf"},
-    {file = "neuro_auth_client-24.8.0.tar.gz", hash = "sha256:b17d974955434f88edf4d30cac8f7ceadea4ede1919d41fa47f55907ac81a2c1"},
+    {file = "neuro_auth_client-25.5.1-py3-none-any.whl", hash = "sha256:e0ecca4c30f62b7efd5bcfc022597a2f782f6e495565a3a9d277e719af86ee04"},
+    {file = "neuro_auth_client-25.5.1.tar.gz", hash = "sha256:d9274c83ea1ba857d3b707f0cb464c244fde6eb6c3bd06831b231dc542d4fe01"},
 ]
 
 [package.dependencies]
@@ -2965,4 +2965,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "92168f43eedb25c82e494ab8f241cac45dc45932556bcf355c008403b0ddabab"
+content-hash = "c8c7899a6f1c10fe0e3c67a4c5c94297206047e3dbbaf739648139aa3d7b53ab"

@@ -14,7 +14,7 @@ function minikube::start {
     minikube config set WantUpdateNotification false
     minikube start --vm-driver=docker --wait=all --wait-timeout=5m
     kubectl config use-context minikube
-    kubectl label node $(hostname) \
+    kubectl label -all \
         topology.kubernetes.io/zone=minikube-zone \
         node.kubernetes.io/instance-type=minikube \
         platform.neuromation.io/nodepool=minikube-node-pool

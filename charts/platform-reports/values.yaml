@@ -1,16 +1,5 @@
-cloudProvider:
-  type: gcp
-  region: us-central1
-  serviceAccountSecret:
-    name: gcp-key
-    key: key_json
-
 platform:
-  authUrl: ""
-  configUrl: ""
-  apiUrl: ""
-  accessTokenCookieName: ""
-  clusterName: ""
+  accessTokenCookieNames: sat,dat
   token: {}
 
   nodeLabels:
@@ -27,8 +16,6 @@ secrets: []
 
 metricsApi:
   replicas: 2
-  nameOverride: ""
-  fullnameOverride: ""
 
   resources:
     requests:
@@ -49,13 +36,9 @@ metricsExporter:
       memory: 256Mi
   podMetadata:
     annotations: {}
-  nameOverride: ""
-  fullnameOverride: ""
 
 prometheusProxy:
   replicas: 2
-  nameOverride: ""
-  fullnameOverride: ""
 
   resources:
     requests:
@@ -64,8 +47,6 @@ prometheusProxy:
 
 grafanaProxy:
   replicas: 2
-  nameOverride: ""
-  fullnameOverride: ""
 
   resources:
     requests:
@@ -99,7 +80,6 @@ kube-prometheus-stack:
 
   kubelet:
     enabled: true
-    namespace: ""
 
     serviceMonitor:
       additionalLabels:
@@ -200,9 +180,6 @@ kube-prometheus-stack:
           platform.apolo.us/scrape-metrics: "true"
 
   prometheusOperator:
-    kubeletService:
-      namespace: ""
-
     image:
       registry: quay.io
       repository: prometheus-operator/prometheus-operator
@@ -243,12 +220,6 @@ kube-prometheus-stack:
         repository: prometheus/prometheus
         tag: v2.48.0
 
-      thanos:
-        objectStorageConfig:
-          existingSecret:
-            name: ""
-            key: ""
-
       podMetadata:
         labels:
           service: prometheus
@@ -270,7 +241,6 @@ kube-prometheus-stack:
           metadata:
             name: prometheus
           spec:
-            storageClassName: ""
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
@@ -291,8 +261,6 @@ kube-prometheus-stack:
 
   alertmanager:
     alertmanagerSpec:
-      configSecret: ""
-      secrets:
       image:
         registry: quay.io
         repository: prometheus/alertmanager
@@ -310,8 +278,6 @@ kube-prometheus-stack:
 
   grafana:
     enabled: false
-    adminPassword: ""
-    priorityClassName: ""
 
 thanos:
   nameOverride: thanos
@@ -334,7 +300,6 @@ thanos:
     persistentVolumeClaim:
       name: thanos-store
       spec:
-        storageClassName: ""
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
@@ -361,7 +326,6 @@ thanos:
     persistentVolumeClaim:
       name: thanos-compact
       spec:
-        storageClassName: ""
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
@@ -387,7 +351,6 @@ thanos:
       app: null
       app.kubernetes.io/name: prometheus
 
-  objstoreSecretOverride: ""
   priorityClassName: ""
 
 grafana:
@@ -479,10 +442,7 @@ grafana:
 
   priorityClassName: ""
 
-sentry:
-  dsn: ""
-  clusterName: ""
-  sampleRate: ""
+sentry: {}
 
 priorityClassName: ""
 

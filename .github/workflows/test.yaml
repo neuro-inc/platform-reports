@@ -67,8 +67,6 @@ jobs:
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
-    env:
-      MINIKUBE_DRIVER: none
     steps:
     - name: Checkout commit
       uses: actions/checkout@v4

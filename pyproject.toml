@@ -27,7 +27,7 @@ aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.12.2", extras = ["speedups"] }
 google-api-python-client = "2.170.0"
 lark = "1.2.2"
-marshmallow = "3.26.1"
+marshmallow = "4.0.0"
 neuro-auth-client = "25.5.1"
 neuro-config-client = "25.2.0"
 neuro-logging = "25.1.0"

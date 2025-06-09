@@ -959,7 +959,7 @@ class TestPodCreditsCollector:
                             PodCondition(
                                 type=PodCondition.Type.POD_SCHEDULED,
                                 last_transition_time=(
-                                    datetime.now(UTC) - timedelta(hours=1)
+                                    datetime.now(UTC) - timedelta(hours=0.5)
                                 ),
                                 status=True,
                             )
@@ -970,7 +970,7 @@ class TestPodCreditsCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {"test": Decimal(10)}
+        assert result == {"test": Decimal(5)}
 
     async def test_get_latest_value__terminated(
         self, collector_factory: Callable[..., PodCreditsCollector]
@@ -996,7 +996,7 @@ class TestPodCreditsCollector:
                         ],
                         container_statuses=[
                             ContainerStatus(
-                                {
+                                state={
                                     "terminated": {
                                         "finishedAt": (
                                             datetime.now(UTC) - timedelta(hours=0.5)

@@ -41,6 +41,7 @@ from platform_reports.kube_client import (
     KubeClient,
     Metadata,
     Pod,
+    PodCondition,
     PodPhase,
     PodStatus,
 )
@@ -911,7 +912,37 @@ class TestPodCreditsCollector:
 
         return _create
 
-    async def test_get_latest_value__running(
+    async def test_get_latest_value__not_scheduled(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        labels={"platform.apolo.us/preset": "test-preset"},
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.PENDING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=1)
+                                ),
+                                status=False,
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {}
+
+    async def test_get_latest_value__scheduled(
         self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
         collector = collector_factory(
@@ -924,15 +955,13 @@ class TestPodCreditsCollector:
                     ),
                     status=PodStatus(
                         phase=PodPhase.RUNNING,
-                        container_statuses=[
-                            ContainerStatus(
-                                {
-                                    "running": {
-                                        "startedAt": (
-                                            datetime.now(UTC) - timedelta(hours=1)
-                                        ).isoformat()
-                                    }
-                                }
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=1)
+                                ),
+                                status=True,
                             )
                         ],
                     ),
@@ -956,13 +985,19 @@ class TestPodCreditsCollector:
                     ),
                     status=PodStatus(
                         phase=PodPhase.SUCCEEDED,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=1.5)
+                                ),
+                                status=True,
+                            )
+                        ],
                         container_statuses=[
                             ContainerStatus(
                                 {
                                     "terminated": {
-                                        "startedAt": (
-                                            datetime.now(UTC) - timedelta(hours=1.5)
-                                        ).isoformat(),
                                         "finishedAt": (
                                             datetime.now(UTC) - timedelta(hours=0.5)
                                         ).isoformat(),
@@ -978,6 +1013,33 @@ class TestPodCreditsCollector:
 
         assert result == {"test": Decimal(10)}
 
+    async def test_get_latest_value__no_preset(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.RUNNING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=datetime.now(UTC),
+                                status=True,
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {}
+
     async def test_get_latest_value__unknown_preset(
         self, collector_factory: Callable[..., PodCreditsCollector]
     ) -> None:
@@ -991,13 +1053,11 @@ class TestPodCreditsCollector:
                     ),
                     status=PodStatus(
                         phase=PodPhase.RUNNING,
-                        container_statuses=[
-                            ContainerStatus(
-                                {
-                                    "running": {
-                                        "startedAt": datetime.now(UTC).isoformat()
-                                    }
-                                }
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=datetime.now(UTC),
+                                status=True,
                             )
                         ],
                     ),

@@ -6,7 +6,7 @@ import logging
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime, time, timedelta, tzinfo
+from datetime import UTC, datetime, time, tzinfo
 from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
@@ -24,7 +24,7 @@ from yarl import URL
 
 from .cluster import ClusterHolder
 from .config import Label
-from .kube_client import KubeClient, Pod
+from .kube_client import KubeClient, Pod, PodCondition
 
 
 logger = logging.getLogger(__name__)
@@ -531,16 +531,23 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         result: dict[str, Decimal] = {}
         for pod in pods:
             try:
-                # TODO: handle pods in CrashLoopBackOff status
+                if not pod.status.is_scheduled:
+                    logger.debug("Pod %r is not scheduled, skipping", pod.metadata.name)
+                    continue
                 pod_name = pod.metadata.name
                 preset_name = pod.metadata.labels.get(
                     Label.APOLO_PRESET_KEY
                 ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
                 if not preset_name:
+                    logger.warning(
+                        "Pod %r has no preset label, skipping", pod_name, preset_name
+                    )
                     continue
                 if not (preset := presets.get(preset_name)):
                     logger.warning(
-                        "Pod %s resource preset %s not found", pod_name, preset_name
+                        "Pod %r resource preset %r not found, skipping",
+                        pod_name,
+                        preset_name,
                     )
                     continue
                 credits_total = self._get_pod_credits_total(
@@ -549,18 +556,17 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                 logger.debug("Pod %r credits total: %s", pod_name, credits_total)
                 result[pod_name] = credits_total
             except Exception as ex:
-                # NOTE: Do not log exception since they are sent to Sentry
-                logger.info(str(ex))
+                logger.exception(str(ex))
         return result
 
     @classmethod
     def _get_pod_credits_total(cls, pod: Pod, credits_per_hour: Decimal) -> Decimal:
-        if pod.status.is_running:
-            run_time = datetime.now(UTC) - pod.status.start_date
-        elif pod.status.is_terminated:
-            run_time = pod.status.finish_date - pod.status.start_date
+        pod_scheduled = pod.status.get_condition(PodCondition.Type.POD_SCHEDULED)
+        start_date = pod_scheduled.last_transition_time
+        if pod.status.is_terminated:
+            run_time = pod.status.finish_date - start_date
         else:
-            run_time = timedelta()
+            run_time = datetime.now(UTC) - start_date
         credits_total = Decimal(run_time.total_seconds()) * credits_per_hour / 3600
         return round(credits_total, 2)
 

@@ -29,11 +29,15 @@ metricsApi:
     annotations: {}
 
 metricsExporter:
-  port: 9500
+  replicas: 2
+
+  port: 8080
+
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
+
   podMetadata:
     annotations: {}
 
@@ -247,6 +251,10 @@ kube-prometheus-stack:
                 storage: 10Gi
 
       serviceMonitorSelector:
+        matchLabels:
+          platform.apolo.us/scrape-metrics: "true"
+
+      scrapeConfigSelector:
         matchLabels:
           platform.apolo.us/scrape-metrics: "true"
 

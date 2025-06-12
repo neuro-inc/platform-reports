@@ -311,6 +311,15 @@ class KubeClient:
         assert payload["kind"] == "Node"
         return Node.from_payload(payload)
 
+    async def get_nodes(self, label_selector: str | None = None) -> list[Node]:
+        url = self._config.url / "api/v1/nodes"
+        params: dict[str, str] = {}
+        if label_selector:
+            params["labelSelector"] = label_selector
+        payload = await self._request(method="get", url=url, params=params)
+        assert payload["kind"] == "NodeList"
+        return [Node.from_payload(i) for i in payload["items"]]
+
     async def create_raw_pod(
         self, namespace: str, raw_pod: dict[str, Any]
     ) -> dict[str, Any]:

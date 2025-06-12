@@ -708,28 +708,38 @@ class NodeEnergyConsumptionCollector(Collector[Mapping[str, NodeEnergyConsumptio
             return {}
 
         cluster = self._cluster_holder.cluster
-        assert cluster.cloud_provider is not None
-
         co2_grams_eq_per_kwh = self._get_co2_grams_eq_per_kwh(cluster)
         price_per_kwh = self._get_price_per_kwh(cluster)
         energy_consumptions = {}
 
         for node in nodes:
-            node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
-            energy_consumption = NodeEnergyConsumption(
+            energy_consumptions[node.metadata.name] = self._get_node_energy_consumption(
+                node,
                 co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
                 price_per_kwh=price_per_kwh,
             )
-            for node_pool in cluster.cloud_provider.node_pools:
-                if node_pool.name == node_pool_name:
-                    energy_consumption = replace(
-                        energy_consumption,
-                        cpu_min_watts=node_pool.cpu_min_watts,
-                        cpu_max_watts=node_pool.cpu_max_watts,
-                    )
-                    break
-            else:
-                logger.warning("Node pool %s was not found in cluster", node_pool_name)
-            energy_consumptions[node.metadata.name] = energy_consumption
 
         return energy_consumptions
+
+    def _get_node_energy_consumption(
+        self, node: Node, *, co2_grams_eq_per_kwh: float, price_per_kwh: Decimal
+    ) -> NodeEnergyConsumption:
+        cluster = self._cluster_holder.cluster
+        assert cluster.cloud_provider is not None
+
+        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
+        energy_consumption = NodeEnergyConsumption(
+            co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
+            price_per_kwh=price_per_kwh,
+        )
+        for node_pool in cluster.cloud_provider.node_pools:
+            if node_pool.name == node_pool_name:
+                energy_consumption = replace(
+                    energy_consumption,
+                    cpu_min_watts=node_pool.cpu_min_watts,
+                    cpu_max_watts=node_pool.cpu_max_watts,
+                )
+                break
+        else:
+            logger.warning("Node pool %s was not found in cluster", node_pool_name)
+        return energy_consumption

@@ -87,7 +87,7 @@ spec:
               value: {{ .Values.cloudProvider.region | quote }}
             {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
-              value: /root/service_account/key.json
+              value: /var/run/secrets/gcp/key.json
             {{- end }}
             {{- end }}
             {{- if .Values.sentry }}
@@ -131,7 +131,7 @@ spec:
           {{- if .Values.cloudProvider }}
           {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: service-account-key
-              mountPath: /root/service_account
+              mountPath: /var/run/secrets/gcp
               readOnly: true
           {{- end }}
           {{- end }}

@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import re
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, time, tzinfo
 from decimal import Decimal
@@ -12,19 +12,19 @@ from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Generic, Self, TypeVar
-from zoneinfo import ZoneInfo
 
 import aiohttp
 from aiobotocore.client import AioBaseClient
+from cachetools import TTLCache
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import EnergySchedule
+from neuro_config_client import Cluster
 from neuro_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .cluster import ClusterHolder
 from .config import Label
-from .kube_client import KubeClient, Pod, PodCondition
+from .kube_client import KubeClient, Node, Pod, PodCondition
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,31 @@ class NodeEnergyConsumption:
 
 
 _TValue = TypeVar("_TValue")
+
+
+def _get_node_region(node: Node) -> str:
+    return (
+        node.metadata.labels.get(Label.FAILURE_DOMAIN_REGION_KEY)
+        or node.metadata.labels[Label.TOPOLOGY_REGION_KEY]
+    )
+
+
+def _get_node_zone(node: Node) -> str:
+    return (
+        node.metadata.labels.get(Label.FAILURE_DOMAIN_ZONE_KEY)
+        or node.metadata.labels[Label.TOPOLOGY_ZONE_KEY]
+    )
+
+
+def _get_node_instance_type(node: Node) -> str:
+    return (
+        node.metadata.labels.get(Label.NODE_INSTANCE_TYPE_KEY)
+        or node.metadata.labels[Label.INSTANCE_TYPE_KEY]
+    )
+
+
+def _is_preemptible_node(node: Node) -> bool:
+    return Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
 
 
 class Collector(Generic[_TValue]):
@@ -104,97 +129,96 @@ class Collector(Generic[_TValue]):
         pass
 
 
-class _NodePriceCollector(Collector[Price]):
+class NodePriceCollector(Collector[Mapping[str, Price]]):
     def __init__(
-        self, node_created_at: datetime, initial_value: Price, interval_s: float = 3600
+        self,
+        *,
+        kube_client: KubeClient,
+        initial_value: Mapping[str, Price],
+        interval_s: float = 15,
     ) -> None:
         super().__init__(initial_value, interval_s)
 
-        self._node_created_at = node_created_at
+        self._kube_client = kube_client
 
-    async def get_latest_value(self) -> Price:
-        node_up_time = datetime.now(UTC) - self._node_created_at
-        price_per_hour = await self.get_price_per_hour()
-        return Price(
-            currency=price_per_hour.currency,
-            value=round(
-                price_per_hour.value * int(node_up_time.total_seconds()) / 3600, 2
-            ),
+    async def get_latest_value(self) -> Mapping[str, Price]:
+        nodes = await self._kube_client.get_nodes(
+            label_selector=Label.NEURO_NODE_POOL_KEY
         )
+        if not nodes:
+            return {}
 
-    async def get_price_per_hour(self) -> Price:
+        prices = {}
+
+        for node in nodes:
+            node_up_time = datetime.now(UTC) - node.metadata.creation_timestamp
+            price_per_hour = await self.get_price_per_hour(node)
+            prices[node.metadata.name] = Price(
+                currency=price_per_hour.currency,
+                value=round(
+                    price_per_hour.value * int(node_up_time.total_seconds()) / 3600, 2
+                ),
+            )
+
+        return prices
+
+    async def get_price_per_hour(self, node: Node) -> Price:
         return Price()
 
 
-class ConfigPriceCollector(_NodePriceCollector):
+class ConfigPriceCollector(NodePriceCollector):
     def __init__(
         self,
+        *,
+        kube_client: KubeClient,
         cluster_holder: ClusterHolder,
-        node_created_at: datetime,
-        node_pool_name: str,
         interval_s: float = 60,
     ) -> None:
-        super().__init__(node_created_at, Price(), interval_s)
+        super().__init__(
+            kube_client=kube_client, initial_value={}, interval_s=interval_s
+        )
 
         self._cluster_holder = cluster_holder
-        self._node_pool_name = node_pool_name
         self._client: Any = None
 
-    async def get_price_per_hour(self) -> Price:
+    async def get_price_per_hour(self, node: Node) -> Price:
         cluster = self._cluster_holder.cluster
         assert cluster.orchestrator is not None
+
+        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
         for resource_pool in cluster.orchestrator.resource_pool_types:
-            if resource_pool.name == self._node_pool_name:
+            if resource_pool.name == node_pool_name:
                 return Price(
                     value=resource_pool.price, currency=resource_pool.currency or ""
                 )
 
+        logger.warning("Node pool %s was not found in cluster", node_pool_name)
+
         return Price()
 
 
-class AWSNodePriceCollector(_NodePriceCollector):
+class AWSNodePriceCollector(NodePriceCollector):
     def __init__(
         self,
         *,
+        kube_client: KubeClient,
         pricing_client: AioBaseClient,
         ec2_client: AioBaseClient,
-        node_created_at: datetime,
-        region: str,
-        instance_type: str,
-        zone: str,
-        is_spot: bool,
-        interval_s: float = 3600,
+        interval_s: float = 15,
     ) -> None:
-        super().__init__(node_created_at, Price(), interval_s)
-
-        if not region:
-            msg = "Region is required"
-            raise ValueError(msg)
-        if not zone:
-            msg = "Zone is required"
-            raise ValueError(msg)
-        if not instance_type:
-            msg = "Instance type is required"
-            raise ValueError(msg)
+        super().__init__(
+            kube_client=kube_client, initial_value={}, interval_s=interval_s
+        )
 
         self._pricing_client = pricing_client
         self._ec2_client = ec2_client
-        self._region = region
-        self._region_long_name = ""
-        self._zone = zone
-        self._instance_type = instance_type
-        self._is_spot = is_spot
-
-    async def __aenter__(self) -> Self:
-        await super().__aenter__()
-        region_long_names = self._get_region_long_names()
-        self._region_long_name = region_long_names[self._region]
-        logger.info(
-            "Initialized AWS price collector for %s instance in %s region",
-            self._instance_type,
-            self._region_long_name,
+        self._region_long_names = self._get_region_long_names()
+        self._on_demand_price_cache: TTLCache[tuple[str, str], Price] = TTLCache(
+            maxsize=1000, ttl=3600
         )
-        return self
+        self._spot_price_cache: TTLCache[tuple[str, str], Price] = TTLCache(
+            maxsize=1000, ttl=3600
+        )
 
     # The pricing API requires human readable names for some reason
     def _get_region_long_names(self) -> dict[str, str]:
@@ -212,31 +236,54 @@ class AWSNodePriceCollector(_NodePriceCollector):
         result["ap-northeast-3"] = "Asia Pacific (Osaka-Local)"
         return result
 
-    async def get_price_per_hour(self) -> Price:
-        if self._is_spot:
-            return await self._get_latest_spot_price()
-        return await self._get_latest_on_demand_price()
+    async def get_price_per_hour(self, node: Node) -> Price:
+        region = _get_node_region(node)
+        zone = _get_node_zone(node)
+        instance_type = _get_node_instance_type(node)
+        is_spot = _is_preemptible_node(node)
+        if is_spot:
+            return await self._get_latest_spot_price(
+                zone=zone, instance_type=instance_type
+            )
+        return await self._get_latest_on_demand_price(
+            region_long_name=self._region_long_names[region],
+            instance_type=instance_type,
+        )
 
-    async def _get_latest_on_demand_price(self) -> Price:
+    async def _get_latest_on_demand_price(
+        self, *, region_long_name: str, instance_type: str
+    ) -> Price:
+        cache_key = (region_long_name, instance_type)
+        if price := self._on_demand_price_cache.get(cache_key):
+            return price
+        price = await self._get_latest_on_demand_price_from_api(
+            region_long_name=region_long_name, instance_type=instance_type
+        )
+        self._on_demand_price_cache[cache_key] = price
+        return price
+
+    async def _get_latest_on_demand_price_from_api(
+        self, *, region_long_name: str, instance_type: str
+    ) -> Price:
         response = await self._pricing_client.get_products(
             ServiceCode="AmazonEC2",
             FormatVersion="aws_v1",
             Filters=[
                 self._create_filter("ServiceCode", "AmazonEC2"),
                 self._create_filter("locationType", "AWS Region"),
-                self._create_filter("location", self._region_long_name),
+                self._create_filter("location", region_long_name),
                 self._create_filter("operatingSystem", "Linux"),
                 self._create_filter("tenancy", "Shared"),
                 self._create_filter("capacitystatus", "Used"),
                 self._create_filter("preInstalledSw", "NA"),
-                self._create_filter("instanceType", self._instance_type),
+                self._create_filter("instanceType", instance_type),
             ],
         )
         if len(response["PriceList"]) != 1:
             logger.warning(
                 "AWS returned %d products in %s region, cannot determine node price",
                 len(response["PriceList"]),
-                self._region_long_name,
+                region_long_name,
             )
             return Price()
         price_list = json.loads(response["PriceList"][0])
@@ -254,80 +301,77 @@ class AWSNodePriceCollector(_NodePriceCollector):
     def _create_filter(self, field: str, value: str) -> dict[str, str]:
         return {"Type": "TERM_MATCH", "Field": field, "Value": value}
 
-    async def _get_latest_spot_price(self) -> Price:
+    async def _get_latest_spot_price(self, zone: str, instance_type: str) -> Price:
+        cache_key = (zone, instance_type)
+        if price := self._spot_price_cache.get(cache_key):
+            return price
+        price = await self._get_latest_spot_price_from_api(
+            zone=zone, instance_type=instance_type
+        )
+        self._spot_price_cache[cache_key] = price
+        return price
+
+    async def _get_latest_spot_price_from_api(
+        self, zone: str, instance_type: str
+    ) -> Price:
         response = await self._ec2_client.describe_spot_price_history(
-            AvailabilityZone=self._zone,
-            InstanceTypes=[self._instance_type],
+            AvailabilityZone=zone,
+            InstanceTypes=[instance_type],
             ProductDescriptions=["Linux/UNIX"],
-            StartTime=datetime.utcnow(),
+            StartTime=datetime.now(UTC).replace(tzinfo=None),
         )
         history = response["SpotPriceHistory"]
         if len(history) == 0:
             logger.warning(
                 "AWS didn't return spot price history for %s instance in %s zone",
-                self._instance_type,
-                self._zone,
+                instance_type,
+                zone,
             )
             return Price()
         return Price(currency="USD", value=Decimal(str(history[0]["SpotPrice"])))
 
 
-class AzureNodePriceCollector(_NodePriceCollector):
+class AzureNodePriceCollector(NodePriceCollector):
     def __init__(
         self,
         *,
+        kube_client: KubeClient,
         prices_client: aiohttp.ClientSession,
         prices_url: URL,
-        node_created_at: datetime,
-        region: str,
-        instance_type: str,
-        is_spot: bool,
-        interval_s: float = 3600,
+        interval_s: float = 15,
     ) -> None:
-        super().__init__(node_created_at, Price(), interval_s)
-
-        if not region:
-            msg = "Region is required"
-            raise ValueError(msg)
-        if not instance_type:
-            msg = "Instance type is required"
-            raise ValueError(msg)
+        super().__init__(
+            kube_client=kube_client, initial_value={}, interval_s=interval_s
+        )
 
         self._prices_client = prices_client
         self._prices_url = prices_url
-        self._region = region
-        self._instance_type = instance_type
-        self._sku_name = " ".join(instance_type.split("_")[1:])
-
-        if is_spot:
-            self._sku_name += " Spot"
-        else:
-            # For on-demand instances base instance price should be taken.
-            # e. g.: Standard_D2_v3 instead of Standard_D2s_v3
-            match = re.search(r"^(D\d\d?)a?s? (v\d)$", self._sku_name)
-            if match:
-                self._instance_type = f"Standard_{match.group(1)}_{match.group(2)}"
-                self._sku_name = f"{match.group(1)} {match.group(2)}"
-
-    async def get_price_per_hour(self) -> Price:
-        response = await self._prices_client.get(
-            (self._prices_url / "api/retail/prices").with_query(
-                {
-                    "$filter": " ".join(
-                        [
-                            "serviceName eq 'Virtual Machines'",
-                            "and priceType eq 'Consumption'",
-                            f"and armRegionName eq '{self._region}'",
-                            f"and armSkuName eq '{self._instance_type}'",
-                            f"and skuName eq '{self._sku_name}'",
-                        ]
-                    )
-                }
-            )
+        self._price_cache: TTLCache[tuple[str, str, str], Price] = TTLCache(
+            maxsize=1000, ttl=3600
         )
-        response.raise_for_status()
-        payload = await response.json()
-        # filter out Windows instances
+
+    async def get_price_per_hour(self, node: Node) -> Price:
+        region = _get_node_region(node)
+        instance_type = _get_node_instance_type(node)
+        is_spot = _is_preemptible_node(node)
+        base_instance_type = self._get_base_instance_type(instance_type)
+        sku_name = self._get_sku_name(instance_type=base_instance_type, is_spot=is_spot)
+
+        cache_key = (region, base_instance_type, sku_name)
+        if price := self._price_cache.get(cache_key):
+            return price
+        price = await self._get_price_per_hour(
+            region=region, base_instance_type=base_instance_type, sku_name=sku_name
+        )
+        self._price_cache[cache_key] = price
+        return price
+
+    async def _get_price_per_hour(
+        self, *, region: str, base_instance_type: str, sku_name: str
+    ) -> Price:
+        payload = await self._get_prices_from_api(
+            region=region, instance_type=base_instance_type, sku_name=sku_name
+        )
         items = [
             i for i in payload["Items"] if "windows" not in i["productName"].lower()
         ]
@@ -335,7 +379,7 @@ class AzureNodePriceCollector(_NodePriceCollector):
             logger.warning(
                 "Azure returned %d products in %s region, cannot determine node price",
                 len(items),
-                self._region,
+                region,
             )
             return Price()
         return Price(
@@ -343,37 +387,62 @@ class AzureNodePriceCollector(_NodePriceCollector):
             value=Decimal(str(items[0]["retailPrice"])),
         )
 
+    def _get_sku_name(self, *, instance_type: str, is_spot: bool) -> str:
+        sku_name = " ".join(instance_type.split("_")[1:])
+        if is_spot:
+            sku_name += " Spot"
+        return sku_name
 
-class GCPNodePriceCollector(_NodePriceCollector):
+    def _get_base_instance_type(self, instance_type: str) -> str:
+        # For on-demand instances base instance price should be taken.
+        # e. g.: Standard_D2_v3 instead of Standard_D2s_v3
+        match = re.search(r"^([^_]+)_(D\d\d?)a?s?_(v\d)$", instance_type)
+        if match:
+            instance_type = f"{match.group(1)}_{match.group(2)}_{match.group(3)}"
+        return instance_type
+
+    async def _get_prices_from_api(
+        self, *, region: str, instance_type: str, sku_name: str
+    ) -> dict[str, Any]:
+        response = await self._prices_client.get(
+            (self._prices_url / "api/retail/prices").with_query(
+                {
+                    "$filter": " ".join(
+                        [
+                            "serviceName eq 'Virtual Machines'",
+                            "and priceType eq 'Consumption'",
+                            f"and armRegionName eq '{region}'",
+                            f"and armSkuName eq '{instance_type}'",
+                            f"and skuName eq '{sku_name}'",
+                        ]
+                    )
+                }
+            )
+        )
+        response.raise_for_status()
+        return await response.json()
+
+
+class GCPNodePriceCollector(NodePriceCollector):
     def __init__(
         self,
         *,
+        kube_client: KubeClient,
         cluster_holder: ClusterHolder,
         service_account_path: Path,
-        node_created_at: datetime,
-        node_pool_name: str,
-        region: str,
-        instance_type: str,
-        is_preemptive: bool,
-        interval_s: float = 3600,
+        interval_s: float = 15,
     ) -> None:
-        super().__init__(node_created_at, Price(), interval_s)
-
-        if not region:
-            msg = "Region is required"
-            raise ValueError(msg)
-        if not instance_type:
-            msg = "Instance type is required"
-            raise ValueError(msg)
+        super().__init__(
+            kube_client=kube_client, initial_value={}, interval_s=interval_s
+        )
 
         self._cluster_holder = cluster_holder
         self._service_account_path = service_account_path
-        self._node_pool_name = node_pool_name
-        self._region = region
-        self._instance_family = self._get_instance_family(instance_type)
-        self._usage_type = self._get_usage_type(is_preemptive)
         self._loop = asyncio.get_event_loop()
         self._client: Any = None
+        self._skus_cache: TTLCache[str, list[dict[str, Any]]] = TTLCache(
+            maxsize=1000, ttl=3600
+        )
 
     async def __aenter__(self) -> Self:
         self._client = await self._loop.run_in_executor(None, self._create_client)
@@ -392,29 +461,46 @@ class GCPNodePriceCollector(_NodePriceCollector):
     def _get_usage_type(self, is_preemptible: bool) -> str:  # noqa: FBT001
         return "preemptible" if is_preemptible else "ondemand"
 
-    async def get_price_per_hour(self) -> Price:
+    async def get_price_per_hour(self, node: Node) -> Price:
+        region = _get_node_region(node)
+        instance_type = _get_node_instance_type(node)
+        instance_family = self._get_instance_family(instance_type)
+        is_preemptive = _is_preemptible_node(node)
+        usage_type = self._get_usage_type(is_preemptive)
+        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
+
         cluster = self._cluster_holder.cluster
         assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
-        if self._node_pool_name not in resource_pools:
+        if node_pool_name not in resource_pools:
             return Price(currency="USD")
-        resource_pool = resource_pools[self._node_pool_name]
+        resource_pool = resource_pools[node_pool_name]
         return await self._get_instance_price_per_hour(
-            resource_pool.cpu,
-            resource_pool.memory,
-            resource_pool.nvidia_gpu or 0,
-            "",
-            # TODO: uncomment once nvidia_gpu_model is added
-            # resource_pool.gpu_model or "",
+            region=region,
+            instance_family=instance_family,
+            usage_type=usage_type,
+            cpu=resource_pool.cpu,
+            memory=resource_pool.memory,
+            gpu=resource_pool.nvidia_gpu or 0,
+            gpu_model=resource_pool.nvidia_gpu_model or "",
         )
 
     async def _get_instance_price_per_hour(
-        self, cpu: float, memory: int, gpu: int, gpu_model: str
+        self,
+        *,
+        region: str,
+        instance_family: str,
+        usage_type: str,
+        cpu: float,
+        memory: int,
+        gpu: int,
+        gpu_model: str,
     ) -> Price:
         prices_in_nanos: dict[str, Decimal] = {}
         expected_prices_count = bool(cpu) + bool(memory) + bool(gpu)
         gpu_model = gpu_model.replace("-", " ").lower()
-        async for sku in self._get_service_skus():
+        service_skus = await self._get_service_skus(region)
+        for sku in service_skus:
             # The only reliable way to match instance type with sku is through
             # sku description field. Other sku fields don't contain instance type
             # specific fields.
@@ -424,8 +510,8 @@ class GCPNodePriceCollector(_NodePriceCollector):
 
             # Calculate price for CPU and RAM
             if (
-                self._instance_family in sku_description_words
-                and self._usage_type == sku_usage_type
+                instance_family in sku_description_words
+                and usage_type == sku_usage_type
                 and not sku_description_words.intersection(
                     ("sole", "tenancy", "custom")
                 )
@@ -439,11 +525,7 @@ class GCPNodePriceCollector(_NodePriceCollector):
                     prices_in_nanos["ram"] = price_in_nanos * memory / 1024**3
 
             # Calculate price for the attached GPU
-            if (
-                gpu
-                and gpu_model in sku_description
-                and self._usage_type == sku_usage_type
-            ):
+            if gpu and gpu_model in sku_description and usage_type == sku_usage_type:
                 price_in_nanos = self._get_price_in_nanos(sku)
                 assert "gpu" not in prices_in_nanos
                 prices_in_nanos["gpu"] = gpu * price_in_nanos
@@ -457,7 +539,15 @@ class GCPNodePriceCollector(_NodePriceCollector):
             value=sum(prices_in_nanos.values(), Decimal()) / 10**9, currency="USD"
         )
 
-    async def _get_service_skus(self) -> AsyncIterator[dict[str, Any]]:
+    async def _get_service_skus(self, region: str) -> list[dict[str, Any]]:
+        if skus := self._skus_cache.get(region):
+            return skus
+        skus = await self._get_service_skus_from_api(region)
+        self._skus_cache[region] = skus
+        return skus
+
+    async def _get_service_skus_from_api(self, region: str) -> list[dict[str, Any]]:
+        skus = []
         next_page_token: str | None = ""
         while next_page_token is not None:
             async with trace_cm(name="list_service_skus"):
@@ -468,10 +558,11 @@ class GCPNodePriceCollector(_NodePriceCollector):
                 if (
                     sku["category"]["resourceFamily"] == "Compute"
                     and sku["category"]["usageType"] in ("OnDemand", "Preemptible")
-                    and self._region in sku["serviceRegions"]
+                    and region in sku["serviceRegions"]
                 ):
-                    yield sku
+                    skus.append(sku)
             next_page_token = response.get("nextPageToken") or None
+        return skus
 
     def _list_service_skus(self, next_page_token: str) -> Any:
         request = (
@@ -506,14 +597,12 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         *,
         kube_client: KubeClient,
         cluster_holder: ClusterHolder,
-        node_name: str,
         interval_s: float = 15,
     ) -> None:
         super().__init__({}, interval_s)
 
         self._kube_client = kube_client
         self._cluster_holder = cluster_holder
-        self._node_name = node_name
 
     async def get_latest_value(self) -> Mapping[str, Decimal]:
         cluster = self._cluster_holder.cluster
@@ -526,7 +615,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         if not presets:
             return {}
         pods = await self._kube_client.get_pods(
-            field_selector=f"spec.nodeName={self._node_name},status.phase!=Pending",
+            label_selector=f"{Label.APOLO_ORG_KEY},{Label.APOLO_PROJECT_KEY}",
         )
         result: dict[str, Decimal] = {}
         for pod in pods:
@@ -571,50 +660,80 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         return round(credits_total, 2)
 
 
-class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
+class NodeEnergyConsumptionCollector(Collector[Mapping[str, NodeEnergyConsumption]]):
     def __init__(
         self,
+        *,
+        kube_client: KubeClient,
         cluster_holder: ClusterHolder,
-        node_pool_name: str,
-        interval_s: float = 300,
+        interval_s: float = 15,
         current_time_factory: Callable[[tzinfo], datetime] = datetime.now,
     ) -> None:
-        super().__init__(NodeEnergyConsumption(), interval_s)
+        super().__init__({}, interval_s)
 
+        self._kube_client = kube_client
         self._cluster_holder = cluster_holder
-        self._node_pool_name = node_pool_name
-        self._default_schedule = EnergySchedule(name="default")
-        self._custom_schedules: Sequence[EnergySchedule] = []
-        self._timezone: tzinfo = ZoneInfo("UTC")
         self._current_time_factory = current_time_factory
 
-    @property
-    def current_value(self) -> NodeEnergyConsumption:
-        now = self._current_time_factory(self._timezone)
+    def _get_price_per_kwh(self, cluster: Cluster) -> Decimal:
+        if cluster.energy is None:
+            return Decimal(0)
+        default_schedule = next(
+            s for s in cluster.energy.schedules if s.name == "default"
+        )
+        custom_schedules = [s for s in cluster.energy.schedules if s.name != "default"]
+        now = self._current_time_factory(cluster.timezone)
         now_weekday = now.weekday() + 1
         now_time = now.timetz()
         now_time = time(
             hour=now_time.hour, minute=now_time.minute, tzinfo=now_time.tzinfo
         )
-        for schedule in self._custom_schedules:
+        for schedule in custom_schedules:
             for period in schedule.periods:
                 if (
                     period.weekday == now_weekday
                     and period.start_time <= now_time <= period.end_time
                 ):
-                    return replace(
-                        super().current_value, price_per_kwh=schedule.price_per_kwh
-                    )
-        return replace(
-            super().current_value, price_per_kwh=self._default_schedule.price_per_kwh
-        )
+                    return schedule.price_per_kwh
+        return default_schedule.price_per_kwh
 
-    async def get_latest_value(self) -> NodeEnergyConsumption:
+    def _get_co2_grams_eq_per_kwh(self, cluster: Cluster) -> float:
+        return cluster.energy.co2_grams_eq_per_kwh if cluster.energy else 0
+
+    async def get_latest_value(self) -> Mapping[str, NodeEnergyConsumption]:
+        nodes = await self._kube_client.get_nodes(
+            label_selector=Label.NEURO_NODE_POOL_KEY
+        )
+        if not nodes:
+            return {}
+
+        cluster = self._cluster_holder.cluster
+        co2_grams_eq_per_kwh = self._get_co2_grams_eq_per_kwh(cluster)
+        price_per_kwh = self._get_price_per_kwh(cluster)
+        energy_consumptions = {}
+
+        for node in nodes:
+            energy_consumptions[node.metadata.name] = self._get_node_energy_consumption(
+                node,
+                co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
+                price_per_kwh=price_per_kwh,
+            )
+
+        return energy_consumptions
+
+    def _get_node_energy_consumption(
+        self, node: Node, *, co2_grams_eq_per_kwh: float, price_per_kwh: Decimal
+    ) -> NodeEnergyConsumption:
         cluster = self._cluster_holder.cluster
         assert cluster.cloud_provider is not None
-        energy_consumption = NodeEnergyConsumption()
+
+        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
+        energy_consumption = NodeEnergyConsumption(
+            co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
+            price_per_kwh=price_per_kwh,
+        )
         for node_pool in cluster.cloud_provider.node_pools:
-            if node_pool.name == self._node_pool_name:
+            if node_pool.name == node_pool_name:
                 energy_consumption = replace(
                     energy_consumption,
                     cpu_min_watts=node_pool.cpu_min_watts,
@@ -622,20 +741,5 @@ class NodeEnergyConsumptionCollector(Collector[NodeEnergyConsumption]):
                 )
                 break
         else:
-            logger.warning(
-                "Node pool %s was not found in cluster", self._node_pool_name
-            )
-        if cluster.energy is None:
-            return energy_consumption
-        energy_consumption = replace(
-            energy_consumption, co2_grams_eq_per_kwh=cluster.energy.co2_grams_eq_per_kwh
-        )
-        self._default_schedule = next(
-            s for s in cluster.energy.schedules if s.name == "default"
-        )
-        self._custom_schedules = [
-            s for s in cluster.energy.schedules if s.name != "default"
-        ]
-        self._timezone = cluster.timezone
-        current_value = self.current_value
-        return replace(energy_consumption, price_per_kwh=current_value.price_per_kwh)
+            logger.warning("Node pool %s was not found in cluster", node_pool_name)
+        return energy_consumption

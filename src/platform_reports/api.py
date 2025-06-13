@@ -45,7 +45,6 @@ from .cluster import RefreshableClusterHolder
 from .config import (
     EnvironConfigFactory,
     GrafanaProxyConfig,
-    Label,
     MetricsApiConfig,
     MetricsExporterConfig,
     PlatformServiceConfig,
@@ -58,9 +57,10 @@ from .metrics_collector import (
     Collector,
     ConfigPriceCollector,
     GCPNodePriceCollector,
+    NodeEnergyConsumption,
     NodeEnergyConsumptionCollector,
+    NodePriceCollector,
     PodCreditsCollector,
-    Price,
 )
 from .metrics_service import GetCreditsUsageRequest, MetricsService
 from .platform_api_client import ApiClient
@@ -79,7 +79,7 @@ METRICS_EXPORTER_CONFIG_APP_KEY = aiohttp.web.AppKey("config", MetricsExporterCo
 PROMETHEUS_PROXY_APP_KEY = aiohttp.web.AppKey("config", PrometheusProxyConfig)
 GRAFANA_PROXY_APP_KEY = aiohttp.web.AppKey("config", GrafanaProxyConfig)
 NODE_PRICE_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
-    "node_price_collector", Collector[Price]
+    "node_price_collector", NodePriceCollector
 )
 POD_CREDITS_COLLECTOR_APP_KEY = aiohttp.web.AppKey(
     "pod_credits_collector", Collector[Mapping[str, Decimal]]
@@ -115,7 +115,7 @@ class MetricsExporterHandler:
         self._app.router.add_get("/metrics", self.handle)
 
     @property
-    def _node_price_collector(self) -> Collector[Price]:
+    def _node_price_collector(self) -> NodePriceCollector:
         return self._app[NODE_PRICE_COLLECTOR_APP_KEY]
 
     @property
@@ -139,14 +139,21 @@ class MetricsExporterHandler:
         return Response(text="\n\n".join(text))
 
     def _get_node_price_total_text(self) -> str:
-        node = self._config.node_name
-        price = self._node_price_collector.current_value
-        return dedent(
-            f"""\
-            # HELP kube_node_price_total The total price of the node.
-            # TYPE kube_node_price_total counter
-            kube_node_price_total{{node="{node}",currency="{price.currency}"}} {price.value}"""  # noqa: E501
-        )
+        node_prices = self._node_price_collector.current_value
+        if not node_prices:
+            return ""
+        metrics: list[str] = [
+            dedent(
+                """\
+                # HELP kube_node_price_total The total price of the node.
+                # TYPE kube_node_price_total counter"""
+            )
+        ]
+        for name, price in node_prices.items():
+            metrics.append(
+                f'kube_node_price_total{{node="{name}",currency="{price.currency}"}} {price.value}'  # noqa: E501
+            )
+        return "\n".join(metrics)
 
     def _get_pod_credits_total_text(self) -> str:
         pod_credits_total = self._pod_credits_collector.current_value
@@ -164,23 +171,80 @@ class MetricsExporterHandler:
         return "\n".join(metrics)
 
     def _get_node_power_usage_text(self) -> str:
-        node = self._config.node_name
-        consumption = self._node_power_consumption_collector.current_value
-        return dedent(
-            f"""\
-            # HELP cpu_min_watts The CPU power consumption while IDLEing in watts
-            # TYPE cpu_min_watts gauge
-            cpu_min_watts{{node="{node}"}} {consumption.cpu_min_watts}
-            # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
-            # TYPE cpu_max_watts gauge
-            cpu_max_watts{{node="{node}"}} {consumption.cpu_max_watts}
-            # HELP co2_grams_eq_per_kwh Estimated CO2 emission for energy generation in region where the node is running
-            # TYPE co2_grams_eq_per_kwh gauge
-            co2_grams_eq_per_kwh{{node="{node}"}} {consumption.co2_grams_eq_per_kwh}
-            # HELP price_per_kwh Energy price per kwh in region where the node is running
-            # TYPE price_per_kwh gauge
-            price_per_kwh{{node="{node}"}} {consumption.price_per_kwh}"""  # noqa: E501
-        )
+        node_energy_consumption = self._node_power_consumption_collector.current_value
+        if not node_energy_consumption:
+            return ""
+        text = [
+            self._get_node_cpu_min_watts_text(node_energy_consumption),
+            self._get_node_cpu_max_watts_text(node_energy_consumption),
+            self._get_node_co2_grams_eq_per_kwh_text(node_energy_consumption),
+            self._get_node_price_per_kwh_text(node_energy_consumption),
+        ]
+        return "\n\n".join(text)
+
+    def _get_node_cpu_min_watts_text(
+        self, node_energy_consumption: Mapping[str, NodeEnergyConsumption]
+    ) -> str:
+        metrics: list[str] = [
+            dedent(
+                """\
+                # HELP cpu_min_watts The CPU power consumption while IDLEing in watts
+                # TYPE cpu_min_watts gauge"""
+            )
+        ]
+        for node, consumption in node_energy_consumption.items():
+            metrics.append(
+                f'cpu_min_watts{{node="{node}"}} {consumption.cpu_min_watts}'
+            )
+        return "\n".join(metrics)
+
+    def _get_node_cpu_max_watts_text(
+        self, node_energy_consumption: Mapping[str, NodeEnergyConsumption]
+    ) -> str:
+        metrics: list[str] = [
+            dedent(
+                """\
+                # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
+                # TYPE cpu_max_watts gauge"""  # noqa: E501
+            )
+        ]
+        for node, consumption in node_energy_consumption.items():
+            metrics.append(
+                f'cpu_max_watts{{node="{node}"}} {consumption.cpu_max_watts}'
+            )
+        return "\n".join(metrics)
+
+    def _get_node_co2_grams_eq_per_kwh_text(
+        self, node_energy_consumption: Mapping[str, NodeEnergyConsumption]
+    ) -> str:
+        metrics: list[str] = [
+            dedent(
+                """\
+                # HELP co2_grams_eq_per_kwh Estimated CO2 emission for energy generation in region where the node is running
+                # TYPE co2_grams_eq_per_kwh gauge"""  # noqa: E501
+            )
+        ]
+        for node, consumption in node_energy_consumption.items():
+            metrics.append(
+                f'co2_grams_eq_per_kwh{{node="{node}"}} {consumption.co2_grams_eq_per_kwh}'  # noqa: E501
+            )
+        return "\n".join(metrics)
+
+    def _get_node_price_per_kwh_text(
+        self, node_energy_consumption: Mapping[str, NodeEnergyConsumption]
+    ) -> str:
+        metrics: list[str] = [
+            dedent(
+                """\
+                # HELP price_per_kwh Energy price per kwh in region where the node is running
+                # TYPE price_per_kwh gauge"""  # noqa: E501
+            )
+        ]
+        for node, consumption in node_energy_consumption.items():
+            metrics.append(
+                f'price_per_kwh{{node="{node}"}} {consumption.price_per_kwh}'
+            )
+        return "\n".join(metrics)
 
 
 class PrometheusProxyHandler:
@@ -479,28 +543,7 @@ def create_metrics_exporter_app(
             LOGGER.info("Initializing Kube client")
             kube_client = await exit_stack.enter_async_context(KubeClient(config.kube))
 
-            node = await kube_client.get_node(config.node_name)
-            zone = (
-                node.metadata.labels.get("failure-domain.beta.kubernetes.io/zone")
-                or node.metadata.labels.get("topology.kubernetes.io/zone")
-                or ""
-            )
-            LOGGER.info("Node zone: %s", zone)
-
-            instance_type = (
-                node.metadata.labels.get("node.kubernetes.io/instance-type")
-                or node.metadata.labels.get("beta.kubernetes.io/instance-type")
-                or ""
-            )
-            LOGGER.info("Node instance type: %s", instance_type)
-
-            is_preemptible = Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
-            LOGGER.info("Node is preemptible: %s", is_preemptible)
-
-            node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
-            LOGGER.info("Node pool name: %s", node_pool_name)
-
-            node_price_collector: Collector[Price]
+            node_price_collector: NodePriceCollector
 
             if config.cloud_provider == "aws":
                 session = aiobotocore.session.get_session()
@@ -514,26 +557,18 @@ def create_metrics_exporter_app(
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AWSNodePriceCollector(
+                        kube_client=kube_client,
                         pricing_client=pricing_client,
                         ec2_client=ec2_client,
-                        node_created_at=node.metadata.creation_timestamp,
-                        region=config.region,
-                        zone=zone,
-                        instance_type=instance_type,
-                        is_spot=is_preemptible,
                     )
                 )
             elif config.cloud_provider == "gcp":
                 assert config.gcp_service_account_key_path
                 node_price_collector = await exit_stack.enter_async_context(
                     GCPNodePriceCollector(
+                        kube_client=kube_client,
                         cluster_holder=cluster_holder,
                         service_account_path=config.gcp_service_account_key_path,
-                        node_pool_name=node_pool_name,
-                        node_created_at=node.metadata.creation_timestamp,
-                        region=config.region,
-                        instance_type=instance_type,
-                        is_preemptive=is_preemptible,
                     )
                 )
             elif config.cloud_provider == "azure":
@@ -542,20 +577,16 @@ def create_metrics_exporter_app(
                 )
                 node_price_collector = await exit_stack.enter_async_context(
                     AzureNodePriceCollector(
+                        kube_client=kube_client,
                         prices_client=prices_client,
                         prices_url=config.azure_prices_url,
-                        node_created_at=node.metadata.creation_timestamp,
-                        region=config.region,
-                        instance_type=instance_type,
-                        is_spot=is_preemptible,
                     )
                 )
             else:
                 node_price_collector = await exit_stack.enter_async_context(
                     ConfigPriceCollector(
+                        kube_client=kube_client,
                         cluster_holder=cluster_holder,
-                        node_created_at=node.metadata.creation_timestamp,
-                        node_pool_name=node_pool_name,
                     )
                 )
             app[NODE_PRICE_COLLECTOR_APP_KEY] = node_price_collector
@@ -564,15 +595,14 @@ def create_metrics_exporter_app(
                 PodCreditsCollector(
                     kube_client=kube_client,
                     cluster_holder=cluster_holder,
-                    node_name=config.node_name,
                 )
             )
             app[POD_CREDITS_COLLECTOR_APP_KEY] = pod_credits_collector
 
             node_power_consumpt_collector = await exit_stack.enter_async_context(
                 NodeEnergyConsumptionCollector(
+                    kube_client=kube_client,
                     cluster_holder=cluster_holder,
-                    node_pool_name=node_pool_name,
                 )
             )
             app[NODE_POWER_CONSUMPTION_COLLECTOR_APP_KEY] = (

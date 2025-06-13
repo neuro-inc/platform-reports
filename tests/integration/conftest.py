@@ -28,7 +28,6 @@ from platform_reports.config import (
     PrometheusProxyConfig,
     ServerConfig,
 )
-from platform_reports.kube_client import Node
 
 
 @pytest.fixture(scope="session")
@@ -125,7 +124,6 @@ def metrics_exporter_config(
     platform_config_config: PlatformServiceConfig,
     platform_api_config: PlatformServiceConfig,
     kube_config: KubeConfig,
-    kube_node: Node,
 ) -> MetricsExporterConfig:
     return MetricsExporterConfig(
         server=ServerConfig(port=unused_tcp_port_factory()),
@@ -133,7 +131,6 @@ def metrics_exporter_config(
         platform_api=platform_api_config,
         kube=kube_config,
         cluster_name="default",
-        node_name=kube_node.metadata.name,
     )
 
 

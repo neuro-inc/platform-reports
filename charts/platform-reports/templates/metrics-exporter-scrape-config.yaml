@@ -1,0 +1,25 @@
+
+apiVersion: monitoring.coreos.com/v1
+kind: ScrapeConfig
+metadata:
+  name: {{ include "platformReports.metricsExporter.fullname" . }}
+  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
+    service: platform-metrics-exporter
+    platform.apolo.us/scrape-metrics: "true"
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "platformReports.name" . }}
+      release: {{ .Release.Name | quote }}
+      service: platform-metrics-exporter
+  staticConfigs:
+  - targets:
+    - {{ include "platformReports.metricsExporter.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.metricsExporter.port }}
+  job: neuro-metrics-exporter
+  honorLabels: true
+  metricsPath: /metrics
+  metricRelabelings:
+    - sourceLabels:
+        - __metrics_path__
+      targetLabel: metrics_path
+  scrapeInterval: 15s

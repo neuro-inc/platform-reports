@@ -15,7 +15,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from unittest import mock
-from zoneinfo import ZoneInfo
 
 import aiohttp
 import pytest
@@ -36,10 +35,12 @@ from neuro_config_client import (
 from yarl import URL
 
 from platform_reports.cluster import ClusterHolder
+from platform_reports.config import Label
 from platform_reports.kube_client import (
     ContainerStatus,
     KubeClient,
     Metadata,
+    Node,
     Pod,
     PodCondition,
     PodPhase,
@@ -100,7 +101,26 @@ class TestCollector:
             await task
 
 
-class TestConfigPriceCollector:
+class _TestNodePriceCollector:
+    @pytest.fixture
+    def kube_client_factory(self) -> Callable[..., KubeClient]:
+        def _create(nodes: list[Node]) -> KubeClient:
+            async def get_nodes(
+                namespace: str | None = None,
+                label_selector: str | None = None,
+            ) -> list[Node]:
+                assert namespace is None
+                assert label_selector == "platform.neuromation.io/nodepool"
+                return nodes
+
+            result = mock.AsyncMock(spec=KubeClient)
+            result.get_nodes.side_effect = get_nodes
+            return result
+
+        return _create
+
+
+class TestConfigPriceCollector(_TestNodePriceCollector):
     @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
@@ -127,14 +147,17 @@ class TestConfigPriceCollector:
 
     @pytest.fixture
     async def collector_factory(
-        self, cluster_holder: ClusterHolder
+        self,
+        kube_client_factory: Callable[..., KubeClient],
+        cluster_holder: ClusterHolder,
     ) -> Callable[..., AbstractAsyncContextManager[ConfigPriceCollector]]:
         @asynccontextmanager
-        async def create(node_pool_name: str) -> AsyncIterator[ConfigPriceCollector]:
+        async def create(nodes: list[Node]) -> AsyncIterator[ConfigPriceCollector]:
+            kube_client = kube_client_factory(nodes)
+
             async with ConfigPriceCollector(
+                kube_client=kube_client,
                 cluster_holder=cluster_holder,
-                node_pool_name=node_pool_name,
-                node_created_at=datetime.now(UTC) - timedelta(hours=10),
             ) as collector:
                 assert isinstance(collector, ConfigPriceCollector)
                 yield collector
@@ -147,10 +170,20 @@ class TestConfigPriceCollector:
             ..., AbstractAsyncContextManager[ConfigPriceCollector]
         ],
     ) -> None:
-        async with collector_factory("node-pool") as collector:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.NEURO_NODE_POOL_KEY: "node-pool",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
+        async with collector_factory([node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(9), currency="USD")
+        assert result == {"node": Price(value=Decimal(9), currency="USD")}
 
     async def test_get_latest_value_unknown_node_pool(
         self,
@@ -158,13 +191,23 @@ class TestConfigPriceCollector:
             ..., AbstractAsyncContextManager[ConfigPriceCollector]
         ],
     ) -> None:
-        async with collector_factory("unknown-node-pool") as collector:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.NEURO_NODE_POOL_KEY: "unknown-node-pool",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
+        async with collector_factory([node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
 
-class TestAWSNodePriceCollector:
+class TestAWSNodePriceCollector(_TestNodePriceCollector):
     @pytest.fixture
     def pricing_client(self) -> mock.AsyncMock:
         return mock.AsyncMock()
@@ -175,26 +218,53 @@ class TestAWSNodePriceCollector:
 
     @pytest.fixture
     def collector_factory(
-        self, pricing_client: AioBaseClient, ec2_client: AioBaseClient
+        self,
+        kube_client_factory: Callable[[list[Node]], KubeClient],
+        pricing_client: AioBaseClient,
+        ec2_client: AioBaseClient,
     ) -> Callable[..., AbstractAsyncContextManager[AWSNodePriceCollector]]:
         @asynccontextmanager
-        async def _create(
-            is_spot: bool = False,  # noqa: FBT001, FBT002
-        ) -> AsyncIterator[AWSNodePriceCollector]:
+        async def _create(nodes: list[Node]) -> AsyncIterator[AWSNodePriceCollector]:
+            kube_client = kube_client_factory(nodes)
+
             async with AWSNodePriceCollector(
+                kube_client=kube_client,
                 pricing_client=pricing_client,
                 ec2_client=ec2_client,
-                node_created_at=datetime.now(UTC) - timedelta(hours=10),
-                region="us-east-1",
-                zone="us-east-1a",
-                instance_type="p2.xlarge",
-                is_spot=is_spot,
-                interval_s=0.1,
             ) as result:
                 assert isinstance(result, AWSNodePriceCollector)
                 yield result
 
         return _create
+
+    @pytest.fixture
+    def on_demand_node(self) -> Node:
+        return Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-east-1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-east-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "p2.xlarge",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
+    @pytest.fixture
+    def spot_node(self) -> Node:
+        return Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-east-1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-east-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "p2.xlarge",
+                    Label.NEURO_PREEMPTIBLE_KEY: "true",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
 
     async def test_get_latest_value(
         self,
@@ -202,6 +272,7 @@ class TestAWSNodePriceCollector:
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
         ],
         pricing_client: mock.AsyncMock,
+        on_demand_node: Node,
     ) -> None:
         pricing_client.get_products.return_value = {
             "PriceList": [
@@ -223,7 +294,7 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        async with collector_factory() as collector:
+        async with collector_factory([on_demand_node]) as collector:
             result = await collector.get_latest_value()
 
         pricing_client.get_products.assert_awaited_once_with(
@@ -244,7 +315,7 @@ class TestAWSNodePriceCollector:
                 {"Type": "TERM_MATCH", "Field": "instanceType", "Value": "p2.xlarge"},
             ],
         )
-        assert result == Price(currency="USD", value=Decimal(1))
+        assert result == {"node": Price(currency="USD", value=Decimal(1))}
 
     async def test_get_latest_value_with_multiple_prices(
         self,
@@ -252,6 +323,7 @@ class TestAWSNodePriceCollector:
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
         ],
         pricing_client: mock.AsyncMock,
+        on_demand_node: Node,
     ) -> None:
         price_item = {
             "terms": {
@@ -270,10 +342,10 @@ class TestAWSNodePriceCollector:
             "PriceList": [json.dumps(price_item), json.dumps(price_item)]
         }
 
-        async with collector_factory() as collector:
+        async with collector_factory([on_demand_node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
     async def test_get_latest_value_with_unsupported_currency(
         self,
@@ -281,6 +353,7 @@ class TestAWSNodePriceCollector:
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
         ],
         pricing_client: mock.AsyncMock,
+        on_demand_node: Node,
     ) -> None:
         pricing_client.get_products.return_value = {
             "PriceList": [
@@ -302,10 +375,10 @@ class TestAWSNodePriceCollector:
             ]
         }
 
-        async with collector_factory() as collector:
+        async with collector_factory([on_demand_node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
     async def test_get_latest_spot_value(
         self,
@@ -313,15 +386,16 @@ class TestAWSNodePriceCollector:
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
         ],
         ec2_client: mock.AsyncMock,
+        spot_node: Node,
     ) -> None:
         ec2_client.describe_spot_price_history.return_value = {
             "SpotPriceHistory": [{"SpotPrice": "0.27"}]
         }
 
-        async with collector_factory(is_spot=True) as collector:
+        async with collector_factory([spot_node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price(currency="USD", value=Decimal("2.7"))
+        assert result == {"node": Price(currency="USD", value=Decimal("2.7"))}
 
         ec2_client.describe_spot_price_history.assert_awaited_once_with(
             AvailabilityZone="us-east-1a",
@@ -336,16 +410,17 @@ class TestAWSNodePriceCollector:
             ..., AbstractAsyncContextManager[AWSNodePriceCollector]
         ],
         ec2_client: mock.AsyncMock,
+        spot_node: Node,
     ) -> None:
         ec2_client.describe_spot_price_history.return_value = {"SpotPriceHistory": []}
 
-        async with collector_factory(is_spot=True) as collector:
+        async with collector_factory([spot_node]) as collector:
             result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
 
-class TestGCPNodePriceCollector:
+class TestGCPNodePriceCollector(_TestNodePriceCollector):
     @pytest.fixture
     def cluster(self) -> Cluster:
         return Cluster(
@@ -365,8 +440,7 @@ class TestGCPNodePriceCollector:
                         cpu=8,
                         memory=52 * 1024**3,
                         nvidia_gpu=4,
-                        # TODO: uncomment once nvidia_gpu_model is added
-                        # nvidia_gpu_model="nvidia-tesla-k80",
+                        nvidia_gpu_model="nvidia-tesla-k80",
                     ),
                     ResourcePoolType(
                         name="n1-highmem-8-1xv100",
@@ -374,8 +448,7 @@ class TestGCPNodePriceCollector:
                         memory=52 * 1024**3,
                         nvidia_gpu=1,
                         # not registered in google service skus fixture
-                        # TODO: uncomment once nvidia_gpu_model is added
-                        # nvidia_gpu_model="nvidia-tesla-v100",
+                        nvidia_gpu_model="nvidia-tesla-v100",
                     ),
                 ],
             ),
@@ -605,22 +678,19 @@ class TestGCPNodePriceCollector:
 
     @pytest.fixture
     def collector_factory(
-        self, cluster_holder: ClusterHolder, google_service_skus: dict[str, Any]
+        self,
+        kube_client_factory: Callable[..., KubeClient],
+        cluster_holder: ClusterHolder,
+        google_service_skus: dict[str, Any],
     ) -> Callable[..., AbstractContextManager[GCPNodePriceCollector]]:
         @contextmanager
-        def _create(
-            node_pool_name: str,
-            instance_type: str,
-            is_preemptible: bool = False,  # noqa: FBT001, FBT002
-        ) -> Iterator[GCPNodePriceCollector]:
+        def _create(nodes: list[Node]) -> Iterator[GCPNodePriceCollector]:
+            kube_client = kube_client_factory(nodes)
+
             result = GCPNodePriceCollector(
+                kube_client=kube_client,
                 cluster_holder=cluster_holder,
                 service_account_path=Path("sa.json"),
-                node_created_at=datetime.now(UTC) - timedelta(hours=10),
-                node_pool_name=node_pool_name,
-                region="us-central1",
-                instance_type=instance_type,
-                is_preemptive=is_preemptible,
             )
             with mock.patch.object(result, "_client") as client:
                 request = (
@@ -635,67 +705,136 @@ class TestGCPNodePriceCollector:
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory("n1-highmem-8", "n1-highmem-8") as collector:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
+        with collector_factory([node]) as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=Decimal("4.73"), currency="USD")
+            assert result == {"node": Price(value=Decimal("4.73"), currency="USD")}
 
     async def test_get_latest_value_cpu_instance_preemptible(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory(
-            "n1-highmem-8", "n1-highmem-8", is_preemptible=True
-        ) as collector:
-            result = await collector.get_latest_value()
-            assert result == Price(value=Decimal(1), currency="USD")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
+                    Label.NEURO_PREEMPTIBLE_KEY: "true",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
 
-    @pytest.mark.xfail
+        with collector_factory([node]) as collector:
+            result = await collector.get_latest_value()
+            assert result == {"node": Price(value=Decimal(1), currency="USD")}
+
     async def test_get_latest_value_gpu_instance(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory("n1-highmem-8-4xk80", "n1-highmem-8") as collector:
-            result = await collector.get_latest_value()
-            assert result == Price(value=Decimal("22.73"), currency="USD")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8-4xk80",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
 
-    @pytest.mark.xfail
+        with collector_factory([node]) as collector:
+            result = await collector.get_latest_value()
+            assert result == {"node": Price(value=Decimal("22.73"), currency="USD")}
+
     async def test_get_latest_value_gpu_instance_preemptible(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
-        with collector_factory(
-            "n1-highmem-8-4xk80", "n1-highmem-8", is_preemptible=True
-        ) as collector:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8-4xk80",
+                    Label.NEURO_PREEMPTIBLE_KEY: "true",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
+        with collector_factory([node]) as collector:
             result = await collector.get_latest_value()
-            assert result == Price(value=Decimal("6.4"), currency="USD")
+            assert result == {"node": Price(value=Decimal("6.4"), currency="USD")}
 
     async def test_get_latest_value_unknown_instance_type(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "unknown",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
         with (
-            collector_factory(
-                "n1-highmem-8", "unknown", is_preemptible=True
-            ) as collector,
+            collector_factory([node]) as collector,
             pytest.raises(AssertionError, match=r"Found prices only for: \[\]"),
         ):
             await collector.get_latest_value()
 
-    @pytest.mark.xfail
-    async def test_get_latest_value_unknown_gpu(
+    async def test_get_latest_value_unknown_node_pool(
         self,
         collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
     ) -> None:
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
+                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
+                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
+                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8-1xv100",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+
         with (
-            collector_factory(
-                "n1-highmem-8-1xv100", "n1-highmem-8", is_preemptible=True
-            ) as collector,
+            collector_factory([node]) as collector,
             pytest.raises(AssertionError, match=r"Found prices only for: \[CPU, RAM\]"),
         ):
             await collector.get_latest_value()
 
 
-class TestAzureNodePriceCollector:
+class TestAzureNodePriceCollector(_TestNodePriceCollector):
     @pytest.fixture
     def prices_client_factory(
         self,
@@ -716,19 +855,18 @@ class TestAzureNodePriceCollector:
         return _create
 
     @pytest.fixture
-    def collector_factory(self) -> Callable[..., AzureNodePriceCollector]:
+    def collector_factory(
+        self, kube_client_factory: Callable[..., KubeClient]
+    ) -> Callable[..., AzureNodePriceCollector]:
         def _create(
-            prices_client: aiohttp.ClientSession,
-            instance_type: str,
-            is_spot: bool = False,  # noqa: FBT001, FBT002
+            prices_client: aiohttp.ClientSession, nodes: list[Node]
         ) -> AzureNodePriceCollector:
+            kube_client = kube_client_factory(nodes)
+
             return AzureNodePriceCollector(
+                kube_client=kube_client,
                 prices_client=prices_client,
                 prices_url=URL("/"),
-                node_created_at=datetime.now(UTC) - timedelta(hours=10),
-                region="eastus",
-                instance_type=instance_type,
-                is_spot=is_spot,
             )
 
         return _create
@@ -752,10 +890,20 @@ class TestAzureNodePriceCollector:
                 "and skuName eq 'NC6'"
             ),
         )
-        collector = collector_factory(prices_client, "Standard_NC6")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_NC6",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(9), currency="USD")
+        assert result == {"node": Price(value=Decimal(9), currency="USD")}
 
     async def test_get_latest_value_general_purpose_instance(
         self,
@@ -776,10 +924,20 @@ class TestAzureNodePriceCollector:
                 "and skuName eq 'D2 v3'"
             ),
         )
-        collector = collector_factory(prices_client, "Standard_D2s_v3")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_D2s_v3",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal("0.96"), currency="USD")
+        assert result == {"node": Price(value=Decimal("0.96"), currency="USD")}
 
     async def test_get_latest_value_multiple_prices(
         self,
@@ -794,10 +952,20 @@ class TestAzureNodePriceCollector:
                 ]
             },
         )
-        collector = collector_factory(prices_client, "Standard_NC6")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_NC6",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
     async def test_get_latest_value_filters_windows_os(
         self,
@@ -816,10 +984,20 @@ class TestAzureNodePriceCollector:
                 ]
             },
         )
-        collector = collector_factory(prices_client, "Standard_NC6")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_NC6",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(9), currency="USD")
+        assert result == {"node": Price(value=Decimal(9), currency="USD")}
 
     async def test_get_latest_value_unknown_instance_type(
         self,
@@ -827,10 +1005,20 @@ class TestAzureNodePriceCollector:
         collector_factory: Callable[..., AzureNodePriceCollector],
     ) -> None:
         prices_client = await prices_client_factory({"Items": []})
-        collector = collector_factory(prices_client, "Standard_NC6")
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_NC6",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price()
+        assert result == {"node": Price()}
 
     async def test_get_latest_spot_value(
         self,
@@ -847,10 +1035,21 @@ class TestAzureNodePriceCollector:
                 "and skuName eq 'NC6 Spot'"
             ),
         )
-        collector = collector_factory(prices_client, "Standard_NC6", is_spot=True)
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={
+                    Label.FAILURE_DOMAIN_REGION_KEY: "eastus",
+                    Label.NODE_INSTANCE_TYPE_KEY: "Standard_NC6",
+                    Label.NEURO_PREEMPTIBLE_KEY: "true",
+                },
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
+        )
+        collector = collector_factory(prices_client, [node])
         result = await collector.get_latest_value()
 
-        assert result == Price(value=Decimal(9), currency="USD")
+        assert result == {"node": Price(value=Decimal(9), currency="USD")}
 
 
 class TestPodCreditsCollector:
@@ -886,8 +1085,10 @@ class TestPodCreditsCollector:
                 label_selector: str | None = None,
             ) -> Sequence[Pod]:
                 assert namespace is None
-                assert label_selector is None
-                assert field_selector == "spec.nodeName=minikube,status.phase!=Pending"
+                assert field_selector is None
+                assert (
+                    label_selector == "platform.apolo.us/org,platform.apolo.us/project"
+                )
                 return pods
 
             result = mock.AsyncMock(spec=KubeClient)
@@ -907,7 +1108,6 @@ class TestPodCreditsCollector:
             return PodCreditsCollector(
                 kube_client=kube_client,
                 cluster_holder=cluster_holder,
-                node_name="minikube",
             )
 
         return _create
@@ -1124,39 +1324,70 @@ class TestNodeEnergyConsumptionCollector:
             ),
         )
 
-    async def test_get_latest_value(self, cluster_holder: ClusterHolder) -> None:
-        current_time = datetime(
-            year=2023,
-            month=1,
-            day=30,
-            hour=5,
-            minute=59,
-            second=59,
-            tzinfo=ZoneInfo("UTC"),
+    @pytest.fixture
+    def kube_client_factory(self) -> Callable[..., KubeClient]:
+        def _create(nodes: list[Node]) -> KubeClient:
+            async def get_nodes(
+                namespace: str | None = None,
+                label_selector: str | None = None,
+            ) -> list[Node]:
+                assert namespace is None
+                assert label_selector == "platform.neuromation.io/nodepool"
+                return nodes
+
+            result = mock.AsyncMock(spec=KubeClient)
+            result.get_nodes.side_effect = get_nodes
+            return result
+
+        return _create
+
+    async def test_get_latest_value(
+        self,
+        kube_client_factory: Callable[..., KubeClient],
+        cluster_holder: ClusterHolder,
+    ) -> None:
+        current_time = datetime(2023, 1, 30, 5, 59, 59, tzinfo=UTC)
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={Label.NEURO_NODE_POOL_KEY: "node-pool"},
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
         )
+        kube_client = kube_client_factory([node])
         async with NodeEnergyConsumptionCollector(
+            kube_client=kube_client,
             cluster_holder=cluster_holder,
-            node_pool_name="node-pool",
             current_time_factory=lambda _: current_time,
         ) as collector:
-            value = await collector.get_latest_value()
+            values = await collector.get_latest_value()
+            value = values["node"]
             assert value.cpu_min_watts == 10.5
             assert value.cpu_max_watts == 110.0
             assert value.co2_grams_eq_per_kwh == 1000.0
             assert value.price_per_kwh == 5
 
     async def test_get_latest_value__default(
-        self, cluster_holder: ClusterHolder
+        self,
+        kube_client_factory: Callable[..., KubeClient],
+        cluster_holder: ClusterHolder,
     ) -> None:
-        current_time = datetime(
-            year=2023, month=1, day=31, hour=5, tzinfo=ZoneInfo("UTC")
+        current_time = datetime(2023, 1, 31, 5, tzinfo=UTC)
+        node = Node(
+            metadata=Metadata(
+                name="node",
+                labels={Label.NEURO_NODE_POOL_KEY: "node-pool"},
+                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+            )
         )
+        kube_client = kube_client_factory([node])
         async with NodeEnergyConsumptionCollector(
+            kube_client=kube_client,
             cluster_holder=cluster_holder,
-            node_pool_name="node-pool",
             current_time_factory=lambda _: current_time,
         ) as collector:
-            value = await collector.get_latest_value()
+            values = await collector.get_latest_value()
+            value = values["node"]
             assert value.cpu_min_watts == 10.5
             assert value.cpu_max_watts == 110.0
             assert value.co2_grams_eq_per_kwh == 1000.0

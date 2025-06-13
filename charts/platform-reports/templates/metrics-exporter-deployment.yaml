@@ -29,7 +29,8 @@ spec:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           # Schedule pods on different nodes
-          - podAffinityTerm:
+          - weight: 100
+            podAffinityTerm:
               labelSelector:
                 matchExpressions:
                 - key: service

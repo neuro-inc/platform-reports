@@ -317,7 +317,7 @@ class KubeClient:
         if label_selector:
             params["labelSelector"] = label_selector
         payload = await self._request(method="get", url=url, params=params)
-        assert payload["kind"] == "NodeList"
+        assert payload["kind"] == "NodeList", "NodeList kind expected"
         return [Node.from_payload(i) for i in payload["items"]]
 
     async def create_raw_pod(
@@ -341,7 +341,7 @@ class KubeClient:
         payload = await self._request(
             method="get", url=self._get_pods_url(namespace), params=params
         )
-        assert payload["kind"] == "PodList"
+        assert payload["kind"] == "PodList", "PodList kind expected"
         return [Pod.from_payload(i) for i in payload["items"]]
 
     async def get_pod(self, namespace: str, pod_name: str) -> Pod:

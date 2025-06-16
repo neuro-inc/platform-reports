@@ -15,7 +15,8 @@ spec:
   staticConfigs:
   - targets:
     - {{ include "platformReports.metricsExporter.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.metricsExporter.port }}
-  job: neuro-metrics-exporter
+    labels:
+      job: neuro-metrics-exporter
   honorLabels: true
   metricsPath: /metrics
   metricRelabelings:

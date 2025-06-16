@@ -152,7 +152,11 @@ class NodePriceCollector(Collector[Mapping[str, Price]]):
 
         for node in nodes:
             node_up_time = datetime.now(UTC) - node.metadata.creation_timestamp
-            price_per_hour = await self.get_price_per_hour(node)
+            try:
+                price_per_hour = await self.get_price_per_hour(node)
+            except Exception:
+                logger.exception("Failed to get price for node %r", node.metadata.name)
+                continue
             prices[node.metadata.name] = Price(
                 currency=price_per_hour.currency,
                 value=round(
@@ -513,28 +517,36 @@ class GCPNodePriceCollector(NodePriceCollector):
                 instance_family in sku_description_words
                 and usage_type == sku_usage_type
                 and not sku_description_words.intersection(
-                    ("sole", "tenancy", "custom")
+                    ("sole", "tenancy", "custom", "reserved", "dws")
                 )
             ):
                 price_in_nanos = self._get_price_in_nanos(sku)
                 if sku_description_words.intersection(("core", "cpu", "vcpu")):
-                    assert "cpu" not in prices_in_nanos
+                    assert "cpu" not in prices_in_nanos, (
+                        f"{instance_family}: cpu already collected"
+                    )
                     prices_in_nanos["cpu"] = price_in_nanos * Decimal(str(cpu))
                 if "ram" in sku_description_words:
-                    assert "ram" not in prices_in_nanos
+                    assert "ram" not in prices_in_nanos, (
+                        f"{instance_family} ram already collected"
+                    )
                     prices_in_nanos["ram"] = price_in_nanos * memory / 1024**3
 
+            # NOTE: GPU is currently not included because of Google GPU sku format changes  # noqa: E501
             # Calculate price for the attached GPU
-            if gpu and gpu_model in sku_description and usage_type == sku_usage_type:
-                price_in_nanos = self._get_price_in_nanos(sku)
-                assert "gpu" not in prices_in_nanos
-                prices_in_nanos["gpu"] = gpu * price_in_nanos
+            # if gpu and gpu_model in sku_description and usage_type == sku_usage_type:
+            #     price_in_nanos = self._get_price_in_nanos(sku)
+            #     assert "gpu" not in prices_in_nanos, (
+            #         f"{instance_family}: gpu already collected"
+            #     )
+            #     prices_in_nanos["gpu"] = gpu * price_in_nanos
 
             if len(prices_in_nanos) == expected_prices_count:
                 break
-        assert len(prices_in_nanos) == expected_prices_count, (
-            f"Found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"
-        )
+        # NOTE: GPU is currently not included because of Google GPU sku format changes
+        # assert len(prices_in_nanos) == expected_prices_count, (
+        #     f"{instance_family}: found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"  # noqa: E501
+        # )
         return Price(
             value=sum(prices_in_nanos.values(), Decimal()) / 10**9, currency="USD"
         )
@@ -547,6 +559,7 @@ class GCPNodePriceCollector(NodePriceCollector):
         return skus
 
     async def _get_service_skus_from_api(self, region: str) -> list[dict[str, Any]]:
+        logger.info("Loading Google service skus")
         skus = []
         next_page_token: str | None = ""
         while next_page_token is not None:
@@ -628,9 +641,7 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                     Label.APOLO_PRESET_KEY
                 ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
                 if not preset_name:
-                    logger.warning(
-                        "Pod %r has no preset label, skipping", pod_name, preset_name
-                    )
+                    logger.warning("Pod %r has no preset label, skipping", pod_name)
                     continue
                 if not (preset := presets.get(preset_name)):
                     logger.warning(

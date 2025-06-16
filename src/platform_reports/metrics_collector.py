@@ -477,7 +477,7 @@ class GCPNodePriceCollector(NodePriceCollector):
         assert cluster.orchestrator is not None
         resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
         if node_pool_name not in resource_pools:
-            return Price(currency="USD")
+            return Price()
         resource_pool = resource_pools[node_pool_name]
         return await self._get_instance_price_per_hour(
             region=region,
@@ -501,8 +501,10 @@ class GCPNodePriceCollector(NodePriceCollector):
         gpu_model: str,
     ) -> Price:
         prices_in_nanos: dict[str, Decimal] = {}
-        expected_prices_count = bool(cpu) + bool(memory) + bool(gpu)
-        gpu_model = gpu_model.replace("-", " ").lower()
+        # NOTE: GPU is currently not included because of Google GPU sku format changes
+        # expected_prices_count = bool(cpu) + bool(memory) + bool(gpu)
+        # gpu_model = gpu_model.replace("-", " ").lower()
+        expected_prices_count = bool(cpu) + bool(memory)
         service_skus = await self._get_service_skus(region)
         for sku in service_skus:
             # The only reliable way to match instance type with sku is through
@@ -543,10 +545,9 @@ class GCPNodePriceCollector(NodePriceCollector):
 
             if len(prices_in_nanos) == expected_prices_count:
                 break
-        # NOTE: GPU is currently not included because of Google GPU sku format changes
-        # assert len(prices_in_nanos) == expected_prices_count, (
-        #     f"{instance_family}: found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"  # noqa: E501
-        # )
+        assert len(prices_in_nanos) == expected_prices_count, (
+            f"{instance_family}: found prices only for: [{', '.join(prices_in_nanos.keys()).upper()}]"  # noqa: E501
+        )
         return Price(
             value=sum(prices_in_nanos.values(), Decimal()) / 10**9, currency="USD"
         )

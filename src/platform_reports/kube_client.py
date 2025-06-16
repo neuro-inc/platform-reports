@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Self
 
 import aiohttp
-from dateutil.parser import parse
+from dateutil.parser import parse as parse_date
 from yarl import URL
 
 from .config import KubeClientAuthType, KubeConfig
@@ -39,7 +39,7 @@ class Metadata:
     def from_payload(cls, payload: dict[str, Any]) -> Metadata:
         return cls(
             name=payload["name"],
-            creation_timestamp=parse(payload["creationTimestamp"]),
+            creation_timestamp=parse_date(payload["creationTimestamp"]),
             labels=payload.get("labels", {}),
         )
 
@@ -53,12 +53,19 @@ class Node:
         return cls(metadata=Metadata.from_payload(payload["metadata"]))
 
 
-class PodPhase(str, enum.Enum):
+class PodPhase(enum.StrEnum):
     PENDING = "Pending"
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
     UNKNOWN = "Unknown"
+
+    @classmethod
+    def parse(cls, value: str) -> Self:
+        try:
+            return cls(value)
+        except (KeyError, ValueError):
+            return cls(cls.UNKNOWN.value)
 
 
 @dataclass(frozen=True)
@@ -66,21 +73,21 @@ class ContainerStatus:
     state: Mapping[str, Any]
 
     @classmethod
-    def from_primitive(cls, payload: Mapping[str, Any]) -> ContainerStatus:
+    def from_payload(cls, payload: Mapping[str, Any]) -> ContainerStatus:
         return cls(state=payload.get("state") or {})
 
     @property
     def started_at(self) -> datetime | None:
         for state in self.state.values():
             if started_at := state.get("startedAt"):
-                return parse(started_at)
+                return parse_date(started_at)
         return None
 
     @property
     def finished_at(self) -> datetime | None:
         for state in self.state.values():
             if finished_at := state.get("finishedAt"):
-                return parse(finished_at)
+                return parse_date(finished_at)
         return None
 
     @property
@@ -97,17 +104,71 @@ class ContainerStatus:
 
 
 @dataclass(frozen=True)
+class PodCondition:
+    # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+
+    class Type(enum.StrEnum):
+        UNKNOWN = "Unknown"
+        POD_SCHEDULED = "PodScheduled"
+        POD_READY_TO_START_CONTAINERS = "PodReadyToStartContainers"
+        CONTAINERS_READY = "ContainersReady"
+        INITIALIZED = "Initialized"
+        READY = "Ready"
+        DISRUPTION_TARGET = "DisruptionTarget"
+        POD_RESIZE_PENDING = "PodResizePending"
+        POD_RESIZE_IN_PROGRESS = "PodResizeInProgress"
+
+        @classmethod
+        def parse(cls, value: str) -> Self:
+            try:
+                return cls(value)
+            except (KeyError, ValueError):
+                return cls(cls.UNKNOWN.value)
+
+    type: Type
+    last_transition_time: datetime
+    status: bool | None = None
+    message: str = ""
+    reason: str = ""
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> Self:
+        return cls(
+            type=cls.Type.parse(payload["type"]),
+            last_transition_time=parse_date(payload["lastTransitionTime"]),
+            status=cls._parse_status(payload["status"]),
+            message=payload.get("message", ""),
+            reason=payload.get("reason", ""),
+        )
+
+    @staticmethod
+    def _parse_status(value: str) -> bool | None:
+        if value == "Unknown":
+            return None
+        if value == "True":
+            return True
+        if value == "False":
+            return False
+        msg = f"Invalid status {value!r}"
+        raise ValueError(msg)
+
+
+@dataclass(frozen=True)
 class PodStatus:
     phase: PodPhase
     container_statuses: Sequence[ContainerStatus] = field(default_factory=list)
+    conditions: Sequence[PodCondition] = field(default_factory=list)
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> PodStatus:
         return cls(
-            phase=PodPhase(payload.get("phase", "Unknown")),
+            phase=PodPhase(payload.get("phase", PodPhase.UNKNOWN)),
             container_statuses=[
-                ContainerStatus.from_primitive(p)
+                ContainerStatus.from_payload(p)
                 for p in payload.get("containerStatuses", ())
+            ],
+            conditions=[
+                PodCondition.from_payload(p) for p in payload.get("conditions", ())
             ],
         )
 
@@ -116,26 +177,17 @@ class PodStatus:
         return self.phase == PodPhase.PENDING
 
     @property
-    def is_running(self) -> bool:
-        return self.phase == PodPhase.RUNNING
+    def is_scheduled(self) -> bool:
+        if self.phase not in (PodPhase.PENDING, PodPhase.UNKNOWN):
+            return True
+        for condition in self.conditions:
+            if condition.type == PodCondition.Type.POD_SCHEDULED:
+                return bool(condition.status)
+        return False
 
     @property
     def is_terminated(self) -> bool:
         return self.phase in (PodPhase.SUCCEEDED, PodPhase.FAILED)
-
-    @property
-    def start_date(self) -> datetime:
-        if self.is_pending:
-            msg = "Pod has not started yet"
-            raise ValueError(msg)
-        start_date = None
-        for container_status in self.container_statuses:
-            if started_at := container_status.started_at:
-                start_date = min(start_date or started_at, started_at)
-        if start_date is None:
-            msg = "Pod has not started yet"
-            raise ValueError(msg)
-        return start_date.astimezone(UTC)
 
     @property
     def finish_date(self) -> datetime:
@@ -153,6 +205,13 @@ class PodStatus:
             msg = "Pod has not finished yet"
             raise ValueError(msg)
         return finish_date.astimezone(UTC)
+
+    def get_condition(self, type_: PodCondition.Type) -> PodCondition:
+        for condition in self.conditions:
+            if condition.type == type_:
+                return condition
+        msg = f"Condition {type_!r} not found"
+        raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -251,6 +310,15 @@ class KubeClient:
         payload = await self._request(method="get", url=url)
         assert payload["kind"] == "Node"
         return Node.from_payload(payload)
+
+    async def get_nodes(self, label_selector: str | None = None) -> list[Node]:
+        url = self._config.url / "api/v1/nodes"
+        params: dict[str, str] = {}
+        if label_selector:
+            params["labelSelector"] = label_selector
+        payload = await self._request(method="get", url=url, params=params)
+        assert payload["kind"] == "NodeList"
+        return [Node.from_payload(i) for i in payload["items"]]
 
     async def create_raw_pod(
         self, namespace: str, raw_pod: dict[str, Any]

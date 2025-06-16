@@ -37,7 +37,6 @@ class TestEnvironConfigFactory:
             "NP_API_URL": "http://dev.neu.ro/api/v1",
             "NP_TOKEN": "token",
             "NP_CLUSTER_NAME": "default",
-            "NP_NODE_NAME": "node",
             "NP_KUBE_URL": "https://kubernetes.default.svc",
         }
 
@@ -56,7 +55,6 @@ class TestEnvironConfigFactory:
                 auth_type=KubeClientAuthType.NONE,
             ),
             cluster_name="default",
-            node_name="node",
         )
 
     def test_create_metrics__exporter_custom(self) -> None:
@@ -67,7 +65,6 @@ class TestEnvironConfigFactory:
             "NP_API_URL": "http://dev.neu.ro/api/v1",
             "NP_TOKEN": "token",
             "NP_CLUSTER_NAME": "default",
-            "NP_NODE_NAME": "node",
             "NP_CLOUD_PROVIDER": "aws",
             "NP_REGION": "us-east-1",
             "NP_GCP_SERVICE_ACCOUNT_KEY_PATH": "sa.json",
@@ -90,7 +87,6 @@ class TestEnvironConfigFactory:
                 auth_type=KubeClientAuthType.NONE,
             ),
             cluster_name="default",
-            node_name="node",
             cloud_provider="aws",
             region="us-east-1",
             gcp_service_account_key_path=Path("sa.json"),

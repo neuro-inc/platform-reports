@@ -11,7 +11,7 @@ from neuro_config_client import (
 )
 
 from platform_reports.cluster import ClusterHolder
-from platform_reports.kube_client import KubeClient, Node
+from platform_reports.kube_client import KubeClient
 from platform_reports.metrics_collector import PodCreditsCollector
 
 from .conftest_kube import KubePodFactory
@@ -58,12 +58,11 @@ def cluster_holder(cluster: Cluster) -> ClusterHolder:
 class TestPodCreditsCollector:
     @pytest.fixture
     def collector(
-        self, kube_client: KubeClient, kube_node: Node, cluster_holder: ClusterHolder
+        self, kube_client: KubeClient, cluster_holder: ClusterHolder
     ) -> PodCreditsCollector:
         return PodCreditsCollector(
             kube_client=kube_client,
             cluster_holder=cluster_holder,
-            node_name=kube_node.metadata.name,
         )
 
     async def test_get_latest_value__pod_running(
@@ -79,7 +78,11 @@ class TestPodCreditsCollector:
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"platform.apolo.us/preset": "test-preset"},
+                    "labels": {
+                        "platform.apolo.us/org": "test-org",
+                        "platform.apolo.us/project": "test-project",
+                        "platform.apolo.us/preset": "test-preset",
+                    },
                 },
                 "spec": {
                     "restartPolicy": "Never",
@@ -119,7 +122,11 @@ class TestPodCreditsCollector:
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"platform.apolo.us/preset": "test-preset"},
+                    "labels": {
+                        "platform.apolo.us/org": "test-org",
+                        "platform.apolo.us/project": "test-project",
+                        "platform.apolo.us/preset": "test-preset",
+                    },
                 },
                 "spec": {
                     "restartPolicy": "Never",

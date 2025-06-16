@@ -30,6 +30,13 @@ class Label:
     APOLO_PRESET_KEY = Key("platform.apolo.us/preset")
     APOLO_APP_KEY = Key("platform.apolo.us/app")
 
+    FAILURE_DOMAIN_REGION_KEY = Key("failure-domain.beta.kubernetes.io/region")
+    FAILURE_DOMAIN_ZONE_KEY = Key("failure-domain.beta.kubernetes.io/zone")
+    TOPOLOGY_REGION_KEY = Key("topology.kubernetes.io/region")
+    TOPOLOGY_ZONE_KEY = Key("topology.kubernetes.io/zone")
+    NODE_INSTANCE_TYPE_KEY = Key("node.kubernetes.io/instance-type")
+    INSTANCE_TYPE_KEY = Key("beta.kubernetes.io/instance-type")
+
 
 class PrometheusLabelMeta(type):
     def __new__(cls, *args: Any, **kwargs: Any) -> type[PrometheusLabel]:
@@ -94,7 +101,6 @@ class MetricsExporterConfig:
     platform_config: PlatformServiceConfig
     platform_api: PlatformServiceConfig
     cluster_name: str
-    node_name: str
     cloud_provider: str = ""
     region: str = ""
     gcp_service_account_key_path: Path | None = None
@@ -175,7 +181,6 @@ class EnvironConfigFactory:
             platform_config=self._create_platform_config(),
             platform_api=self._create_platform_api(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
-            node_name=self._environ["NP_NODE_NAME"],
             cloud_provider=self._environ.get(
                 "NP_CLOUD_PROVIDER", MetricsExporterConfig.cloud_provider
             ),

@@ -7,7 +7,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepodcrashlooping
       summary: Pod is crash looping.
     expr: |
-      max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", job="kube-state-metrics"}[5m]) >= 1
+      max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[5m]) >= 1
     for: 15m
     labels:
       severity: warning
@@ -19,7 +19,7 @@ groups:
     expr: |
       sum by (namespace, pod, cluster) (
         max by(namespace, pod, cluster) (
-          kube_pod_status_phase{job="kube-state-metrics", phase=~"Pending|Unknown|Failed"}
+          kube_pod_status_phase{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets", phase=~"Pending|Unknown|Failed"}
         ) * on(namespace, pod, cluster) group_left(owner_kind) topk by(namespace, pod, cluster) (
           1, max by(namespace, pod, owner_kind, cluster) (kube_pod_owner{owner_kind!="Job"})
         )
@@ -33,9 +33,9 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubedeploymentgenerationmismatch
       summary: Deployment generation mismatch due to possible roll-back
     expr: |
-      kube_deployment_status_observed_generation{job="kube-state-metrics"}
+      kube_deployment_status_observed_generation{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         !=
-      kube_deployment_metadata_generation{job="kube-state-metrics"}
+      kube_deployment_metadata_generation{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
     for: 15m
     labels:
       severity: warning
@@ -46,11 +46,11 @@ groups:
       summary: Deployment has not matched the expected number of replicas.
     expr: |
       (
-        kube_deployment_spec_replicas{job="kube-state-metrics"}
+        kube_deployment_spec_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
           >
-        kube_deployment_status_replicas_available{job="kube-state-metrics"}
+        kube_deployment_status_replicas_available{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
       ) and (
-        changes(kube_deployment_status_replicas_updated{job="kube-state-metrics"}[10m])
+        changes(kube_deployment_status_replicas_updated{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[10m])
           ==
         0
       )
@@ -63,7 +63,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubedeploymentrolloutstuck
       summary: Deployment rollout is not progressing.
     expr: |
-      kube_deployment_status_condition{condition="Progressing", status="false",job="kube-state-metrics"}
+      kube_deployment_status_condition{condition="Progressing", status="false",job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
       != 0
     for: 15m
     labels:
@@ -75,11 +75,11 @@ groups:
       summary: Deployment has not matched the expected number of replicas.
     expr: |
       (
-        kube_statefulset_status_replicas_ready{job="kube-state-metrics"}
+        kube_statefulset_status_replicas_ready{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
           !=
-        kube_statefulset_status_replicas{job="kube-state-metrics"}
+        kube_statefulset_status_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
       ) and (
-        changes(kube_statefulset_status_replicas_updated{job="kube-state-metrics"}[10m])
+        changes(kube_statefulset_status_replicas_updated{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[10m])
           ==
         0
       )
@@ -92,9 +92,9 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubestatefulsetgenerationmismatch
       summary: StatefulSet generation mismatch due to possible roll-back
     expr: |
-      kube_statefulset_status_observed_generation{job="kube-state-metrics"}
+      kube_statefulset_status_observed_generation{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         !=
-      kube_statefulset_metadata_generation{job="kube-state-metrics"}
+      kube_statefulset_metadata_generation{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
     for: 15m
     labels:
       severity: warning
@@ -106,18 +106,18 @@ groups:
     expr: |
       (
         max without (revision) (
-          kube_statefulset_status_current_revision{job="kube-state-metrics"}
+          kube_statefulset_status_current_revision{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             unless
-          kube_statefulset_status_update_revision{job="kube-state-metrics"}
+          kube_statefulset_status_update_revision{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         )
           *
         (
-          kube_statefulset_replicas{job="kube-state-metrics"}
+          kube_statefulset_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             !=
-          kube_statefulset_status_replicas_updated{job="kube-state-metrics"}
+          kube_statefulset_status_replicas_updated{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         )
       )  and (
-        changes(kube_statefulset_status_replicas_updated{job="kube-state-metrics"}[5m])
+        changes(kube_statefulset_status_replicas_updated{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[5m])
           ==
         0
       )
@@ -132,24 +132,24 @@ groups:
     expr: |
       (
         (
-          kube_daemonset_status_current_number_scheduled{job="kube-state-metrics"}
+          kube_daemonset_status_current_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             !=
-          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics"}
+          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         ) or (
-          kube_daemonset_status_number_misscheduled{job="kube-state-metrics"}
+          kube_daemonset_status_number_misscheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             !=
           0
         ) or (
-          kube_daemonset_status_updated_number_scheduled{job="kube-state-metrics"}
+          kube_daemonset_status_updated_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             !=
-          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics"}
+          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         ) or (
-          kube_daemonset_status_number_available{job="kube-state-metrics"}
+          kube_daemonset_status_number_available{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
             !=
-          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics"}
+          kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         )
       ) and (
-        changes(kube_daemonset_status_updated_number_scheduled{job="kube-state-metrics"}[5m])
+        changes(kube_daemonset_status_updated_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[5m])
           ==
         0
       )
@@ -162,7 +162,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubecontainerwaiting
       summary: Pod container waiting longer than 1 hour
     expr: |
-      sum by (namespace, pod, container, cluster) (kube_pod_container_status_waiting_reason{job="kube-state-metrics"}) > 0
+      sum by (namespace, pod, container, cluster) (kube_pod_container_status_waiting_reason{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}) > 0
     for: 1h
     labels:
       severity: warning
@@ -172,9 +172,9 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubedaemonsetnotscheduled
       summary: DaemonSet pods are not scheduled.
     expr: |
-      kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics"}
+      kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         -
-      kube_daemonset_status_current_number_scheduled{job="kube-state-metrics"} > 0
+      kube_daemonset_status_current_number_scheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"} > 0
     for: 10m
     labels:
       severity: warning
@@ -184,7 +184,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubedaemonsetmisscheduled
       summary: DaemonSet pods are misscheduled.
     expr: |
-      kube_daemonset_status_number_misscheduled{job="kube-state-metrics"} > 0
+      kube_daemonset_status_number_misscheduled{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"} > 0
     for: 15m
     labels:
       severity: warning
@@ -194,9 +194,9 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubejobnotcompleted
       summary: Job did not complete in time
     expr: |
-      time() - max by(namespace, job_name, cluster) (kube_job_status_start_time{job="kube-state-metrics"}
+      time() - max by(namespace, job_name, cluster) (kube_job_status_start_time{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         and
-      kube_job_status_active{job="kube-state-metrics"} > 0) > 43200
+      kube_job_status_active{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"} > 0) > 43200
     labels:
       severity: warning
   - alert: KubeJobFailed
@@ -205,7 +205,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubejobfailed
       summary: Job failed to complete.
     expr: |
-      kube_job_failed{job="kube-state-metrics"}  > 0
+      kube_job_failed{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}  > 0
     for: 15m
     labels:
       severity: warning
@@ -215,19 +215,19 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpareplicasmismatch
       summary: HPA has not matched desired number of replicas.
     expr: |
-      (kube_horizontalpodautoscaler_status_desired_replicas{job="kube-state-metrics"}
+      (kube_horizontalpodautoscaler_status_desired_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         !=
-      kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"})
+      kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"})
         and
-      (kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}
+      (kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         >
-      kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics"})
+      kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"})
         and
-      (kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}
+      (kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         <
-      kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"})
+      kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"})
         and
-      changes(kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}[15m]) == 0
+      changes(kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}[15m]) == 0
     for: 15m
     labels:
       severity: warning
@@ -237,9 +237,9 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout
       summary: HPA is running at max replicas
     expr: |
-      kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}
+      kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
         ==
-      kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"}
+      kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"}
     for: 15m
     labels:
       severity: warning
@@ -251,7 +251,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepersistentvolumeerrors
       summary: PersistentVolume is having issues with provisioning.
     expr: |
-      kube_persistentvolume_status_phase{phase=~"Failed|Pending",job="kube-state-metrics"} > 0
+      kube_persistentvolume_status_phase{phase=~"Failed|Pending",job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"} > 0
     for: 5m
     labels:
       severity: critical
@@ -339,7 +339,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubenodenotready
       summary: Node is not ready.
     expr: |
-      kube_node_status_condition{job="kube-state-metrics",condition="Ready",status="true"} == 0
+      kube_node_status_condition{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",condition="Ready",status="true"} == 0
     for: 15m
     labels:
       severity: critical
@@ -349,7 +349,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubenodeunreachable
       summary: Node is unreachable.
     expr: |
-      (kube_node_spec_taint{job="kube-state-metrics",key="node.kubernetes.io/unreachable",effect="NoSchedule"} unless ignoring(key,value) kube_node_spec_taint{job="kube-state-metrics",key=~"ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn"}) == 1
+      (kube_node_spec_taint{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",key="node.kubernetes.io/unreachable",effect="NoSchedule"} unless ignoring(key,value) kube_node_spec_taint{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",key=~"ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn"}) == 1
     for: 15m
     labels:
       severity: critical
@@ -360,11 +360,11 @@ groups:
       summary: Kubelet is running at capacity.
     expr: |
       count by(cluster, node) (
-        (kube_pod_status_phase{job="kube-state-metrics",phase="Running"} == 1) * on(instance,pod,namespace,cluster) group_left(node) topk by(instance,pod,namespace,cluster) (1, kube_pod_info{job="kube-state-metrics"})
+        (kube_pod_status_phase{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",phase="Running"} == 1) * on(instance,pod,namespace,cluster) group_left(node) topk by(instance,pod,namespace,cluster) (1, kube_pod_info{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets"})
       )
       /
       max by(cluster, node) (
-        kube_node_status_capacity{job="kube-state-metrics",resource="pods"} != 1
+        kube_node_status_capacity{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",resource="pods"} != 1
       ) > 0.95
     for: 15m
     labels:
@@ -375,7 +375,7 @@ groups:
       runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubenodereadinessflapping
       summary: Node readiness status is flapping.
     expr: |
-      sum(changes(kube_node_status_condition{job="kube-state-metrics",status="true",condition="Ready"}[15m])) by (cluster, node) > 2
+      sum(changes(kube_node_status_condition{job="kube-state-metrics", namespace=~"kube-.*|platform|velero|calico.*|democratic-csi|gpu-operator|openebs|cert-manager|argo.*|vault|external-secrets",status="true",condition="Ready"}[15m])) by (cluster, node) > 2
     for: 15m
     labels:
       severity: warning

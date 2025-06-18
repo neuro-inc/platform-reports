@@ -67,7 +67,11 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
                 "kind": "Pod",
                 "metadata": {
                     "generateName": "test-",
-                    "labels": {"platform.apolo.us/preset": "test-preset"},
+                    "labels": {
+                        "platform.apolo.us/org": "test-org",
+                        "platform.apolo.us/project": "test-project",
+                        "platform.apolo.us/preset": "test-preset",
+                    },
                 },
                 "spec": {
                     "restartPolicy": "Never",
@@ -115,12 +119,15 @@ kube_node_price_total{{node="{kube_node.metadata.name}",currency="USD"}} 0.00"""
                     rf"""# HELP cpu_min_watts The CPU power consumption while IDLEing in watts
 # TYPE cpu_min_watts gauge
 cpu_min_watts{{node="{kube_node.metadata.name}"}} \d+\.?\d*
+
 # HELP cpu_max_watts The CPU power consumption when fully utilized in watts
 # TYPE cpu_max_watts gauge
 cpu_max_watts{{node="{kube_node.metadata.name}"}} \d+\.?\d*
+
 # HELP co2_grams_eq_per_kwh Estimated CO2 emission for energy generation in region where the node is running
 # TYPE co2_grams_eq_per_kwh gauge
 co2_grams_eq_per_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*
+
 # HELP price_per_kwh Energy price per kwh in region where the node is running
 # TYPE price_per_kwh gauge
 price_per_kwh{{node="{kube_node.metadata.name}"}} \d+\.?\d*""",  # noqa: E501

@@ -1,14 +1,11 @@
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: {{ include "platformReports.metricsExporter.fullname" . }}
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     service: platform-metrics-exporter
 spec:
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 100%
+  replicas: {{ .Values.metricsExporter.replicas }}
   selector:
     matchLabels:
       app: {{ include "platformReports.name" . }}
@@ -29,15 +26,18 @@ spec:
 {{- end }}
     spec:
       affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: {{ .Values.platform.nodeLabels.job }}
-                    operator: Exists
-      tolerations:
-        - effect: NoSchedule
-          operator: Exists
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          # Schedule pods on different nodes
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: service
+                  operator: In
+                  values:
+                  - platform-metrics-exporter
+              topologyKey: kubernetes.io/hostname
       {{- if .Values.image.pullSecretName }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecretName | quote }}
@@ -46,16 +46,15 @@ spec:
       priorityClassName: {{ .Values.priorityClassName }}
       {{- end }}
       containers:
-        # Use slim image version to reduce service startup time
         - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: metrics-exporter
           securityContext:
-                     {{- if .Values.securityContext.enabled }}
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-            runAsGroup: {{ .Values.securityContext.runAsGroup }}
-            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
-            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
-                     {{- end }}
+            {{- with .Values.securityContext }}
+            runAsUser: {{ .runAsUser }}
+            runAsGroup: {{ .runAsGroup }}
+            runAsNonRoot: {{ .runAsNonRoot }}
+            allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
+            {{- end }}
           command: [metrics-exporter]
           env:
             {{- if .Values.logLevel }}
@@ -82,10 +81,6 @@ spec:
 {{- end }}
             - name: NP_CLUSTER_NAME
               value: {{ .Values.platform.clusterName }}
-            - name: NP_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
             {{- if .Values.cloudProvider }}
             - name: NP_CLOUD_PROVIDER
               value: {{ .Values.cloudProvider.type | quote }}
@@ -93,7 +88,7 @@ spec:
               value: {{ .Values.cloudProvider.region | quote }}
             {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
-              value: /root/service_account/key.json
+              value: /var/run/secrets/gcp/key.json
             {{- end }}
             {{- end }}
             {{- if .Values.sentry }}
@@ -137,7 +132,7 @@ spec:
           {{- if .Values.cloudProvider }}
           {{- if eq .Values.cloudProvider.type "gcp" }}
             - name: service-account-key
-              mountPath: /root/service_account
+              mountPath: /var/run/secrets/gcp
               readOnly: true
           {{- end }}
           {{- end }}
@@ -166,44 +161,3 @@ spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: {{ include "platformReports.metricsExporter.fullname" . }}
-  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
-    job: neuro-metrics-exporter
-    service: platform-metrics-exporter
-spec:
-  selector:
-    app: {{ include "platformReports.name" . }}
-    release: {{ .Release.Name | quote }}
-    service: platform-metrics-exporter
-  ports:
-    - name: metrics
-      port: {{ .Values.metricsExporter.port }}
-      targetPort: metrics
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: {{ include "platformReports.metricsExporter.fullname" . }}
-  labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
-    service: platform-metrics-exporter
-    platform.apolo.us/scrape-metrics: "true"
-spec:
-  selector:
-    matchLabels:
-      app: {{ include "platformReports.name" . }}
-      release: {{ .Release.Name | quote }}
-      service: platform-metrics-exporter
-  jobLabel: job
-  endpoints:
-    - port: metrics
-      path: /metrics
-      honorLabels: true
-      interval: 15s
-      relabelings:
-        - sourceLabels:
-            - __metrics_path__
-          targetLabel: metrics_path

@@ -15,7 +15,7 @@ RUN pip install --user --no-cache-dir --find-links /tmp/dist platform-reports &&
 
 FROM python:${PY_VERSION}-slim-bookworm AS runtime
 
-LABEL org.opencontainers.image.source = "https://github.com/neuro-inc/platform-reports"
+LABEL org.opencontainers.image.source="https://github.com/neuro-inc/platform-reports"
 
 ARG SERVICE_NAME="reports-api"
 ARG SERVICE_UID=1001

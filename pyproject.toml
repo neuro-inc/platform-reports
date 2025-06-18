@@ -22,21 +22,22 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-aiobotocore = "2.22.0"
+aiobotocore = "2.23.0"
 aiohttp-apispec = "2.2.3"
-aiohttp = { version = "3.11.18", extras = ["speedups"] }
-google-api-python-client = "2.169.0"
+aiohttp = { version = "3.12.13", extras = ["speedups"] }
+cachetools = "5.5.2"
+google-api-python-client = "2.172.0"
 lark = "1.2.2"
 marshmallow = "3.26.1"
-neuro-auth-client = "24.8.0"
+neuro-auth-client = "25.5.1"
 neuro-config-client = "25.2.0"
-neuro-logging = "25.1.0"
-pydantic = "2.11.4"
+neuro-logging = "25.6.0"
+pydantic = "2.11.7"
 pydantic-settings = "2.9.1"
 python-dateutil = "2.9.0.post0"
-python-jose = "3.4.0"
+python-jose = "3.5.0"
 uvloop = "0.21.0"
-yarl = "1.20.0"
+yarl = "1.20.1"
 
 [tool.poetry.scripts]
 metrics-api = "platform_reports.api:run_metrics_api"
@@ -45,14 +46,15 @@ prometheus-proxy = "platform_reports.api:run_prometheus_proxy"
 grafana-proxy = "platform_reports.api:run_grafana_proxy"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "1.15.0"
+mypy = "1.16.1"
 pre-commit = "4.2.0"
-pytest = "8.3.5"
+pytest = "8.4.0"
 pytest-aiohttp = "1.1.0"
 pytest-asyncio = "0.21.2"
-pytest-cov = "6.1.1"
-pytest-docker = "3.2.1"
-ruff ="0.11.10"
+pytest-cov = "6.2.1"
+pytest-docker = "3.2.2"
+ruff ="0.12.0"
+types-cachetools = "6.0.0.20250525"
 types-PyYAML = "6.0.12.20250516"
 types-python-dateutil = "2.9.0.20250516"
 

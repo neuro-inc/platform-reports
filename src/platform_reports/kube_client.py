@@ -9,7 +9,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 import aiohttp
 from dateutil.parser import parse as parse_date
@@ -44,13 +44,86 @@ class Metadata:
         )
 
 
+_MEMORY_UNITS = (
+    ("K", 1000),
+    ("M", 1000**2),
+    ("G", 1000**3),
+    ("T", 1000**4),
+    ("P", 1000**5),
+    ("Ki", 1024),
+    ("Mi", 1024**2),
+    ("Gi", 1024**3),
+    ("Ti", 1024**4),
+    ("Pi", 1024**5),
+)
+
+
+@dataclass(frozen=True)
+class Resources:
+    cpu: float = 0
+    memory: int = 0
+    nvidia_gpu: int = 0
+    amd_gpu: int = 0
+
+    nvidia_gpu_key: ClassVar[str] = "nvidia.com/gpu"
+    amd_gpu_key: ClassVar[str] = "amd.com/gpu"
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            cpu=cls._parse_cpu(str(payload.get("cpu", "0"))),
+            memory=cls._parse_memory(str(payload.get("memory", "0"))),
+            nvidia_gpu=int(payload.get(cls.nvidia_gpu_key, 0)),
+            amd_gpu=int(payload.get(cls.amd_gpu_key, 0)),
+        )
+
+    @classmethod
+    def _parse_cpu(cls, value: str) -> float:
+        if value.endswith("m"):
+            return int(value[:-1]) / 1000
+        return float(value)
+
+    @classmethod
+    def _parse_memory(cls, memory: str) -> int:
+        try:
+            return int(memory)
+        except ValueError:
+            pass
+        for suffix, multiplier in _MEMORY_UNITS:
+            if memory.endswith(suffix):
+                return int(memory[: -len(suffix)]) * multiplier
+        msg = f"Memory unit for {memory} is not supported"
+        raise KubeClientError(msg)
+
+
+@dataclass(frozen=True)
+class NodeStatus:
+    allocatable: Resources = Resources()
+    capacity: Resources = Resources()
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            allocatable=Resources.from_payload(payload["allocatable"]),
+            capacity=Resources.from_payload(payload["capacity"]),
+        )
+
+
 @dataclass(frozen=True)
 class Node:
     metadata: Metadata
+    status: NodeStatus = NodeStatus()
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> Node:
-        return cls(metadata=Metadata.from_payload(payload["metadata"]))
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            metadata=Metadata.from_payload(payload["metadata"]),
+            status=(
+                NodeStatus.from_payload(status)
+                if (status := payload.get("status"))
+                else Node.status
+            ),
+        )
 
 
 class PodPhase(enum.StrEnum):

@@ -41,10 +41,12 @@ from platform_reports.kube_client import (
     KubeClient,
     Metadata,
     Node,
+    NodeStatus,
     Pod,
     PodCondition,
     PodPhase,
     PodStatus,
+    Resources,
 )
 from platform_reports.metrics_collector import (
     AWSNodePriceCollector,
@@ -422,39 +424,6 @@ class TestAWSNodePriceCollector(_TestNodePriceCollector):
 
 class TestGCPNodePriceCollector(_TestNodePriceCollector):
     @pytest.fixture
-    def cluster(self) -> Cluster:
-        return Cluster(
-            name="default",
-            status=ClusterStatus.DEPLOYED,
-            created_at=datetime.now(),
-            orchestrator=OrchestratorConfig(
-                job_hostname_template="",
-                job_internal_hostname_template="",
-                job_fallback_hostname="",
-                job_schedule_timeout_s=30,
-                job_schedule_scale_up_timeout_s=30,
-                resource_pool_types=[
-                    ResourcePoolType(name="n1-highmem-8", cpu=8, memory=52 * 1024**3),
-                    ResourcePoolType(
-                        name="n1-highmem-8-4xk80",
-                        cpu=8,
-                        memory=52 * 1024**3,
-                        nvidia_gpu=4,
-                        nvidia_gpu_model="nvidia-tesla-k80",
-                    ),
-                    ResourcePoolType(
-                        name="n1-highmem-8-1xv100",
-                        cpu=8,
-                        memory=52 * 1024**3,
-                        nvidia_gpu=1,
-                        # not registered in google service skus fixture
-                        nvidia_gpu_model="nvidia-tesla-v100",
-                    ),
-                ],
-            ),
-        )
-
-    @pytest.fixture
     def google_service_skus(self) -> dict[str, Any]:
         return {
             "skus": [
@@ -680,7 +649,6 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
     def collector_factory(
         self,
         kube_client_factory: Callable[..., KubeClient],
-        cluster_holder: ClusterHolder,
         google_service_skus: dict[str, Any],
     ) -> Callable[..., AbstractContextManager[GCPNodePriceCollector]]:
         @contextmanager
@@ -689,7 +657,6 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
 
             result = GCPNodePriceCollector(
                 kube_client=kube_client,
-                cluster_holder=cluster_holder,
                 service_account_path=Path("sa.json"),
             )
             with mock.patch.object(result, "_client") as client:
@@ -712,10 +679,15 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
                     Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
                     Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
                     Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
-                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
                 },
                 creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
-            )
+            ),
+            status=NodeStatus(
+                capacity=Resources(
+                    cpu=8,
+                    memory=52 * 1024**3,
+                )
+            ),
         )
 
         with collector_factory([node]) as collector:
@@ -733,11 +705,16 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
                     Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
                     Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
                     Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
-                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
                     Label.NEURO_PREEMPTIBLE_KEY: "true",
                 },
                 creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
-            )
+            ),
+            status=NodeStatus(
+                capacity=Resources(
+                    cpu=8,
+                    memory=52 * 1024**3,
+                )
+            ),
         )
 
         with collector_factory([node]) as collector:
@@ -756,7 +733,6 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
                     Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
                     Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
                     Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
-                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8-4xk80",
                 },
                 creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
             )
@@ -778,7 +754,6 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
                     Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
                     Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
                     Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
-                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8-4xk80",
                     Label.NEURO_PREEMPTIBLE_KEY: "true",
                 },
                 creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
@@ -800,36 +775,20 @@ class TestGCPNodePriceCollector(_TestNodePriceCollector):
                     Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
                     Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
                     Label.NODE_INSTANCE_TYPE_KEY: "unknown",
-                    Label.NEURO_NODE_POOL_KEY: "n1-highmem-8",
                 },
                 creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
-            )
+            ),
+            status=NodeStatus(
+                capacity=Resources(
+                    cpu=8,
+                    memory=52 * 1024**3,
+                )
+            ),
         )
 
         with collector_factory([node]) as collector:
             result = await collector.get_latest_value()
             assert result == {}
-
-    async def test_get_latest_value_unknown_node_pool(
-        self,
-        collector_factory: Callable[..., AbstractContextManager[GCPNodePriceCollector]],
-    ) -> None:
-        node = Node(
-            metadata=Metadata(
-                name="node",
-                labels={
-                    Label.FAILURE_DOMAIN_REGION_KEY: "us-central1",
-                    Label.FAILURE_DOMAIN_ZONE_KEY: "us-central-1a",
-                    Label.NODE_INSTANCE_TYPE_KEY: "n1-highmem-8",
-                    Label.NEURO_NODE_POOL_KEY: "unknown",
-                },
-                creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
-            )
-        )
-
-        with collector_factory([node]) as collector:
-            result = await collector.get_latest_value()
-            assert result == {"node": Price()}
 
 
 class TestAzureNodePriceCollector(_TestNodePriceCollector):

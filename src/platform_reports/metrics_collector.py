@@ -432,7 +432,6 @@ class GCPNodePriceCollector(NodePriceCollector):
         self,
         *,
         kube_client: KubeClient,
-        cluster_holder: ClusterHolder,
         service_account_path: Path,
         interval_s: float = 15,
     ) -> None:
@@ -440,7 +439,6 @@ class GCPNodePriceCollector(NodePriceCollector):
             kube_client=kube_client, initial_value={}, interval_s=interval_s
         )
 
-        self._cluster_holder = cluster_holder
         self._service_account_path = service_account_path
         self._loop = asyncio.get_event_loop()
         self._client: Any = None
@@ -471,40 +469,27 @@ class GCPNodePriceCollector(NodePriceCollector):
         instance_family = self._get_instance_family(instance_type)
         is_preemptive = _is_preemptible_node(node)
         usage_type = self._get_usage_type(is_preemptive)
-        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
 
-        cluster = self._cluster_holder.cluster
-        assert cluster.orchestrator is not None
-        resource_pools = {r.name: r for r in cluster.orchestrator.resource_pool_types}
-        if node_pool_name not in resource_pools:
-            return Price()
-        resource_pool = resource_pools[node_pool_name]
         return await self._get_instance_price_per_hour(
+            node=node,
             region=region,
             instance_family=instance_family,
             usage_type=usage_type,
-            cpu=resource_pool.cpu,
-            memory=resource_pool.memory,
-            gpu=resource_pool.nvidia_gpu or 0,
-            gpu_model=resource_pool.nvidia_gpu_model or "",
         )
 
     async def _get_instance_price_per_hour(
         self,
         *,
+        node: Node,
         region: str,
         instance_family: str,
         usage_type: str,
-        cpu: float,
-        memory: int,
-        gpu: int,
-        gpu_model: str,
     ) -> Price:
         prices_in_nanos: dict[str, Decimal] = {}
         # NOTE: GPU is currently not included because of Google GPU sku format changes
-        # expected_prices_count = bool(cpu) + bool(memory) + bool(gpu)
+        # expected_prices_count = 2 + bool(gpu)
         # gpu_model = gpu_model.replace("-", " ").lower()
-        expected_prices_count = bool(cpu) + bool(memory)
+        expected_prices_count = 2
         service_skus = await self._get_service_skus(region)
         for sku in service_skus:
             # The only reliable way to match instance type with sku is through
@@ -527,12 +512,16 @@ class GCPNodePriceCollector(NodePriceCollector):
                     assert "cpu" not in prices_in_nanos, (
                         f"{instance_family}: cpu already collected"
                     )
-                    prices_in_nanos["cpu"] = price_in_nanos * Decimal(str(cpu))
+                    prices_in_nanos["cpu"] = price_in_nanos * Decimal(
+                        node.status.capacity.cpu
+                    )
                 if "ram" in sku_description_words:
                     assert "ram" not in prices_in_nanos, (
                         f"{instance_family} ram already collected"
                     )
-                    prices_in_nanos["ram"] = price_in_nanos * memory / 1024**3
+                    prices_in_nanos["ram"] = (
+                        price_in_nanos * node.status.capacity.memory / 1024**3
+                    )
 
             # NOTE: GPU is currently not included because of Google GPU sku format changes  # noqa: E501
             # Calculate price for the attached GPU

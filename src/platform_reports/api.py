@@ -571,7 +571,6 @@ def create_metrics_exporter_app(
                 node_price_collector = await exit_stack.enter_async_context(
                     GCPNodePriceCollector(
                         kube_client=kube_client,
-                        cluster_holder=cluster_holder,
                         service_account_path=config.gcp_service_account_key_path,
                     )
                 )

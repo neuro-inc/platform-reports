@@ -7,10 +7,12 @@ from platform_reports.kube_client import (
     ContainerStatus,
     Metadata,
     Node,
+    NodeStatus,
     Pod,
     PodCondition,
     PodPhase,
     PodStatus,
+    Resources,
 )
 
 
@@ -23,14 +25,45 @@ class TestNode:
                     "name": "node",
                     "creationTimestamp": now.isoformat(),
                     "labels": {"key": "value"},
-                }
+                },
             }
         )
 
         assert result == Node(
             metadata=Metadata(
                 name="node", creation_timestamp=now, labels={"key": "value"}
-            )
+            ),
+        )
+
+
+class TestNodeStatus:
+    def test_from_payload(self) -> None:
+        result = NodeStatus.from_payload(
+            {
+                "allocatable": {
+                    "cpu": "3920m",
+                    "memory": "13594512Ki",
+                },
+                "capacity": {
+                    "cpu": "4",
+                    "memory": "16382864Ki",
+                    "nvidia.com/gpu": 1,
+                    "amd.com/gpu": 2,
+                },
+            }
+        )
+
+        assert result == NodeStatus(
+            allocatable=Resources(
+                cpu=3.92,
+                memory=13920780288,
+            ),
+            capacity=Resources(
+                cpu=4,
+                memory=16776052736,
+                nvidia_gpu=1,
+                amd_gpu=2,
+            ),
         )
 
 

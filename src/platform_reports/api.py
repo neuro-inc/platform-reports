@@ -545,6 +545,8 @@ def create_metrics_exporter_app(
 
             node_price_collector: NodePriceCollector
 
+            LOGGER.info("Initializing node price collector")
+
             if config.cloud_provider == "aws":
                 session = aiobotocore.session.get_session()
                 pricing_client = await exit_stack.enter_async_context(
@@ -563,11 +565,12 @@ def create_metrics_exporter_app(
                     )
                 )
             elif config.cloud_provider == "gcp":
-                assert config.gcp_service_account_key_path
+                assert config.gcp_service_account_key_path, (
+                    "GCP service account key is required"
+                )
                 node_price_collector = await exit_stack.enter_async_context(
                     GCPNodePriceCollector(
                         kube_client=kube_client,
-                        cluster_holder=cluster_holder,
                         service_account_path=config.gcp_service_account_key_path,
                     )
                 )
@@ -591,6 +594,7 @@ def create_metrics_exporter_app(
                 )
             app[NODE_PRICE_COLLECTOR_APP_KEY] = node_price_collector
 
+            LOGGER.info("Initializing pod credits collector")
             pod_credits_collector = await exit_stack.enter_async_context(
                 PodCreditsCollector(
                     kube_client=kube_client,
@@ -599,6 +603,7 @@ def create_metrics_exporter_app(
             )
             app[POD_CREDITS_COLLECTOR_APP_KEY] = pod_credits_collector
 
+            LOGGER.info("Initializing node power consumption collector")
             node_power_consumpt_collector = await exit_stack.enter_async_context(
                 NodeEnergyConsumptionCollector(
                     kube_client=kube_client,
@@ -609,14 +614,17 @@ def create_metrics_exporter_app(
                 node_power_consumpt_collector
             )
 
+            LOGGER.info("Starting node price collector")
             await exit_stack.enter_async_context(
                 run_task(await node_price_collector.start())
             )
 
+            LOGGER.info("Starting pod credits collector")
             await exit_stack.enter_async_context(
                 run_task(await pod_credits_collector.start())
             )
 
+            LOGGER.info("Starting node power consumption collector")
             await exit_stack.enter_async_context(
                 run_task(await node_power_consumpt_collector.start())
             )

@@ -33,12 +33,21 @@ class KubeClientUnauthorized(KubeClientError):
 class Metadata:
     name: str
     creation_timestamp: datetime
+    namespace: str | None = None
     labels: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def required_namespace(self) -> str:
+        if self.namespace:
+            return self.namespace
+        msg = "Namespace is required"
+        raise ValueError(msg)
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> Metadata:
         return cls(
             name=payload["name"],
+            namespace=payload.get("namespace"),
             creation_timestamp=parse_date(payload["creationTimestamp"]),
             labels=payload.get("labels", {}),
         )
@@ -60,13 +69,16 @@ _MEMORY_UNITS = (
 
 @dataclass(frozen=True)
 class Resources:
-    cpu: float = 0
+    cpu: float = 0.0
     memory: int = 0
+
     nvidia_gpu: int = 0
     amd_gpu: int = 0
+    intel_gpu: int = 0
 
     nvidia_gpu_key: ClassVar[str] = "nvidia.com/gpu"
     amd_gpu_key: ClassVar[str] = "amd.com/gpu"
+    intel_gpu_key: ClassVar[str] = "gpu.intel.com/i915"
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> Self:
@@ -75,6 +87,7 @@ class Resources:
             memory=cls._parse_memory(str(payload.get("memory", "0"))),
             nvidia_gpu=int(payload.get(cls.nvidia_gpu_key, 0)),
             amd_gpu=int(payload.get(cls.amd_gpu_key, 0)),
+            intel_gpu=int(payload.get(cls.intel_gpu_key, 0)),
         )
 
     @classmethod
@@ -94,6 +107,30 @@ class Resources:
                 return int(memory[: -len(suffix)]) * multiplier
         msg = f"Memory unit for {memory} is not supported"
         raise KubeClientError(msg)
+
+    @property
+    def has_cpu(self) -> bool:
+        return bool(self.cpu)
+
+    @property
+    def has_memory(self) -> bool:
+        return bool(self.memory)
+
+    @property
+    def has_nvidia_gpu(self) -> bool:
+        return bool(self.nvidia_gpu)
+
+    @property
+    def has_amd_gpu(self) -> bool:
+        return bool(self.amd_gpu)
+
+    @property
+    def has_intel_gpu(self) -> bool:
+        return bool(self.amd_gpu)
+
+    @property
+    def has_gpu(self) -> bool:
+        return self.has_nvidia_gpu or self.has_amd_gpu or self.has_intel_gpu
 
 
 @dataclass(frozen=True)
@@ -288,15 +325,56 @@ class PodStatus:
 
 
 @dataclass(frozen=True)
+class ContainerResources:
+    requests: Resources = Resources()
+    limits: Resources = Resources()
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            requests=Resources.from_payload(payload.get("requests") or {}),
+            limits=Resources.from_payload(payload.get("limits") or {}),
+        )
+
+
+@dataclass(frozen=True)
+class Container:
+    resources: ContainerResources = ContainerResources()
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            resources=ContainerResources.from_payload(payload.get("resources") or {}),
+        )
+
+
+@dataclass(frozen=True)
+class PodSpec:
+    containers: Sequence[Container] = ()
+    node_name: str | None = None
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
+        return cls(
+            containers=[
+                Container.from_payload(p) for p in payload.get("containers", ())
+            ],
+            node_name=payload.get("nodeName"),
+        )
+
+
+@dataclass(frozen=True)
 class Pod:
     metadata: Metadata
     status: PodStatus
+    spec: PodSpec = PodSpec()
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> Pod:
+    def from_payload(cls, payload: dict[str, Any]) -> Self:
         return cls(
             metadata=Metadata.from_payload(payload["metadata"]),
             status=PodStatus.from_payload(payload.get("status", {})),
+            spec=PodSpec.from_payload(payload["spec"]),
         )
 
 
@@ -427,6 +505,16 @@ class KubeClient:
     async def delete_pod(self, namespace: str, pod_name: str) -> None:
         await self._request(
             method="DELETE", url=self._get_pods_url(namespace) / pod_name
+        )
+
+    async def add_pod_labels(
+        self, namespace: str, pod_name: str, labels: Mapping[str, str]
+    ) -> None:
+        await self._request(
+            method="PATCH",
+            url=self._get_pods_url(namespace) / pod_name,
+            headers={"Content-Type": "application/merge-patch+json"},
+            json={"metadata": {"labels": labels}},
         )
 
     async def wait_pod_is_running(

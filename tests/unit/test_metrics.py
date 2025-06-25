@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
@@ -37,6 +37,8 @@ from yarl import URL
 from platform_reports.cluster import ClusterHolder
 from platform_reports.config import Label
 from platform_reports.kube_client import (
+    Container,
+    ContainerResources,
     ContainerStatus,
     KubeClient,
     Metadata,
@@ -45,6 +47,7 @@ from platform_reports.kube_client import (
     Pod,
     PodCondition,
     PodPhase,
+    PodSpec,
     PodStatus,
     Resources,
 )
@@ -1009,6 +1012,134 @@ class TestAzureNodePriceCollector(_TestNodePriceCollector):
         assert result == {"node": Price(value=Decimal(9), currency="USD")}
 
 
+class TestPodCreditsCollectorResourcePresets:
+    @pytest.fixture
+    def resource_presets(self) -> list[ResourcePreset]:
+        return [
+            ResourcePreset(
+                name="cpu-small",
+                cpu=1,
+                memory=1024**4,
+                credits_per_hour=Decimal(10),
+            ),
+            ResourcePreset(
+                name="cpu-large",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(40),
+            ),
+            ResourcePreset(
+                name="nvidia-gpu-small",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(100),
+                nvidia_gpu=1,
+                nvidia_gpu_model="nvidia-A100",
+            ),
+            ResourcePreset(
+                name="nvidia-gpu-large",
+                cpu=32,
+                memory=1024**128,
+                credits_per_hour=Decimal(500),
+                nvidia_gpu=8,
+                nvidia_gpu_model="nvidia-A100",
+            ),
+            ResourcePreset(
+                name="amd-gpu-small",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(110),
+                amd_gpu=1,
+                amd_gpu_model="amd-A100",
+            ),
+            ResourcePreset(
+                name="amd-gpu-large",
+                cpu=32,
+                memory=1024**128,
+                credits_per_hour=Decimal(510),
+                amd_gpu=8,
+                amd_gpu_model="amd-A100",
+            ),
+        ]
+
+    def test_cpu(self, resource_presets: list[ResourcePreset]) -> None:
+        presets = PodCreditsCollector._ResourcePresets(resource_presets)
+
+        assert list(presets.cpu) == [
+            ResourcePreset(
+                name="cpu-small",
+                cpu=1,
+                memory=1024**4,
+                credits_per_hour=Decimal(10),
+            ),
+            ResourcePreset(
+                name="cpu-large",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(40),
+            ),
+        ]
+
+    def test_filter_gpu_models(self, resource_presets: list[ResourcePreset]) -> None:
+        presets = PodCreditsCollector._ResourcePresets(resource_presets)
+        gpu_models = PodCreditsCollector._GPUModels(nvidia="nvidia-A100")
+
+        assert list(presets.filter_gpu_models(gpu_models)) == [
+            ResourcePreset(
+                name="nvidia-gpu-small",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(100),
+                nvidia_gpu=1,
+                nvidia_gpu_model="nvidia-A100",
+            ),
+            ResourcePreset(
+                name="nvidia-gpu-large",
+                cpu=32,
+                memory=1024**128,
+                credits_per_hour=Decimal(500),
+                nvidia_gpu=8,
+                nvidia_gpu_model="nvidia-A100",
+            ),
+        ]
+
+        gpu_models = PodCreditsCollector._GPUModels(amd="amd-A100")
+
+        assert list(presets.filter_gpu_models(gpu_models)) == [
+            ResourcePreset(
+                name="amd-gpu-small",
+                cpu=4,
+                memory=1024**16,
+                credits_per_hour=Decimal(110),
+                amd_gpu=1,
+                amd_gpu_model="amd-A100",
+            ),
+            ResourcePreset(
+                name="amd-gpu-large",
+                cpu=32,
+                memory=1024**128,
+                credits_per_hour=Decimal(510),
+                amd_gpu=8,
+                amd_gpu_model="amd-A100",
+            ),
+        ]
+
+        gpu_models = PodCreditsCollector._GPUModels(
+            nvidia="nvidia-A100", amd="amd-A100"
+        )
+
+        assert list(presets.filter_gpu_models(gpu_models)) == []
+
+    def test_sorted_by_credits_per_hour(
+        self, resource_presets: list[ResourcePreset]
+    ) -> None:
+        presets = PodCreditsCollector._ResourcePresets(list(reversed(resource_presets)))
+
+        assert list(presets.sorted_by_credits_per_hour) == sorted(
+            resource_presets, key=lambda r: r.credits_per_hour
+        )
+
+
 class TestPodCreditsCollector:
     @pytest.fixture
     def cluster(self) -> Cluster:
@@ -1022,34 +1153,69 @@ class TestPodCreditsCollector:
                 job_fallback_hostname="",
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
+                resource_pool_types=[
+                    ResourcePoolType(
+                        name="gpu",
+                        nvidia_gpu_model="nvidia-A100",
+                    )
+                ],
                 resource_presets=[
                     ResourcePreset(
-                        name="test-preset",
+                        name="cpu-small",
                         cpu=1,
-                        memory=1024**3,
+                        memory=1024**4,
                         credits_per_hour=Decimal(10),
-                    )
+                    ),
+                    ResourcePreset(
+                        name="cpu-large",
+                        cpu=4,
+                        memory=1024**16,
+                        credits_per_hour=Decimal(40),
+                    ),
+                    ResourcePreset(
+                        name="gpu-small",
+                        cpu=4,
+                        memory=1024**16,
+                        credits_per_hour=Decimal(100),
+                        nvidia_gpu=1,
+                        nvidia_gpu_model="nvidia-A100",
+                    ),
+                    ResourcePreset(
+                        name="gpu-large",
+                        cpu=32,
+                        memory=1024**128,
+                        credits_per_hour=Decimal(500),
+                        nvidia_gpu=8,
+                        nvidia_gpu_model="nvidia-A100",
+                    ),
                 ],
             ),
         )
 
     @pytest.fixture
     def kube_client_factory(self) -> Callable[..., mock.AsyncMock]:
-        def _create(pods: list[Pod]) -> mock.AsyncMock:
+        def _create(
+            pods: list[Pod] | None = None, nodes: list[Node] | None = None
+        ) -> mock.AsyncMock:
             async def get_pods(
                 namespace: str | None = None,
                 field_selector: str | None = None,
                 label_selector: str | None = None,
-            ) -> Sequence[Pod]:
+            ) -> list[Pod]:
                 assert namespace is None
                 assert field_selector is None
                 assert (
                     label_selector == "platform.apolo.us/org,platform.apolo.us/project"
                 )
-                return pods
+                return pods or []
+
+            async def get_nodes(label_selector: str | None = None) -> list[Node]:
+                assert label_selector == "platform.neuromation.io/nodepool"
+                return nodes or []
 
             result = mock.AsyncMock(spec=KubeClient)
             result.get_pods.side_effect = get_pods
+            result.get_nodes.side_effect = get_nodes
             return result
 
         return _create
@@ -1060,8 +1226,10 @@ class TestPodCreditsCollector:
         cluster_holder: ClusterHolder,
         kube_client_factory: Callable[..., KubeClient],
     ) -> Callable[..., PodCreditsCollector]:
-        def _create(pods: list[Pod]) -> PodCreditsCollector:
-            kube_client = kube_client_factory(pods)
+        def _create(
+            pods: list[Pod] | None = None, nodes: list[Node] | None = None
+        ) -> PodCreditsCollector:
+            kube_client = kube_client_factory(pods=pods, nodes=nodes)
             return PodCreditsCollector(
                 kube_client=kube_client,
                 cluster_holder=cluster_holder,
@@ -1077,7 +1245,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"platform.apolo.us/preset": "test-preset"},
+                        labels={"platform.apolo.us/preset": "cpu-small"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -1107,7 +1275,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"platform.apolo.us/preset": "test-preset"},
+                        labels={"platform.apolo.us/preset": "cpu-small"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -1137,7 +1305,7 @@ class TestPodCreditsCollector:
                 Pod(
                     metadata=Metadata(
                         name="test",
-                        labels={"platform.apolo.us/preset": "test-preset"},
+                        labels={"platform.apolo.us/preset": "cpu-small"},
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -1170,14 +1338,17 @@ class TestPodCreditsCollector:
 
         assert result == {"test": Decimal(10)}
 
-    async def test_get_latest_value__no_preset(
-        self, collector_factory: Callable[..., PodCreditsCollector]
+    async def test_get_latest_value__no_preset__label_added(
+        self,
+        kube_client_factory: Callable[..., mock.AsyncMock],
+        cluster_holder: ClusterHolder,
     ) -> None:
-        collector = collector_factory(
+        kube_client = kube_client_factory(
             pods=[
                 Pod(
                     metadata=Metadata(
                         name="test",
+                        namespace="test-project",
                         creation_timestamp=datetime.now(UTC),
                     ),
                     status=PodStatus(
@@ -1185,7 +1356,46 @@ class TestPodCreditsCollector:
                         conditions=[
                             PodCondition(
                                 type=PodCondition.Type.POD_SCHEDULED,
-                                last_transition_time=datetime.now(UTC),
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
+                                status=True,
+                            )
+                        ],
+                    ),
+                )
+            ],
+        )
+        collector = PodCreditsCollector(
+            kube_client=kube_client,
+            cluster_holder=cluster_holder,
+        )
+
+        await collector.get_latest_value()
+
+        kube_client.add_pod_labels.assert_awaited_with(
+            "test-project", "test", {"platform.apolo.us/preset": "cpu-small"}
+        )
+
+    async def test_get_latest_value__no_preset__cpu_pod__no_resource_limits(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        namespace="test-project",
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.RUNNING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
                                 status=True,
                             )
                         ],
@@ -1195,7 +1405,148 @@ class TestPodCreditsCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {}
+        assert result == {"test": Decimal(5)}
+
+    async def test_get_latest_value__no_preset__cpu_pod__resource_limits_too_high(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        namespace="test-project",
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.RUNNING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
+                                status=True,
+                            )
+                        ],
+                    ),
+                    spec=PodSpec(
+                        containers=[
+                            Container(
+                                resources=ContainerResources(
+                                    limits=Resources(cpu=100, memory=1024**3 * 100),
+                                )
+                            )
+                        ]
+                    ),
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"test": Decimal(20)}
+
+    async def test_get_latest_value__no_preset__gpu_pod__no_resource_limits(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        namespace="test-project",
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.RUNNING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
+                                status=True,
+                            )
+                        ],
+                    ),
+                    spec=PodSpec(
+                        node_name="gpu-node",
+                        containers=[
+                            Container(
+                                resources=ContainerResources(
+                                    limits=Resources(nvidia_gpu=1)
+                                )
+                            )
+                        ],
+                    ),
+                )
+            ],
+            nodes=[
+                Node(
+                    metadata=Metadata(
+                        name="gpu-node",
+                        labels={
+                            Label.NEURO_NODE_POOL_KEY: "gpu",
+                        },
+                        creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+                    )
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"test": Decimal(50)}
+
+    async def test_get_latest_value__no_preset__gpu_pod__resource_limits__too_high(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        namespace="test-project",
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(
+                        phase=PodPhase.RUNNING,
+                        conditions=[
+                            PodCondition(
+                                type=PodCondition.Type.POD_SCHEDULED,
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
+                                status=True,
+                            )
+                        ],
+                    ),
+                    spec=PodSpec(
+                        node_name="gpu-node",
+                        containers=[
+                            Container(
+                                resources=ContainerResources(
+                                    limits=Resources(nvidia_gpu=100)
+                                )
+                            )
+                        ],
+                    ),
+                )
+            ],
+            nodes=[
+                Node(
+                    metadata=Metadata(
+                        name="gpu-node",
+                        labels={
+                            Label.NEURO_NODE_POOL_KEY: "gpu",
+                        },
+                        creation_timestamp=datetime.now(UTC) - timedelta(hours=10),
+                    )
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {"test": Decimal(250)}
 
     async def test_get_latest_value__unknown_preset(
         self, collector_factory: Callable[..., PodCreditsCollector]
@@ -1213,7 +1564,9 @@ class TestPodCreditsCollector:
                         conditions=[
                             PodCondition(
                                 type=PodCondition.Type.POD_SCHEDULED,
-                                last_transition_time=datetime.now(UTC),
+                                last_transition_time=(
+                                    datetime.now(UTC) - timedelta(hours=0.5)
+                                ),
                                 status=True,
                             )
                         ],
@@ -1223,7 +1576,7 @@ class TestPodCreditsCollector:
         )
         result = await collector.get_latest_value()
 
-        assert result == {}
+        assert result == {"test": Decimal(5)}
 
     async def test_get_latest_value__no_pods(
         self,

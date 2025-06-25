@@ -4,10 +4,11 @@ import asyncio
 import json
 import logging
 import re
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, time, tzinfo
 from decimal import Decimal
+from functools import cached_property
 from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
@@ -18,13 +19,19 @@ from aiobotocore.client import AioBaseClient
 from cachetools import TTLCache
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import Cluster
+from neuro_config_client import Cluster, OrchestratorConfig, ResourcePreset
 from neuro_logging import new_trace_cm, trace_cm
 from yarl import URL
 
 from .cluster import ClusterHolder
 from .config import Label
-from .kube_client import KubeClient, Node, Pod, PodCondition
+from .kube_client import (
+    KubeClient,
+    Node,
+    Pod,
+    PodCondition,
+    Resources,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -595,6 +602,67 @@ class GCPNodePriceCollector(NodePriceCollector):
 
 
 class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
+    @dataclass(frozen=True)
+    class _GPUModels:
+        nvidia: str | None = None
+        amd: str | None = None
+        intel: str | None = None
+
+    class _ResourcePresets:
+        def __init__(self, resource_presets: Sequence[ResourcePreset]):
+            self._resource_presets = resource_presets
+            self._gpu_resource_presets: dict[PodCreditsCollector._GPUModels, Self] = {}
+
+        def __iter__(self) -> Iterator[ResourcePreset]:
+            return iter(self._resource_presets)
+
+        @cached_property
+        def _resource_presets_map(self) -> dict[str, ResourcePreset]:
+            return {p.name: p for p in self._resource_presets}
+
+        def get(self, name: str) -> ResourcePreset | None:
+            return self._resource_presets_map.get(name)
+
+        @cached_property
+        def cpu(self) -> Self:
+            resource_presets = []
+            for p in self._resource_presets:
+                if not p.nvidia_gpu and not p.amd_gpu and not p.intel_gpu:
+                    resource_presets.append(p)
+            return self.__class__(resource_presets)
+
+        def filter_gpu_models(self, gpu_models: PodCreditsCollector._GPUModels) -> Self:
+            def _check_gpu(
+                gpu_model: str | None,
+                preset_gpu_model: str | None,
+            ) -> bool:
+                if gpu_model and gpu_model != preset_gpu_model:
+                    return False
+                if not gpu_model and preset_gpu_model:
+                    return False
+                return True
+
+            if cached_result := self._gpu_resource_presets.get(gpu_models):
+                return cached_result
+
+            resource_presets = []
+            for p in self._resource_presets:
+                if (
+                    _check_gpu(gpu_models.nvidia, p.nvidia_gpu_model)
+                    and _check_gpu(gpu_models.amd, p.amd_gpu_model)
+                    and _check_gpu(gpu_models.intel, p.intel_gpu_model)
+                ):
+                    resource_presets.append(p)
+            result = self.__class__(resource_presets)
+            self._gpu_resource_presets[gpu_models] = result
+            return result
+
+        @cached_property
+        def sorted_by_credits_per_hour(self) -> Self:
+            return self.__class__(
+                sorted(self._resource_presets, key=lambda r: r.credits_per_hour)
+            )
+
     def __init__(
         self,
         *,
@@ -606,17 +674,20 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
 
         self._kube_client = kube_client
         self._cluster_holder = cluster_holder
+        self._kube_nodes_cache: TTLCache[str, list[Node]] = TTLCache(1, ttl=10)
+
+    @property
+    def _cluster_orchestrator(self) -> OrchestratorConfig:
+        orchestrator = self._cluster_holder.cluster.orchestrator
+        assert orchestrator, "No orchestrator in cluster, check permissions"
+        return orchestrator
 
     async def get_latest_value(self) -> Mapping[str, Decimal]:
-        cluster = self._cluster_holder.cluster
-        if cluster.orchestrator is None:
-            logger.warning("Cluster doesn't have orchestrator config")
+        if not self._cluster_orchestrator.resource_presets:
             return {}
-        presets = {
-            preset.name: preset for preset in cluster.orchestrator.resource_presets
-        }
-        if not presets:
-            return {}
+        resource_presets = self._ResourcePresets(
+            self._cluster_orchestrator.resource_presets
+        )
         pods = await self._kube_client.get_pods(
             label_selector=f"{Label.APOLO_ORG_KEY},{Label.APOLO_PROJECT_KEY}",
         )
@@ -627,19 +698,20 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                     logger.debug("Pod %r is not scheduled, skipping", pod.metadata.name)
                     continue
                 pod_name = pod.metadata.name
-                preset_name = pod.metadata.labels.get(
-                    Label.APOLO_PRESET_KEY
-                ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
-                if not preset_name:
-                    logger.warning("Pod %r has no preset label, skipping", pod_name)
-                    continue
-                if not (preset := presets.get(preset_name)):
+                if not (
+                    preset := await self._get_resource_preset(pod, resource_presets)
+                ):
                     logger.warning(
-                        "Pod %r resource preset %r not found, skipping",
+                        "Could not match resource preset for Pod %r, skipping pod",
                         pod_name,
-                        preset_name,
                     )
                     continue
+                if Label.APOLO_PRESET_KEY not in pod.metadata.labels:
+                    await self._kube_client.add_pod_labels(
+                        pod.metadata.required_namespace,
+                        pod.metadata.name,
+                        {Label.APOLO_PRESET_KEY: preset.name},
+                    )
                 credits_total = self._get_pod_credits_total(
                     pod, preset.credits_per_hour
                 )
@@ -659,6 +731,124 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
             run_time = datetime.now(UTC) - start_date
         credits_total = Decimal(run_time.total_seconds()) * credits_per_hour / 3600
         return round(credits_total, 2)
+
+    async def _get_resource_preset(
+        self, pod: Pod, resource_presets: _ResourcePresets
+    ) -> ResourcePreset | None:
+        preset_name = pod.metadata.labels.get(
+            Label.APOLO_PRESET_KEY
+        ) or pod.metadata.labels.get(Label.NEURO_PRESET_KEY)
+        if preset_name:
+            if preset := resource_presets.get(preset_name):
+                return preset
+            logger.warning(
+                "Pod %r resource preset %r not found", pod.metadata.name, preset_name
+            )
+        return await self._match_resource_preset(pod, resource_presets)
+
+    async def _match_resource_preset(
+        self, pod: Pod, resource_presets: _ResourcePresets
+    ) -> ResourcePreset | None:
+        pod_resources = self._collect_pod_resources(pod)
+
+        if pod_resources.has_gpu:
+            assert pod.spec.node_name, (
+                f"Pod {pod.metadata.name} is not scheduled on a node"
+            )
+            gpu_models = await self._get_node_gpu_models(pod.spec.node_name)
+            if gpu_models is not None:
+                resource_presets = resource_presets.filter_gpu_models(gpu_models)
+        else:
+            resource_presets = resource_presets.cpu
+
+        resource_preset = None
+
+        for resource_preset in resource_presets.sorted_by_credits_per_hour:
+            if self._check_pod_fits_into_resource_preset(
+                pod_resources, resource_preset
+            ):
+                break
+        else:
+            logger.warning("Pod %r doesn't have a matching preset", pod.metadata.name)
+
+        return resource_preset
+
+    def _collect_pod_resources(self, pod: Pod) -> Resources:
+        container_resources: list[Resources] = []
+
+        for container in pod.spec.containers:
+            limits = container.resources.limits
+            if limits is None:
+                logger.debug("Pod %s has no resource limits", pod.metadata.name)
+                return Resources()
+            container_resources.append(limits)
+
+        resources = Resources(
+            cpu=(
+                sum(r.cpu for r in container_resources)
+                if all(r.has_cpu for r in container_resources)
+                else 0
+            ),
+            memory=(
+                sum(r.memory for r in container_resources)
+                if all(r.has_memory for r in container_resources)
+                else 0
+            ),
+            nvidia_gpu=sum(r.nvidia_gpu for r in container_resources),
+            amd_gpu=sum(r.amd_gpu for r in container_resources),
+            intel_gpu=sum(r.intel_gpu for r in container_resources),
+        )
+
+        if not resources.has_cpu:
+            logger.debug("Pod %s has no cpu limits", pod.metadata.name)
+        if not resources.has_memory:
+            logger.debug("Pod %s has no memory limits", pod.metadata.name)
+
+        return resources
+
+    async def _get_node_gpu_models(self, node_name: str) -> _GPUModels | None:
+        node = await self._get_node(node_name)
+        if not node:
+            return None
+        node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
+        for rpt in self._cluster_orchestrator.resource_pool_types:
+            if rpt.name == node_pool_name:
+                return self._GPUModels(
+                    nvidia=rpt.nvidia_gpu_model,
+                    amd=rpt.amd_gpu_model,
+                    intel=rpt.intel_gpu_model,
+                )
+        logger.warning(
+            "Node pool %r not found in platform config, ignoring GPU models",
+            node_pool_name,
+        )
+        return None
+
+    async def _get_node(self, node_name: str) -> Node | None:
+        if not (nodes := self._kube_nodes_cache.get(Label.NEURO_NODE_POOL_KEY)):
+            nodes = await self._kube_client.get_nodes(Label.NEURO_NODE_POOL_KEY)
+            self._kube_nodes_cache[Label.NEURO_NODE_POOL_KEY] = nodes
+        for node in nodes:
+            if node == node_name:
+                return node
+        logger.warning(
+            "Node %r not found or does not have platform node pool label, "
+            "ignoring GPU models",
+            node_name,
+        )
+        return None
+
+    def _check_pod_fits_into_resource_preset(
+        self, pod_resources: Resources, preset: ResourcePreset
+    ) -> bool:
+        # TODO: check Google TPU
+        return (
+            pod_resources.cpu <= preset.cpu
+            and pod_resources.memory <= preset.memory
+            and pod_resources.nvidia_gpu <= (preset.nvidia_gpu or 0)
+            and pod_resources.amd_gpu <= (preset.amd_gpu or 0)
+            and pod_resources.intel_gpu <= (preset.intel_gpu or 0)
+        )
 
 
 class NodeEnergyConsumptionCollector(Collector[Mapping[str, NodeEnergyConsumption]]):

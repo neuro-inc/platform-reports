@@ -4,6 +4,8 @@ import pytest
 
 from platform_reports.kube_client import (
     UTC,
+    Container,
+    ContainerResources,
     ContainerStatus,
     Metadata,
     Node,
@@ -11,6 +13,7 @@ from platform_reports.kube_client import (
     Pod,
     PodCondition,
     PodPhase,
+    PodSpec,
     PodStatus,
     Resources,
 )
@@ -74,19 +77,79 @@ class TestPod:
             {
                 "metadata": {
                     "name": "job",
+                    "namespace": "default",
                     "creationTimestamp": now.isoformat(),
                     "labels": {"key": "value"},
                 },
-                "spec": {"containers": [{"name": "job"}]},
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "container1",
+                            "resources": {},
+                        },
+                        {
+                            "name": "container2",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "1",
+                                    "memory": "2",
+                                    "nvidia.com/gpu": "3",
+                                    "amd.com/gpu": "4",
+                                    "gpu.intel.com/i915": "5",
+                                },
+                                "limits": {
+                                    "cpu": "11",
+                                    "memory": "22",
+                                    "nvidia.com/gpu": "33",
+                                    "amd.com/gpu": "44",
+                                    "gpu.intel.com/i915": "55",
+                                },
+                            },
+                        },
+                    ],
+                    "nodeName": "minikube",
+                },
                 "status": {"phase": "Running"},
             }
         )
 
         assert result == Pod(
             metadata=Metadata(
-                name="job", creation_timestamp=now, labels={"key": "value"}
+                name="job",
+                namespace="default",
+                creation_timestamp=now,
+                labels={"key": "value"},
             ),
             status=PodStatus(phase=PodPhase.RUNNING),
+            spec=PodSpec(
+                containers=[
+                    Container(
+                        resources=ContainerResources(
+                            requests=Resources(),
+                            limits=Resources(),
+                        ),
+                    ),
+                    Container(
+                        resources=ContainerResources(
+                            requests=Resources(
+                                cpu=1,
+                                memory=2,
+                                nvidia_gpu=3,
+                                amd_gpu=4,
+                                intel_gpu=5,
+                            ),
+                            limits=Resources(
+                                cpu=11,
+                                memory=22,
+                                nvidia_gpu=33,
+                                amd_gpu=44,
+                                intel_gpu=55,
+                            ),
+                        ),
+                    ),
+                ],
+                node_name="minikube",
+            ),
         )
 
 

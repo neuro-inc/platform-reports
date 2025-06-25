@@ -132,3 +132,24 @@ class TestKubeClient:
         result = await kube_client.get_pods(namespace="unknown")
 
         assert result == []
+
+    async def test_add_pods_labels(self, kube_client: KubeClient) -> None:
+        pods = await kube_client.get_pods(namespace="kube-system")
+
+        assert pods
+
+        pod = pods[0]
+
+        await kube_client.add_pod_labels(
+            pod.metadata.required_namespace,
+            pod.metadata.name,
+            {
+                "test-label": "test",
+            },
+        )
+
+        pod = await kube_client.get_pod(
+            pod.metadata.required_namespace, pod.metadata.name
+        )
+
+        assert pod.metadata.labels["test-label"] == "test"

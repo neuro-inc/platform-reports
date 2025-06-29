@@ -24,11 +24,14 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
     dashboards_path = Path("charts/platform-reports/files/grafana-dashboards")
     expr_regex = re.compile(r'"expr": "((?:[^"\\]|\\.)+)"')
     var_regex = re.compile(r'"query": "label_values\(((?:[^"\\]|\\.)+),[a-z_]+\)"')
+    var_query_regex = re.compile(r'"query": "query_result\((.*?)\)"')
     for path in dashboards_path.glob("**/*.json"):
         exprs: list[str] = []
         dashboard_json = path.read_text()
         for match in chain(
-            expr_regex.finditer(dashboard_json), var_regex.finditer(dashboard_json)
+            expr_regex.finditer(dashboard_json),
+            var_regex.finditer(dashboard_json),
+            var_query_regex.finditer(dashboard_json),
         ):
             exprs.append(
                 json.loads(f'"{match.group(1)}"')
@@ -41,6 +44,7 @@ def dashboards_expressions() -> dict[str, Sequence[str]]:
                 .replace("$org_name", "org")
                 .replace("$user_name", "user")
                 .replace("$job_id", f"job-{uuid.uuid4()}")
+                .replace("${app_instance_name}", f"app-{uuid.uuid4()}")
             )
         if not exprs:
             continue

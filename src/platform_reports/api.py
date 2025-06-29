@@ -64,6 +64,7 @@ from .metrics_collector import (
 )
 from .metrics_service import GetCreditsUsageRequest, MetricsService
 from .platform_api_client import ApiClient
+from .platform_apps_client import AppsApiClient
 from .prometheus_client import PrometheusClient
 from .schema import (
     ClientErrorSchema,
@@ -346,9 +347,10 @@ class GrafanaProxyHandler:
     async def handle_get_dashboard(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_names)
         dashboard_id = request.match_info["dashboard_id"]
+        referer_url = URL(request.headers.get("Referer", ""))  # for get query params
 
         if not await self._auth_service.check_dashboard_permissions(
-            user_name=user_name, dashboard_id=dashboard_id, params=request.query
+            user_name=user_name, dashboard_id=dashboard_id, params=referer_url.query
         ):
             return Response(status=HTTPForbidden.status_code)
 
@@ -694,8 +696,12 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
             api_client = await exit_stack.enter_async_context(
                 create_api_client(config.platform_api)
             )
-
-            auth_service = AuthService(auth_client, api_client, config.cluster_name)
+            apps_client = await exit_stack.enter_async_context(
+                AppsApiClient(config.platform_apps.url, config.platform_apps.token)
+            )
+            auth_service = AuthService(
+                auth_client, api_client, config.cluster_name, apps_client
+            )
             app[AUTH_SERVICE_APP_KEY] = auth_service
 
             LOGGER.info("Initializing Grafana client")

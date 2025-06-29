@@ -87,10 +87,31 @@ class TestDashboards:
             return []
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
-
-        for _, exprs in project_dashboards_expressions.items():
+        for dashboard, exprs in project_dashboards_expressions.items():
+            if dashboard == "project/app_instance":
+                continue
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
+
+        async def get_missing_permissions_for_app(
+            _: str, permissions: Sequence[Permission]
+        ) -> Sequence[Permission]:
+            assert all(
+                any(
+                    p.uri.startswith(perm)
+                    for perm in ("app://default", "role://default/manager")
+                )
+                for p in permissions
+            )
+            return []
+
+        auth_client.get_missing_permissions.side_effect = (
+            get_missing_permissions_for_app
+        )
+        for dashboard, exprs in project_dashboards_expressions.items():
+            if dashboard == "project/app_instance":
+                await auth_service.check_query_permissions("user", exprs)
+                auth_client.reset_mock()
 
     async def test_org_dashboards_permissions(
         self,

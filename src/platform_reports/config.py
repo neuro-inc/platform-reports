@@ -95,6 +95,12 @@ class PlatformServiceConfig:
 
 
 @dataclass(frozen=True)
+class PlatformAppsConfig:
+    url: URL
+    token: str = field(repr=False)
+
+
+@dataclass(frozen=True)
 class MetricsExporterConfig:
     server: ServerConfig
     kube: KubeConfig
@@ -154,6 +160,7 @@ class GrafanaProxyConfig:
     grafana_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
+    platform_apps: PlatformAppsConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -211,6 +218,7 @@ class EnvironConfigFactory:
             grafana_url=URL(self._environ["GRAFANA_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
+            platform_apps=self._create_platform_apps_config(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
@@ -231,6 +239,14 @@ class EnvironConfigFactory:
     def _create_platform_api(self) -> PlatformServiceConfig:
         return PlatformServiceConfig(
             url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_TOKEN"]
+        )
+
+    def _create_platform_apps_config(self) -> PlatformAppsConfig:
+        return PlatformAppsConfig(
+            url=URL(self._environ["NP_APPS_URL"]),
+            token=self._environ["NP_TOKEN"],
+            # url=URL("http://platform-apps-v2:8080"),
+            # token=self._environ["NP_TOKEN"],
         )
 
     def _create_platform_config(self) -> PlatformServiceConfig:

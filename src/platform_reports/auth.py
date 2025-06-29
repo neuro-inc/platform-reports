@@ -9,6 +9,7 @@ from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
 
 from .platform_api_client import ApiClient
+from .platform_apps_client import AppsApiClient
 from .prometheus_query_parser import (
     InstantVector,
     LabelMatcher,
@@ -32,6 +33,7 @@ class Dashboard(str, enum.Enum):
     PRICES = "prices"
     OVERVIEW = "overview"
     JOB = "job"
+    APP = "app"
     JOBS = "jobs"
     PROJECT_JOBS = "project_jobs"
     ORG_JOBS = "org_jobs"
@@ -45,15 +47,21 @@ class Matcher(str, enum.Enum):
     POD = "pod"
     ORG_LABEL = "label_platform_neuromation_io_org"
     PROJECT_LABEL = "label_platform_neuromation_io_project"
+    APP_INSTANCE_LABEL = "label_platform_apolo_us_app_instance_name"
     SERVICE_LABEL = "label_service"
 
 
 class AuthService:
     def __init__(
-        self, auth_client: AuthClient, api_client: ApiClient, cluster_name: str
+        self,
+        auth_client: AuthClient,
+        api_client: ApiClient,
+        cluster_name: str,
+        apps_client: AppsApiClient | None = None,
     ) -> None:
         self._auth_client = auth_client
         self._api_client = api_client
+        self._apps_client = apps_client
         self._cluster_name = cluster_name
 
     async def check_permissions(
@@ -78,9 +86,10 @@ class AuthService:
     async def check_dashboard_permissions(  # noqa: C901
         self, user_name: str, dashboard_id: str, params: MultiMapping[str]
     ) -> bool:
-        permissions_service = PermissionsService(self._api_client, self._cluster_name)
+        permissions_service = PermissionsService(
+            self._api_client, self._cluster_name, self._apps_client
+        )
         permissions = []
-
         if dashboard_id == Dashboard.NODES:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.SERVICES:
@@ -93,6 +102,14 @@ class AuthService:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
                 permissions = await permissions_service.get_job_permissions([job_id])
+        elif dashboard_id == Dashboard.APP:
+            app_instance_name = params.get("var-app_instance_name")
+            if not app_instance_name:
+                # Get access only if app_instance_name is provided
+                return False
+            permissions = await permissions_service.get_app_permissions(
+                [app_instance_name]
+            )
         elif dashboard_id == Dashboard.JOBS:
             permissions = [permissions_service.get_job_permission()]
         elif dashboard_id == Dashboard.PROJECT_JOBS:
@@ -146,7 +163,9 @@ class AuthService:
             if not self._check_all_vectors_have_job_matcher(vector):
                 return False
 
-        permissions_service = PermissionsService(self._api_client, self._cluster_name)
+        permissions_service = PermissionsService(
+            self._api_client, self._cluster_name, self._apps_client
+        )
         permissions = await permissions_service.get_vector_permissions(vectors)
         return await self.check_permissions(user_name, permissions)
 
@@ -169,8 +188,14 @@ class AuthService:
 
 
 class PermissionsService:
-    def __init__(self, api_client: ApiClient, cluster_name: str) -> None:
+    def __init__(
+        self,
+        api_client: ApiClient,
+        cluster_name: str,
+        apps_client: AppsApiClient | None = None,
+    ) -> None:
         self._api_client = api_client
+        self._apps_client = apps_client
         self._cluster_name = cluster_name
         self._job_permissions: dict[str, Permission] = {}
 
@@ -236,21 +261,46 @@ class PermissionsService:
 
                 org_matcher = vector.get_eq_label_matcher(Matcher.ORG_LABEL)
                 project_matcher = vector.get_eq_label_matcher(Matcher.PROJECT_LABEL)
-                if org_matcher is not None and project_matcher is not None:
+                app_instance_matcher = vector.get_eq_label_matcher(
+                    Matcher.APP_INSTANCE_LABEL
+                )
+
+                if app_instance_matcher:
                     permissions.append(
-                        self.get_job_permission(
-                            org_name=org_matcher.value,
-                            project_name=project_matcher.value,
+                        self.get_app_permission(
+                            org_name=org_matcher.value if org_matcher else None,
+                            project_name=project_matcher.value
+                            if project_matcher
+                            else None,
                         )
                     )
-                elif org_matcher is not None:
+                    return permissions
+
+                if org_matcher or project_matcher:
                     permissions.append(
-                        self.get_job_permission(org_name=org_matcher.value)
+                        self.get_job_permission(
+                            org_name=org_matcher.value if org_matcher else None,
+                            project_name=project_matcher.value
+                            if project_matcher
+                            else None,
+                        )
                     )
-                elif project_matcher is not None:
-                    permissions.append(
-                        self.get_job_permission(project_name=project_matcher.value)
-                    )
+
+                # if org_matcher is not None and project_matcher is not None:
+                #     permissions.append(
+                #         self.get_job_permission(
+                #             org_name=org_matcher.value,
+                #             project_name=project_matcher.value,
+                #         )
+                #     )
+                # elif org_matcher is not None:
+                #     permissions.append(
+                #         self.get_job_permission(org_name=org_matcher.value)
+                #     )
+                # elif project_matcher is not None:
+                #     permissions.append(
+                #         self.get_job_permission(project_name=project_matcher.value)
+                #     )
                 else:
                     return [self.get_cluster_manager_permission()]
 
@@ -386,5 +436,36 @@ class PermissionsService:
                 permission = Permission(uri=str(job.uri), action="read")
                 self._job_permissions[job_id] = permission
                 result.append(permission)
+
+        return result
+
+    def get_app_permission(
+        self, *, org_name: str | None = None, project_name: str | None = None
+    ) -> Permission:
+        uri = f"app://{self._cluster_name}"
+        if org_name and org_name != "no_org":
+            uri = f"{uri}/{org_name}"
+        if project_name:
+            uri = f"{uri}/{project_name}"
+        return Permission(uri=uri, action="read")
+
+    async def get_app_permissions(
+        self, app_instance_names: Iterable[str]
+    ) -> list[Permission]:
+        result: list[Permission] = []
+
+        if self._apps_client is None:
+            exc_txt = "Apps client is not configured"
+            raise Exception(exc_txt)
+
+        for app_instance_name in app_instance_names:
+            # app = await self._apps_client.get_app_by_name(app_instance_name)
+            # "2844c1b8-dead-4ecf-a625-b585160b2cd1"
+            # "63974603-95da-4b62-a7e9-a1b170c3d9db"
+            app = await self._apps_client.get_app(app_instance_id=app_instance_name)
+            permission = self.get_app_permission(
+                org_name=app.org_name, project_name=app.project_name
+            )
+            result.append(permission)
 
         return result

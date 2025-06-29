@@ -23,6 +23,7 @@ from platform_reports.config import (
     KubeConfig,
     MetricsApiConfig,
     MetricsExporterConfig,
+    PlatformAppsConfig,
     PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -108,6 +109,15 @@ def platform_api_config(
 ) -> PlatformServiceConfig:
     return PlatformServiceConfig(
         url=platform_api_server / "api/v1", token=service_token
+    )
+
+
+@pytest.fixture
+def platform_apps_config(
+    platform_api_server: URL, service_token: str
+) -> PlatformAppsConfig:
+    return PlatformAppsConfig(
+        url=platform_api_server / "apis/apps", token=service_token
     )
 
 
@@ -207,6 +217,7 @@ def grafana_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
+    platform_apps_config: PlatformAppsConfig,
     grafana_url: URL,
 ) -> GrafanaProxyConfig:
     return GrafanaProxyConfig(
@@ -214,6 +225,7 @@ def grafana_proxy_config(
         grafana_url=grafana_url,
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
+        platform_apps=platform_apps_config,
         cluster_name="default",
         access_token_cookie_names=["dat"],
     )

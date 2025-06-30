@@ -285,22 +285,6 @@ class PermissionsService:
                             else None,
                         )
                     )
-
-                # if org_matcher is not None and project_matcher is not None:
-                #     permissions.append(
-                #         self.get_job_permission(
-                #             org_name=org_matcher.value,
-                #             project_name=project_matcher.value,
-                #         )
-                #     )
-                # elif org_matcher is not None:
-                #     permissions.append(
-                #         self.get_job_permission(org_name=org_matcher.value)
-                #     )
-                # elif project_matcher is not None:
-                #     permissions.append(
-                #         self.get_job_permission(project_name=project_matcher.value)
-                #     )
                 else:
                     return [self.get_cluster_manager_permission()]
 

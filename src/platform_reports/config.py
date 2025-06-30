@@ -245,8 +245,6 @@ class EnvironConfigFactory:
         return PlatformAppsConfig(
             url=URL(self._environ["NP_APPS_URL"]),
             token=self._environ["NP_TOKEN"],
-            # url=URL("http://platform-apps-v2:8080"),
-            # token=self._environ["NP_TOKEN"],
         )
 
     def _create_platform_config(self) -> PlatformServiceConfig:

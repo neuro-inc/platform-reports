@@ -459,10 +459,7 @@ class PermissionsService:
             raise Exception(exc_txt)
 
         for app_instance_name in app_instance_names:
-            # app = await self._apps_client.get_app_by_name(app_instance_name)
-            # "2844c1b8-dead-4ecf-a625-b585160b2cd1"
-            # "63974603-95da-4b62-a7e9-a1b170c3d9db"
-            app = await self._apps_client.get_app(app_instance_id=app_instance_name)
+            app = await self._apps_client.get_app_by_name(app_instance_name)
             permission = self.get_app_permission(
                 org_name=app.org_name, project_name=app.project_name
             )

@@ -59,8 +59,11 @@ class AppsApiClient:
     def _base_version_url(self, version: str) -> URL:
         return self._url / "apis" / "apps" / version
 
+    def _get_apps_url(self, version: str) -> URL:
+        return self._base_version_url(version) / "instances"
+
     def _get_app_url(self, instance_id: str, version: str) -> URL:
-        return self._base_version_url(version) / "instances" / instance_id
+        return self._get_apps_url(version) / instance_id
 
     async def __aenter__(self) -> "AppsApiClient":
         self._client = self._create_http_client()
@@ -124,3 +127,22 @@ class AppsApiClient:
         ) as response:
             response_json = await response.json()
             return _create_app_instance(response_json)
+
+    async def get_app_by_name(
+        self,
+        app_instance_name: str,
+        token: str | None = None,
+    ) -> AppInstance:
+        async with self._client.get(
+            self._get_apps_url(version="v2"),
+            headers=self._create_default_headers(token),
+            params={"name": app_instance_name},
+        ) as response:
+            response_json = await response.json()
+            if len(response_json["items"]) != 1:
+                exc_txt = f"App instance with name '{app_instance_name}' not found."
+                raise AppsApiException(
+                    code=404,
+                    message=exc_txt,
+                )
+            return _create_app_instance(response_json["items"][0])

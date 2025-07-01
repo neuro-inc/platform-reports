@@ -47,6 +47,8 @@ class Matcher(str, enum.Enum):
     POD = "pod"
     ORG_LABEL = "label_platform_neuromation_io_org"
     PROJECT_LABEL = "label_platform_neuromation_io_project"
+    APP_ORG_LABEL = "label_platform_apolo_us_org"
+    APP_PROJECT_LABEL = "label_platform_apolo_us_project"
     APP_INSTANCE_LABEL = "label_platform_apolo_us_app_instance_name"
     SERVICE_LABEL = "label_service"
 
@@ -247,6 +249,7 @@ class PermissionsService:
     ) -> list[Permission]:
         permissions: list[Permission] = []
         platform_job_ids: list[str] = []
+        platform_app_names: list[str] = []
 
         for vector in vectors:
             if vector.is_from_job("kube-state-metrics"):
@@ -254,27 +257,18 @@ class PermissionsService:
                 if matcher is not None:
                     return [self.get_cluster_manager_permission()]
 
-                matcher = self._get_platform_job_matcher(vector)
-                if matcher is not None:
-                    platform_job_ids.append(matcher.value)
+                job_matcher = self._get_platform_job_matcher(vector)
+                if job_matcher is not None:
+                    platform_job_ids.append(job_matcher.value)
+                    continue
+
+                app_instance_matcher = self._get_platform_app_matcher(vector)
+                if app_instance_matcher is not None:
+                    platform_app_names.append(app_instance_matcher.value)
                     continue
 
                 org_matcher = vector.get_eq_label_matcher(Matcher.ORG_LABEL)
                 project_matcher = vector.get_eq_label_matcher(Matcher.PROJECT_LABEL)
-                app_instance_matcher = vector.get_eq_label_matcher(
-                    Matcher.APP_INSTANCE_LABEL
-                )
-
-                if app_instance_matcher:
-                    permissions.append(
-                        self.get_app_permission(
-                            org_name=org_matcher.value if org_matcher else None,
-                            project_name=project_matcher.value
-                            if project_matcher
-                            else None,
-                        )
-                    )
-                    return permissions
 
                 if org_matcher or project_matcher:
                     permissions.append(
@@ -287,56 +281,80 @@ class PermissionsService:
                     )
                 else:
                     return [self.get_cluster_manager_permission()]
-
         return [
             *permissions,
             *await self.get_job_permissions(platform_job_ids),
+            *await self.get_app_permissions(platform_app_names),
         ]
 
     async def _get_kubelet_permissions(
         self, vectors: Sequence[InstantVector]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
+        platform_app_names: list[str] = []
 
         for vector in vectors:
             if vector.is_from_job("kubelet"):
-                matcher = self._get_platform_job_matcher(vector)
-                if matcher is not None:
-                    platform_job_ids.append(matcher.value)
-                else:
-                    return [self.get_cluster_manager_permission()]
+                job_matcher = self._get_platform_job_matcher(vector)
+                app_instance_matcher = self._get_platform_app_matcher(vector)
+                if job_matcher is not None:
+                    platform_job_ids.append(job_matcher.value)
+                    continue
+                if app_instance_matcher is not None:
+                    platform_app_names.append(app_instance_matcher.value)
+                    continue
+                return [self.get_cluster_manager_permission()]
 
-        return await self.get_job_permissions(platform_job_ids)
+        return [
+            *await self.get_job_permissions(platform_job_ids),
+            *await self.get_app_permissions(platform_app_names),
+        ]
 
     async def _get_nvidia_dcgm_exporter_permissions(
         self, vectors: Sequence[InstantVector]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
+        platform_app_names: list[str] = []
 
         for vector in vectors:
             if vector.is_from_job("nvidia-dcgm-exporter"):
-                matcher = self._get_platform_job_matcher(vector)
-                if matcher is not None:
-                    platform_job_ids.append(matcher.value)
-                else:
-                    return [self.get_cluster_manager_permission()]
+                job_matcher = self._get_platform_job_matcher(vector)
+                app_instance_matcher = self._get_platform_app_matcher(vector)
+                if job_matcher is not None:
+                    platform_job_ids.append(job_matcher.value)
+                    continue
+                if app_instance_matcher is not None:
+                    platform_app_names.append(app_instance_matcher.value)
+                    continue
+                return [self.get_cluster_manager_permission()]
 
-        return await self.get_job_permissions(platform_job_ids)
+        return [
+            *await self.get_job_permissions(platform_job_ids),
+            *await self.get_app_permissions(platform_app_names),
+        ]
 
     async def _get_neuro_metrics_exporter_permissions(
         self, vectors: Sequence[InstantVector]
     ) -> list[Permission]:
         platform_job_ids: list[str] = []
+        platform_app_names: list[str] = []
 
         for vector in vectors:
             if vector.is_from_job("neuro-metrics-exporter"):
-                matcher = self._get_platform_job_matcher(vector)
-                if matcher is not None:
-                    platform_job_ids.append(matcher.value)
-                else:
-                    return [self.get_cluster_manager_permission()]
+                job_matcher = self._get_platform_job_matcher(vector)
+                app_instance_matcher = self._get_platform_app_matcher(vector)
+                if job_matcher is not None:
+                    platform_job_ids.append(job_matcher.value)
+                    continue
+                if app_instance_matcher is not None:
+                    platform_app_names.append(app_instance_matcher.value)
+                    continue
+                return [self.get_cluster_manager_permission()]
 
-        return await self.get_job_permissions(platform_job_ids)
+        return [
+            *await self.get_job_permissions(platform_job_ids),
+            *await self.get_app_permissions(platform_app_names),
+        ]
 
     async def _get_vector_match_permissions(
         self, vector: VectorMatch
@@ -394,6 +412,9 @@ class PermissionsService:
             return matcher
         return None
 
+    def _get_platform_app_matcher(self, vector: InstantVector) -> LabelMatcher | None:
+        return vector.get_eq_label_matcher(Matcher.APP_INSTANCE_LABEL)
+
     def get_cluster_manager_permission(self) -> Permission:
         return Permission(uri=f"role://{self._cluster_name}/manager", action="read")
 
@@ -437,6 +458,9 @@ class PermissionsService:
         self, app_instance_names: Iterable[str]
     ) -> list[Permission]:
         result: list[Permission] = []
+
+        if not app_instance_names:
+            return result
 
         if self._apps_client is None:
             exc_txt = "Apps client is not configured"

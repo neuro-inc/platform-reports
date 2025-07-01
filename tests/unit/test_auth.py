@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 from multidict import MultiDict
@@ -10,6 +12,7 @@ from yarl import URL
 
 from platform_reports.auth import AuthService, Dashboard
 from platform_reports.platform_api_client import ApiClient, Job
+from platform_reports.platform_apps_client import AppInstance, AppsApiClient
 
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
@@ -21,6 +24,22 @@ def job_factory() -> Callable[[str], Job]:
         return Job(
             id=id_,
             uri=URL(f"job://default/org/project/{id_}"),
+        )
+
+    return _factory
+
+
+@pytest.fixture
+def app_factory() -> Callable[[str], AppInstance]:
+    def _factory(app_name: str) -> AppInstance:
+        return AppInstance(
+            id=str(uuid4()),
+            name=app_name,
+            cluster_name="default",
+            project_name="project",
+            org_name="org",
+            namespace="default",
+            created_at=datetime.now(tz=UTC),
         )
 
     return _factory
@@ -43,12 +62,22 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
     return client
 
 
+@pytest.fixture
+def apps_client(app_factory: Callable[[str], AppInstance]) -> mock.AsyncMock:
+    async def get_app_by_name(app_name: str) -> AppInstance:
+        return app_factory(app_name)
+
+    client = mock.AsyncMock(AppsApiClient)
+    client.get_app_by_name = mock.AsyncMock(side_effect=get_app_by_name)
+    return client
+
+
 class TestDashboards:
     @pytest.fixture
     def auth_service(
-        self, auth_client: AuthClient, api_client: ApiClient
+        self, auth_client: AuthClient, api_client: ApiClient, apps_client: AppsApiClient
     ) -> AuthService:
-        return AuthService(auth_client, api_client, "default")
+        return AuthService(auth_client, api_client, "default", apps_client)
 
     async def test_cluster_dashboards_permissions(
         self,
@@ -97,11 +126,7 @@ class TestDashboards:
             _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
             assert all(
-                any(
-                    p.uri.startswith(perm)
-                    for perm in ("app://default", "role://default/manager")
-                )
-                for p in permissions
+                p.uri.startswith("app://default/org/project") for p in permissions
             )
             return []
 

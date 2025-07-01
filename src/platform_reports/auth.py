@@ -47,8 +47,6 @@ class Matcher(str, enum.Enum):
     POD = "pod"
     ORG_LABEL = "label_platform_neuromation_io_org"
     PROJECT_LABEL = "label_platform_neuromation_io_project"
-    APP_ORG_LABEL = "label_platform_apolo_us_org"
-    APP_PROJECT_LABEL = "label_platform_apolo_us_project"
     APP_INSTANCE_LABEL = "label_platform_apolo_us_app_instance_name"
     SERVICE_LABEL = "label_service"
 

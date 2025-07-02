@@ -183,6 +183,7 @@ def prometheus_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
+    platform_apps_config: PlatformAppsConfig,
     thanos_query_url: URL,
 ) -> PrometheusProxyConfig:
     return PrometheusProxyConfig(
@@ -190,6 +191,7 @@ def prometheus_proxy_config(
         prometheus_url=thanos_query_url,
         platform_auth=platform_auth_config,
         platform_api=platform_api_config,
+        platform_apps=platform_apps_config,
         cluster_name="default",
         access_token_cookie_names=["dat"],
     )

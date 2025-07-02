@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import os
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,8 +20,6 @@ class Label:
     NEURO_NODE_POOL_KEY = Key("platform.neuromation.io/nodepool")
     NEURO_PREEMPTIBLE_KEY = Key("platform.neuromation.io/preemptible")
     NEURO_PRESET_KEY = Key("platform.neuromation.io/preset")
-    NEURO_ORG_KEY = Key("platform.neuromation.io/org")
-    NEURO_PROJECT_KEY = Key("platform.neuromation.io/project")
     NEURO_USER_KEY = Key("platform.neuromation.io/user")
     NEURO_JOB_KEY = Key("platform.neuromation.io/job")
 
@@ -28,7 +27,7 @@ class Label:
     APOLO_PROJECT_KEY = Key("platform.apolo.us/project")
     APOLO_USER_KEY = Key("platform.apolo.us/user")
     APOLO_PRESET_KEY = Key("platform.apolo.us/preset")
-    APOLO_APP_KEY = Key("platform.apolo.us/app")
+    APOLO_APP_INSTANCE_NAME_KEY = Key("platform.apolo.us/app-instance-name")
 
     FAILURE_DOMAIN_REGION_KEY = Key("failure-domain.beta.kubernetes.io/region")
     FAILURE_DOMAIN_ZONE_KEY = Key("failure-domain.beta.kubernetes.io/zone")
@@ -39,12 +38,14 @@ class Label:
 
 
 class PrometheusLabelMeta(type):
+    _UNSUPPORT_CHARS_RE = re.compile(r"[^a-zA-Z0-9_]")
+
     def __new__(cls, *args: Any, **kwargs: Any) -> type[PrometheusLabel]:
         instance = super().__new__(cls, *args, **kwargs)
         for name in dir(instance):
             value = getattr(instance, name)
             if isinstance(value, Label.Key):
-                value = "label_" + value.replace(".", "_").replace("/", "_")
+                value = "label_" + cls._UNSUPPORT_CHARS_RE.sub("_", value)
                 setattr(instance, name, Label.Key(value))
         return instance
 
@@ -90,6 +91,12 @@ class PlatformAuthConfig:
 
 @dataclass(frozen=True)
 class PlatformServiceConfig:
+    url: URL
+    token: str = field(repr=False)
+
+
+@dataclass(frozen=True)
+class PlatformAppsConfig:
     url: URL
     token: str = field(repr=False)
 
@@ -143,6 +150,7 @@ class PrometheusProxyConfig:
     prometheus_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
+    platform_apps: PlatformAppsConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -154,6 +162,7 @@ class GrafanaProxyConfig:
     grafana_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
+    platform_apps: PlatformAppsConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -199,6 +208,7 @@ class EnvironConfigFactory:
             prometheus_url=URL(self._environ["PROMETHEUS_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
+            platform_apps=self._create_platform_apps_config(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
@@ -211,6 +221,7 @@ class EnvironConfigFactory:
             grafana_url=URL(self._environ["GRAFANA_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
+            platform_apps=self._create_platform_apps_config(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"
@@ -231,6 +242,12 @@ class EnvironConfigFactory:
     def _create_platform_api(self) -> PlatformServiceConfig:
         return PlatformServiceConfig(
             url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_TOKEN"]
+        )
+
+    def _create_platform_apps_config(self) -> PlatformAppsConfig:
+        return PlatformAppsConfig(
+            url=URL(self._environ["NP_APPS_URL"]),
+            token=self._environ["NP_TOKEN"],
         )
 
     def _create_platform_config(self) -> PlatformServiceConfig:

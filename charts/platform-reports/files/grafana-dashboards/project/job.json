@@ -432,11 +432,11 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_neuromation_io_org!=\"no_org\"}",
+                    "expr": "kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\",label_platform_apolo_us_org!=\"no_org\"}",
                     "format": "time_series",
                     "instant": true,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_org}}",
+                    "legendFormat": "{{label_platform_apolo_us_org}}",
                     "refId": "A"
                 }
             ],
@@ -488,11 +488,11 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "max by(label_platform_neuromation_io_project) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
+                    "expr": "max by(label_platform_apolo_us_project) (kube_pod_labels{job=\"kube-state-metrics\",pod=\"$job_id\"})",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_project}}",
+                    "legendFormat": "{{label_platform_apolo_us_project}}",
                     "refId": "A"
                 }
             ],

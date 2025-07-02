@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 from multidict import MultiDict
 from neuro_auth_client import AuthClient, Permission
-from yarl import URL
 
 from platform_reports.auth import AuthService, Dashboard
 from platform_reports.platform_api_client import ApiClient, Job
+from platform_reports.platform_apps_client import AppInstance, AppsApiClient
 
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
@@ -20,7 +22,24 @@ def job_factory() -> Callable[[str], Job]:
     def _factory(id_: str) -> Job:
         return Job(
             id=id_,
-            uri=URL(f"job://default/org/project/{id_}"),
+            org_name="org",
+            project_name="project",
+        )
+
+    return _factory
+
+
+@pytest.fixture
+def app_factory() -> Callable[[str], AppInstance]:
+    def _factory(app_name: str) -> AppInstance:
+        return AppInstance(
+            id=str(uuid4()),
+            name=app_name,
+            cluster_name="default",
+            project_name="project",
+            org_name="org",
+            namespace="default",
+            created_at=datetime.now(tz=UTC),
         )
 
     return _factory
@@ -43,12 +62,27 @@ def api_client(job_factory: Callable[[str], Job]) -> mock.AsyncMock:
     return client
 
 
+@pytest.fixture
+def apps_client(app_factory: Callable[[str], AppInstance]) -> mock.AsyncMock:
+    async def get_app_by_name(app_name: str) -> AppInstance:
+        return app_factory(app_name)
+
+    client = mock.AsyncMock(AppsApiClient)
+    client.get_app_by_name = mock.AsyncMock(side_effect=get_app_by_name)
+    return client
+
+
 class TestDashboards:
     @pytest.fixture
     def auth_service(
-        self, auth_client: AuthClient, api_client: ApiClient
+        self, auth_client: AuthClient, api_client: ApiClient, apps_client: AppsApiClient
     ) -> AuthService:
-        return AuthService(auth_client, api_client, "default")
+        return AuthService(
+            auth_client=auth_client,
+            api_client=api_client,
+            apps_client=apps_client,
+            cluster_name="default",
+        )
 
     async def test_cluster_dashboards_permissions(
         self,
@@ -83,11 +117,10 @@ class TestDashboards:
         ) -> Sequence[Permission]:
             assert all(
                 p.uri.startswith("job://default/org/project") for p in permissions
-            )
+            ) or all(p.uri.startswith("app://default/org/project") for p in permissions)
             return []
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
-
         for _, exprs in project_dashboards_expressions.items():
             await auth_service.check_query_permissions("user", exprs)
             auth_client.reset_mock()
@@ -115,8 +148,15 @@ class TestDashboards:
 
 class TestAuthService:
     @pytest.fixture
-    def service(self, auth_client: AuthClient, api_client: ApiClient) -> AuthService:
-        return AuthService(auth_client, api_client, "default")
+    def service(
+        self, auth_client: AuthClient, api_client: ApiClient, apps_client: AppsApiClient
+    ) -> AuthService:
+        return AuthService(
+            auth_client=auth_client,
+            api_client=api_client,
+            apps_client=apps_client,
+            cluster_name="default",
+        )
 
     async def test_check_permissions_is_true(
         self, service: AuthService, auth_client: mock.AsyncMock
@@ -188,7 +228,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -374,7 +414,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -443,7 +483,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -515,7 +555,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -570,7 +610,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -601,7 +641,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -646,7 +686,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri=f"job://default/org/project/{JOB_ID}", action="read")],
+            [Permission(uri="job://default/org/project", action="read")],
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -659,7 +699,7 @@ class TestAuthService:
                 """
                 kube_pod_labels{
                     job='kube-state-metrics',
-                    label_platform_neuromation_io_project='project'
+                    label_platform_apolo_us_project='project'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -680,7 +720,7 @@ class TestAuthService:
                 """
                 kube_pod_labels{
                     job='kube-state-metrics',
-                    label_platform_neuromation_io_org='org'
+                    label_platform_apolo_us_org='org'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -701,7 +741,7 @@ class TestAuthService:
                 """
                 kube_pod_labels{
                     job='kube-state-metrics',
-                    label_platform_neuromation_io_org='no_org'
+                    label_platform_apolo_us_org='no_org'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -722,8 +762,8 @@ class TestAuthService:
                 """
                 kube_pod_labels{
                     job='kube-state-metrics',
-                    label_platform_neuromation_io_org='org',
-                    label_platform_neuromation_io_project='project'
+                    label_platform_apolo_us_org='org',
+                    label_platform_apolo_us_project='project'
                 }
                 * on(pod)
                 container_cpu_usage_seconds_total{job='kubelet'}
@@ -760,14 +800,14 @@ class TestAuthService:
             user_name="user",
             queries=[
                 """
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_apolo_us_project='project'}
                 *
                 container_cpu_usage_seconds_total{job='kubelet'}
                 """,
                 """
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_apolo_us_project='project'}
                 *
-                kube_pod_labels{job='kube-state-metrics',label_platform_neuromation_io_project='project'}
+                kube_pod_labels{job='kube-state-metrics',label_platform_apolo_us_project='project'}
                 """,
             ],
         )
@@ -793,3 +833,26 @@ class TestAuthService:
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user", [Permission(uri="role://default/manager", action="read")]
         )
+
+    async def test_check_join_for_app_instance_permissions(
+        self,
+        service: AuthService,
+        auth_client: mock.AsyncMock,
+        apps_client: mock.AsyncMock,
+    ) -> None:
+        await service.check_query_permissions(
+            user_name="user",
+            queries=[
+                """
+                kube_pod_labels{job='kube-state-metrics',label_platform_apolo_us_app_instance_name='test-app'}
+                * on(pod)
+                container_cpu_usage_seconds_total{job='kubelet',pod='test-app-pod'}
+                """
+            ],
+        )
+
+        auth_client.get_missing_permissions.assert_awaited_once_with(
+            "user",
+            [Permission(uri="app://default/org/project", action="read")],
+        )
+        apps_client.get_app_by_name.assert_awaited_once_with("test-app")

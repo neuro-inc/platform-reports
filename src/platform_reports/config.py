@@ -150,6 +150,7 @@ class PrometheusProxyConfig:
     prometheus_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
+    platform_apps: PlatformAppsConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -207,6 +208,7 @@ class EnvironConfigFactory:
             prometheus_url=URL(self._environ["PROMETHEUS_URL"]),
             platform_auth=self._create_platform_auth(),
             platform_api=self._create_platform_api(),
+            platform_apps=self._create_platform_apps_config(),
             cluster_name=self._environ["NP_CLUSTER_NAME"],
             access_token_cookie_names=self._environ[
                 "NP_AUTH_ACCESS_TOKEN_COOKIE_NAMES"

@@ -102,6 +102,7 @@ class TestEnvironConfigFactory:
             "NP_AUTH_URL": "-",
             "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
+            "NP_APPS_URL": "https://dev.neu.ro/apis/apps",
         }
 
         result = EnvironConfigFactory(env).create_prometheus_proxy()
@@ -115,6 +116,9 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
+            platform_apps=PlatformAppsConfig(
+                url=URL("https://dev.neu.ro/apis/apps"), token="token"
+            ),
         )
 
     def test_create_prometheus_proxy_custom(self) -> None:
@@ -127,6 +131,7 @@ class TestEnvironConfigFactory:
             "NP_AUTH_URL": "https://dev.neu.ro",
             "NP_TOKEN": "token",
             "NP_API_URL": "https://dev.neu.ro/api/v1",
+            "NP_APPS_URL": "https://dev.neu.ro/apis/apps",
         }
 
         result = EnvironConfigFactory(env).create_prometheus_proxy()
@@ -141,6 +146,9 @@ class TestEnvironConfigFactory:
             ),
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
+            ),
+            platform_apps=PlatformAppsConfig(
+                url=URL("https://dev.neu.ro/apis/apps"), token="token"
             ),
         )
 

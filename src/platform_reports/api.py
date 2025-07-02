@@ -662,7 +662,17 @@ def create_prometheus_proxy_app(
                 create_api_client(config.platform_api)
             )
 
-            auth_service = AuthService(auth_client, api_client, config.cluster_name)
+            LOGGER.info("Initializing Apps client")
+            apps_client = await exit_stack.enter_async_context(
+                AppsApiClient(config.platform_apps.url, config.platform_apps.token)
+            )
+
+            auth_service = AuthService(
+                auth_client=auth_client,
+                api_client=api_client,
+                apps_client=apps_client,
+                cluster_name=config.cluster_name,
+            )
             api_v1_app[AUTH_SERVICE_APP_KEY] = auth_service
 
             LOGGER.info("Initializing Prometheus client")
@@ -696,11 +706,17 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
             api_client = await exit_stack.enter_async_context(
                 create_api_client(config.platform_api)
             )
+
+            LOGGER.info("Initializing Apps client")
             apps_client = await exit_stack.enter_async_context(
                 AppsApiClient(config.platform_apps.url, config.platform_apps.token)
             )
+
             auth_service = AuthService(
-                auth_client, api_client, config.cluster_name, apps_client
+                auth_client=auth_client,
+                api_client=api_client,
+                apps_client=apps_client,
+                cluster_name=config.cluster_name,
             )
             app[AUTH_SERVICE_APP_KEY] = auth_service
 

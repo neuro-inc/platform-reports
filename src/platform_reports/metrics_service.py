@@ -56,7 +56,7 @@ class PrometheusQueryFactory:
             )
         else:
             query.append(
-                f'(kube_pod_labels{{{PrometheusLabel.NEURO_PROJECT_KEY}!=""}} or '
+                f'(kube_pod_labels{{{PrometheusLabel.APOLO_PROJECT_KEY}!=""}} or '
                 f'kube_pod_labels{{{PrometheusLabel.APOLO_PROJECT_KEY}!=""}})'
             )
         return "".join(query)
@@ -67,10 +67,10 @@ class PrometheusQueryFactory:
     ) -> str:
         label_matchers = []
         if org_name:
-            label_matchers.append(f'{PrometheusLabel.NEURO_ORG_KEY}="{org_name}"')
+            label_matchers.append(f'{PrometheusLabel.APOLO_ORG_KEY}="{org_name}"')
         if project_name:
             label_matchers.append(
-                f'{PrometheusLabel.NEURO_PROJECT_KEY}="{project_name}"'
+                f'{PrometheusLabel.APOLO_PROJECT_KEY}="{project_name}"'
             )
         return ",".join(label_matchers)
 
@@ -142,14 +142,14 @@ class PodCreditsMetric(Metric):
     @property
     def org_name(self) -> str | None:
         org_name = self.labels.get(PrometheusLabel.APOLO_ORG_KEY) or self.labels.get(
-            PrometheusLabel.NEURO_ORG_KEY
+            PrometheusLabel.APOLO_ORG_KEY
         )
         return None if org_name == "no_org" else org_name
 
     @property
     def project_name(self) -> str | None:
         return self.labels.get(PrometheusLabel.APOLO_PROJECT_KEY) or self.labels.get(
-            PrometheusLabel.NEURO_PROJECT_KEY
+            PrometheusLabel.APOLO_PROJECT_KEY
         )
 
     @property
@@ -177,7 +177,7 @@ class CreditsUsageFactory:
             return None
         if job_id := metric.labels.get(PrometheusLabel.NEURO_JOB_KEY):
             return cls._create_for_job(metric, job_id=job_id)
-        if app_id := metric.labels.get(PrometheusLabel.APOLO_APP_KEY):
+        if app_id := metric.labels.get(PrometheusLabel.APOLO_APP_INSTANCE_NAME_KEY):
             return cls._create_for_app(metric, app_id=app_id)
         LOGGER.warning(
             "Failed to create compute credits usage from metric labels: %s",

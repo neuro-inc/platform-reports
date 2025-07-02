@@ -9,7 +9,8 @@ from yarl import URL
 @dataclass(frozen=True)
 class Job:
     id: str
-    uri: URL
+    org_name: str
+    project_name: str
 
 
 class ApiClient:
@@ -64,5 +65,6 @@ class ApiClient:
             response_json = await response.json()
             return Job(
                 id=response_json["id"],
-                uri=URL(response_json["uri"]),
+                org_name=response_json["org_name"],
+                project_name=response_json["project_name"],
             )

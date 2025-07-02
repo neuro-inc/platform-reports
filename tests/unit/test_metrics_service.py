@@ -28,7 +28,7 @@ class TestPrometheusQueryFactory:
 
         assert query == (
             "max by(pod) (kube_pod_credits_total) * on(pod) group_right() "
-            '(kube_pod_labels{label_platform_neuromation_io_project!=""} or '
+            '(kube_pod_labels{label_platform_apolo_us_project!=""} or '
             'kube_pod_labels{label_platform_apolo_us_project!=""})'
         )
 
@@ -51,7 +51,7 @@ class TestCreditsUsageFactory:
     def test_create_for_compute__job(self) -> None:
         metric = PodCreditsMetric(
             labels={
-                "label_platform_neuromation_io_project": "test-project",
+                "label_platform_apolo_us_project": "test-project",
                 "label_platform_neuromation_io_user": "test-user",
                 "label_platform_neuromation_io_job": "test-job",
             },
@@ -75,8 +75,8 @@ class TestCreditsUsageFactory:
     def test_create_for_compute__job__with_org_label(self) -> None:
         metric = PodCreditsMetric(
             labels={
-                "label_platform_neuromation_io_org": "test-org",
-                "label_platform_neuromation_io_project": "test-project",
+                "label_platform_apolo_us_org": "test-org",
+                "label_platform_apolo_us_project": "test-project",
                 "label_platform_neuromation_io_job": "test-job",
             },
             values=[
@@ -118,7 +118,7 @@ class TestCreditsUsageFactory:
                 "label_platform_apolo_us_org": "test-org",
                 "label_platform_apolo_us_project": "test-project",
                 "label_platform_apolo_us_user": "test-user",
-                "label_platform_apolo_us_app": "test-app",
+                "label_platform_apolo_us_app_instance_name": "test-app",
             },
             values=[
                 Metric.Value(datetime.now(), Decimal(1)),
@@ -157,7 +157,7 @@ class TestCreditsUsageFactory:
     def test_create_for_compute__not_enough_metrics(self) -> None:
         metric = PodCreditsMetric(
             labels={
-                "label_platform_neuromation_io_project": "test-project",
+                "label_platform_apolo_us_project": "test-project",
                 "label_platform_neuromation_io_job": "test-job",
             },
             values=[

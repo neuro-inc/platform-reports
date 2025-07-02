@@ -127,8 +127,8 @@ class TestMetricsService:
                                 },
                                 {
                                     "metric": {
-                                        "label_platform_neuromation_io_org": "test-org",
-                                        "label_platform_neuromation_io_project": "test-project",  # noqa: E501
+                                        "label_platform_apolo_us_org": "test-org",
+                                        "label_platform_apolo_us_project": "test-project",  # noqa: E501
                                         "label_platform_neuromation_io_user": "test-user",  # noqa: E501
                                         "label_platform_neuromation_io_job": "test-job",
                                     },

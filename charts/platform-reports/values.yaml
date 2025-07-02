@@ -152,7 +152,7 @@ kube-prometheus-stack:
 
     metricLabelsAllowlist:
       - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
-      - pods=[service,platform.neuromation.io/org,platform.neuromation.io/project,platform.neuromation.io/user,platform.neuromation.io/preset,platform.neuromation.io/job,platform.apolo.us/org,platform.apolo.us/project,platform.apolo.us/preset,platform.apolo.us/app,platform.apolo.us/app-instance-name]
+      - pods=[service,platform.neuromation.io/user,platform.neuromation.io/job,platform.apolo.us/org,platform.apolo.us/project,platform.apolo.us/preset,platform.apolo.us/app-instance-name]
 
     priorityClassName: ""
 
@@ -298,34 +298,6 @@ kube-prometheus-stack:
 
   grafana:
     enabled: false
-
-  additionalPrometheusRulesMap:
-    apps-custom-metrics-rule:
-      groups:
-        - name: apps-custom-metrics
-          rules:
-            - record: app:container_cpu_usage_seconds_total
-              expr: container_cpu_usage_seconds_total{job="kubelet",container!="",image!=""} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:container_memory_working_set_bytes
-              expr: container_memory_working_set_bytes{job="kubelet",container!="",image!=""} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:DCGM_FI_DEV_GPU_UTIL
-              expr: DCGM_FI_DEV_GPU_UTIL{job="nvidia-dcgm-exporter"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:DCGM_FI_DEV_FB_USED
-              expr: DCGM_FI_DEV_FB_USED{job="kubelet",container!="",image!=""} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:kube_pod_container_resource_requests
-              expr: kube_pod_container_resource_requests{job="kube-state-metrics"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:kube_pod_container_resource_limits
-              expr: kube_pod_container_resource_limits{job="kube-state-metrics"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:container_network_receive_bytes_total
-              expr: container_network_receive_bytes_total{job="kubelet"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:container_network_transmit_bytes_total
-              expr: container_network_transmit_bytes_total{job="kubelet"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:container_fs_reads_bytes_total
-              expr: container_fs_reads_bytes_total{job="kubelet"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:container_fs_writes_bytes_total
-              expr: container_fs_writes_bytes_total{job="kubelet"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
-            - record: app:kube_pod_container_info
-              expr: kube_pod_container_info{job="kube-state-metrics"} * on (pod) group_left (label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_app_instance_name) kube_pod_labels{job="kube-state-metrics"}
 
 thanos:
   nameOverride: thanos

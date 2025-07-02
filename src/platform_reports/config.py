@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import os
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,8 +20,6 @@ class Label:
     NEURO_NODE_POOL_KEY = Key("platform.neuromation.io/nodepool")
     NEURO_PREEMPTIBLE_KEY = Key("platform.neuromation.io/preemptible")
     NEURO_PRESET_KEY = Key("platform.neuromation.io/preset")
-    NEURO_ORG_KEY = Key("platform.neuromation.io/org")
-    NEURO_PROJECT_KEY = Key("platform.neuromation.io/project")
     NEURO_USER_KEY = Key("platform.neuromation.io/user")
     NEURO_JOB_KEY = Key("platform.neuromation.io/job")
 
@@ -28,7 +27,7 @@ class Label:
     APOLO_PROJECT_KEY = Key("platform.apolo.us/project")
     APOLO_USER_KEY = Key("platform.apolo.us/user")
     APOLO_PRESET_KEY = Key("platform.apolo.us/preset")
-    APOLO_APP_KEY = Key("platform.apolo.us/app")
+    APOLO_APP_INSTANCE_NAME_KEY = Key("platform.apolo.us/app-instance-name")
 
     FAILURE_DOMAIN_REGION_KEY = Key("failure-domain.beta.kubernetes.io/region")
     FAILURE_DOMAIN_ZONE_KEY = Key("failure-domain.beta.kubernetes.io/zone")
@@ -39,12 +38,14 @@ class Label:
 
 
 class PrometheusLabelMeta(type):
+    _UNSUPPORT_CHARS_RE = re.compile(r"[^a-zA-Z0-9_]")
+
     def __new__(cls, *args: Any, **kwargs: Any) -> type[PrometheusLabel]:
         instance = super().__new__(cls, *args, **kwargs)
         for name in dir(instance):
             value = getattr(instance, name)
             if isinstance(value, Label.Key):
-                value = "label_" + value.replace(".", "_").replace("/", "_")
+                value = "label_" + cls._UNSUPPORT_CHARS_RE.sub("_", value)
                 setattr(instance, name, Label.Key(value))
         return instance
 

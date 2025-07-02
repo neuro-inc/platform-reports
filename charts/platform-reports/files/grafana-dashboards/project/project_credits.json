@@ -102,7 +102,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=\"$project_name\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                    "expr": "sum by(label_platform_neuromation_io_user,label_platform_neuromation_io_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
                     "format": "table",
                     "hide": false,
                     "instant": false,
@@ -372,7 +372,7 @@
                     "value": "$__all"
                 },
                 "datasource": "Prometheus",
-                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=\"$project_name\"},label_platform_neuromation_io_user)",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\"},label_platform_neuromation_io_user)",
                 "error": null,
                 "hide": 0,
                 "includeAll": true,
@@ -380,7 +380,7 @@
                 "multi": false,
                 "name": "user_name",
                 "options": [],
-                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_neuromation_io_org=\"$org_name\",label_platform_neuromation_io_project=\"$project_name\"},label_platform_neuromation_io_user)",
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\"},label_platform_neuromation_io_user)",
                 "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,

@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 17,
+  "id": 19,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -45,7 +45,7 @@
           "refId": "A"
         }
       ],
-      "title": "Running Apps",
+      "title": "Running Jobs",
       "type": "row"
     },
     {
@@ -133,6 +133,10 @@
                     "type": "special"
                   }
                 ]
+              },
+              {
+                "id": "custom.width",
+                "value": 275
               }
             ]
           },
@@ -190,6 +194,27 @@
                     "type": "special"
                   }
                 ]
+              },
+              {
+                "id": "custom.width",
+                "value": 314
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Job"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Explore",
+                    "url": "/d/job/job?orgId=${__org}&var-job_id=${__data.fields[pod]}&${__url_time_range}&refresh=15s"
+                  }
+                ]
               }
             ]
           },
@@ -200,17 +225,8 @@
             },
             "properties": [
               {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Explore",
-                    "url": "/d/app/app?orgId=${__org}&var-app_instance_name=${__data.fields[label_platform_apolo_us_app_instance_name]}&${__url_time_range}&refresh=15s"
-                  }
-                ]
-              },
-              {
                 "id": "custom.width",
-                "value": 472
+                "value": 416
               }
             ]
           },
@@ -222,19 +238,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 204
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Project"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 184
+                "value": 145
               }
             ]
           },
@@ -246,7 +250,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 176
+                "value": 163
               }
             ]
           }
@@ -274,10 +278,6 @@
         "sortBy": [
           {
             "desc": false,
-            "displayName": "Project"
-          },
-          {
-            "desc": false,
             "displayName": "User"
           },
           {
@@ -294,7 +294,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (\n          irate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\"}[$__rate_interval])\n        )\n      /\n        sum by (pod) (\n          kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (\n          irate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\"}[$__rate_interval])\n        )\n      /\n        sum by (pod) (\n          kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -308,7 +308,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (container_memory_working_set_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\"})\n      /\n        sum by (pod) (\n          kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (container_memory_working_set_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\"})\n      /\n        sum by (pod) (\n          kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_project, label_platform_apolo_us_user, label_platform_apolo_us_preset, label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -344,17 +344,13 @@
               "instance": true,
               "job": true,
               "label_job": true,
-              "label_platform_apolo_us_app_instance_name 2": true,
               "label_platform_apolo_us_preset 2": true,
-              "label_platform_apolo_us_project": false,
+              "label_platform_apolo_us_project": true,
               "label_platform_apolo_us_project 2": true,
-              "label_platform_apolo_us_user": false,
               "label_platform_apolo_us_user 2": true,
-              "label_platform_neuromation_io_job": true,
               "metrics_path": true,
               "name": true,
               "namespace": true,
-              "pod": false,
               "pod_ip": true,
               "pod_name": true,
               "prometheus": true,
@@ -363,28 +359,25 @@
               "uid": true
             },
             "indexByName": {
-              "Time": 6,
-              "Value #A": 4,
-              "Value #B": 5,
+              "Time": 7,
+              "Time 2": 6,
+              "Value #A": 3,
+              "Value #B": 4,
               "label_platform_apolo_us_app_instance_name": 0,
-              "label_platform_apolo_us_app_instance_name 2": 7,
-              "label_platform_apolo_us_preset": 3,
+              "label_platform_apolo_us_preset": 2,
               "label_platform_apolo_us_preset 2": 8,
-              "label_platform_apolo_us_project": 1,
+              "label_platform_apolo_us_project": 5,
               "label_platform_apolo_us_project 2": 9,
-              "label_platform_apolo_us_user": 2,
+              "label_platform_apolo_us_user": 1,
               "label_platform_apolo_us_user 2": 10
             },
             "renameByName": {
-              "Value": "",
               "Value #A": "CPU",
               "Value #B": "Memory",
               "label_platform_apolo_us_app_instance_name": "App name",
-              "label_platform_apolo_us_org": "Organization",
               "label_platform_apolo_us_preset": "Preset",
-              "label_platform_apolo_us_project": "Project",
+              "label_platform_apolo_us_project": "",
               "label_platform_apolo_us_user": "User",
-              "label_platform_neuromation_io_preset": "Preset",
               "node": "Node",
               "pod": "Job"
             }
@@ -480,7 +473,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum (\n    kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n  * on (pod)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum (\n    kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n  * on (pod)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -584,7 +577,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(\n    sum by (pod) (\n      kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n    )\n  * on (pod)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum(\n    sum by (pod) (\n      kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n    )\n  * on (pod)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -688,7 +681,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_neuromation_io_gpu_model) (\n    max by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"})\n  * on (pod) group_left (label_platform_neuromation_io_gpu_model)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"}\n)",
+          "expr": "sum by (label_platform_neuromation_io_gpu_model) (\n    max by (pod) (DCGM_FI_DEV_COUNT{job=\"nvidia-dcgm-exporter\"})\n  * on (pod) group_left (label_platform_neuromation_io_gpu_model)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\",label_platform_neuromation_io_gpu_model!=\"\"}\n)",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -819,13 +812,12 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (\n          irate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\"}[5m])\n        )\n      /\n        sum by (pod) (\n          kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (\n          irate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\"}[5m])\n        )\n      /\n        sum by (pod) (\n          kube_pod_container_resource_requests{container!=\"POD\",job=\"kube-state-metrics\",resource=\"cpu\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -925,11 +917,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (container_memory_working_set_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\"})\n      /\n        sum by (pod) (\n          kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n        sum by (pod) (container_memory_working_set_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\"})\n      /\n        sum by (pod) (\n          kube_pod_container_resource_limits{container!=\"POD\",job=\"kube-state-metrics\",resource=\"memory\"}\n        )\n    *\n      100\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -1055,11 +1047,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg by (label_platform_apolo_us_app_instance_name) (\n    avg by (pod) (DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"})\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "avg by (label_platform_apolo_us_app_instance_name) (\n    avg by (pod) (DCGM_FI_DEV_GPU_UTIL{job=\"nvidia-dcgm-exporter\"})\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -1161,11 +1153,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"})\n    /\n      sum by (pod) (\n        DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}\n      )\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"})\n    /\n      sum by (pod) (\n        DCGM_FI_DEV_FB_USED{job=\"nvidia-dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"nvidia-dcgm-exporter\"}\n      )\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -1294,11 +1286,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (irate(container_network_receive_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n    * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n      kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n  *\n    8\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (irate(container_network_receive_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n    * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n      kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n  *\n    8\n)",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -1401,12 +1393,12 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (irate(container_network_transmit_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n    * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n      kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n  *\n    8\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n      sum by (pod) (irate(container_network_transmit_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n    * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n      kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n  *\n    8\n)",
           "format": "time_series",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -1533,10 +1525,10 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n    sum by (pod) (irate(container_fs_reads_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n    sum by (pod) (irate(container_fs_reads_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -1634,11 +1626,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n    sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
+          "expr": "sum by (label_platform_apolo_us_app_instance_name) (\n    sum by (pod) (irate(container_fs_writes_bytes_total{job=\"kubelet\"}[$__rate_interval]))\n  * on (pod) group_left (label_platform_apolo_us_app_instance_name)\n    kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_app_instance_name=~\".+\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\",label_platform_apolo_us_user=~\"^$user_name$\"}\n)",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{label_platform_apolo_us_app_instance_name}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
@@ -1690,37 +1682,17 @@
         "type": "constant"
       },
       {
-        "allValue": ".*",
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
-        "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_project)",
-        "hide": 0,
-        "includeAll": true,
+        "hide": 2,
         "label": "Project",
-        "multi": false,
         "name": "project_name",
-        "options": [],
-        "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_project)",
-        "refresh": 2,
-        "regex": "",
+        "query": "",
         "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "constant"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -1728,14 +1700,14 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_user)",
+        "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\"},label_platform_apolo_us_user)",
         "hide": 0,
         "includeAll": true,
         "label": "User",
         "multi": false,
         "name": "user_name",
         "options": [],
-        "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_user)",
+        "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=\"$org_name\",label_platform_apolo_us_project=\"$project_name\"},label_platform_apolo_us_user)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -1777,7 +1749,7 @@
   },
   "timezone": "browser",
   "title": "Apps",
-  "uid": "org_apps",
-  "version": 5,
+  "uid": "project_apps",
+  "version": 17,
   "weekStart": ""
 }

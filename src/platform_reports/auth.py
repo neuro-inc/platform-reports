@@ -37,6 +37,7 @@ class Dashboard(str, enum.Enum):
     JOBS = "jobs"
     APPS = "apps"
     PROJECT_JOBS = "project_jobs"
+    PROJECT_APPS = "project_apps"
     ORG_JOBS = "org_jobs"
     ORG_APPS = "org_apps"
     CREDITS = "credits"
@@ -126,6 +127,16 @@ class AuthService:
                         project_name=dashboard_project_name
                     )
                 ]
+        elif dashboard_id == Dashboard.PROJECT_APPS:
+            dashboard_project_name = params.get("var-project_name")
+            dashboard_org_name = params.get("var-org_name")
+            if not dashboard_project_name:
+                return False
+            permissions = [
+                permissions_service.get_app_permission(
+                    project_name=dashboard_project_name, org_name=dashboard_org_name
+                )
+            ]
         elif dashboard_id == Dashboard.ORG_JOBS:
             dashboard_org_name = params.get("var-org_name")
             permissions = [

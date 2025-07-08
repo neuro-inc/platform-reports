@@ -81,7 +81,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Credits"
+              "options": "App name"
             },
             "properties": [
               {
@@ -91,6 +91,15 @@
               {
                 "id": "decimals",
                 "value": 2
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Explore",
+                    "url": "/d/app/app?orgId=${__org}&var-app_instance_name=${__data.fields[label_platform_apolo_us_app_instance_name]}&${__url_time_range}&refresh=15s"
+                  }
+                ]
               }
             ]
           }
@@ -327,11 +336,11 @@
                 "operation": "aggregate"
               },
               "label_platform_apolo_us_app_instance_name": {
-                "aggregations": []
-              },
-              "label_platform_apolo_us_preset": {
                 "aggregations": [],
                 "operation": "groupby"
+              },
+              "label_platform_apolo_us_preset": {
+                "aggregations": []
               },
               "label_platform_apolo_us_user": {
                 "aggregations": [],
@@ -354,6 +363,9 @@
                 ],
                 "operation": "aggregate"
               },
+              "label_platform_apolo_us_app_instance_name": {
+                "aggregations": []
+              },
               "label_platform_apolo_us_preset": {
                 "aggregations": [],
                 "operation": "groupby"
@@ -369,7 +381,8 @@
           "id": "organize",
           "options": {
             "excludeByName": {
-              "label_platform_apolo_us_preset": true
+              "label_platform_apolo_us_app_instance_name": true,
+              "label_platform_apolo_us_preset": false
             },
             "indexByName": {
               "Value (diff) (sum)": 2,
@@ -411,7 +424,7 @@
       {
         "allValue": ".+",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -469,6 +482,6 @@
   "timezone": "browser",
   "title": "Apps Credits",
   "uid": "project_apps_credits",
-  "version": 7,
+  "version": 10,
   "weekStart": ""
 }

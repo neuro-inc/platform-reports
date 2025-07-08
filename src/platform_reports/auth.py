@@ -35,10 +35,14 @@ class Dashboard(str, enum.Enum):
     JOB = "job"
     APP = "app"
     JOBS = "jobs"
+    APPS = "apps"
     PROJECT_JOBS = "project_jobs"
+    PROJECT_APPS = "project_apps"
     ORG_JOBS = "org_jobs"
+    ORG_APPS = "org_apps"
     CREDITS = "credits"
     PROJECT_CREDITS = "project_credits"
+    PROJECT_APPS_CREDITS = "project_apps_credits"
     ORG_CREDITS = "org_credits"
 
 
@@ -98,6 +102,8 @@ class AuthService:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.PRICES:
             permissions = [permissions_service.get_cluster_manager_permission()]
+        elif dashboard_id == Dashboard.APPS:
+            permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.OVERVIEW:
             permissions = [permissions_service.get_cluster_manager_permission()]
         elif dashboard_id == Dashboard.JOB:
@@ -122,10 +128,27 @@ class AuthService:
                         project_name=dashboard_project_name
                     )
                 ]
+        elif dashboard_id == Dashboard.PROJECT_APPS:
+            dashboard_project_name = params.get("var-project_name")
+            dashboard_org_name = params.get("var-org_name")
+            if not dashboard_project_name:
+                return False
+            permissions = [
+                permissions_service.get_app_permission(
+                    project_name=dashboard_project_name, org_name=dashboard_org_name
+                )
+            ]
         elif dashboard_id == Dashboard.ORG_JOBS:
             dashboard_org_name = params.get("var-org_name")
             permissions = [
                 permissions_service.get_job_permission(org_name=dashboard_org_name)
+            ]
+        elif dashboard_id == Dashboard.ORG_APPS:
+            dashboard_org_name = params.get("var-org_name")
+            if not dashboard_org_name:
+                return False
+            permissions = [
+                permissions_service.get_app_permission(org_name=dashboard_org_name)
             ]
         elif dashboard_id == Dashboard.CREDITS:
             permissions = [permissions_service.get_job_permission()]
@@ -137,6 +160,16 @@ class AuthService:
                         project_name=dashboard_project_name
                     )
                 ]
+        elif dashboard_id == Dashboard.PROJECT_APPS_CREDITS:
+            dashboard_project_name = params.get("var-project_name")
+            dashboard_org_name = params.get("var-org_name")
+            if not dashboard_project_name:
+                return False
+            permissions = [
+                permissions_service.get_app_permission(
+                    project_name=dashboard_project_name, org_name=dashboard_org_name
+                )
+            ]
         elif dashboard_id == Dashboard.ORG_CREDITS:
             dashboard_org_name = params.get("var-org_name")
             permissions = [

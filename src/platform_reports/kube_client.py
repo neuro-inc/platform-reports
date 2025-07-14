@@ -268,6 +268,7 @@ class PodStatus:
     phase: PodPhase
     container_statuses: Sequence[ContainerStatus] = field(default_factory=list)
     conditions: Sequence[PodCondition] = field(default_factory=list)
+    reason: str | None = None
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> PodStatus:
@@ -280,6 +281,7 @@ class PodStatus:
             conditions=[
                 PodCondition.from_payload(p) for p in payload.get("conditions", ())
             ],
+            reason=payload.get("reason"),
         )
 
     @property

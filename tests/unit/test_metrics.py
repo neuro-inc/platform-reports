@@ -1338,6 +1338,25 @@ class TestPodCreditsCollector:
 
         assert result == {"test": Decimal(10)}
 
+    async def test_get_latest_value__evicted(
+        self, collector_factory: Callable[..., PodCreditsCollector]
+    ) -> None:
+        collector = collector_factory(
+            pods=[
+                Pod(
+                    metadata=Metadata(
+                        name="test",
+                        labels={"platform.apolo.us/preset": "cpu-small"},
+                        creation_timestamp=datetime.now(UTC),
+                    ),
+                    status=PodStatus(phase=PodPhase.FAILED, reason="Evicted"),
+                )
+            ],
+        )
+        result = await collector.get_latest_value()
+
+        assert result == {}
+
     async def test_get_latest_value__no_preset__label_added(
         self,
         kube_client_factory: Callable[..., mock.AsyncMock],

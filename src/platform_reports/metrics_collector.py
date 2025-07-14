@@ -712,9 +712,18 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
                         pod.metadata.name,
                         {Label.APOLO_PRESET_KEY: preset.name},
                     )
-                credits_total = self._get_pod_credits_total(
-                    pod, preset.credits_per_hour
-                )
+                try:
+                    credits_total = self._get_pod_credits_total(
+                        pod, preset.credits_per_hour
+                    )
+                except Exception:
+                    logger.debug(
+                        "Failed to calculate pod %r credits. Pod phase %r, reason %r",
+                        pod_name,
+                        pod.status.phase,
+                        pod.status.reason,
+                    )
+                    continue
                 logger.debug("Pod %r credits total: %s", pod_name, credits_total)
                 result[pod_name] = credits_total
             except Exception as ex:

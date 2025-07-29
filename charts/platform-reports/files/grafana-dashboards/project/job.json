@@ -91,7 +91,7 @@
                     "format": "time_series",
                     "instant": true,
                     "interval": "",
-                    "legendFormat": "{{label_platform_neuromation_io_preset}}",
+                    "legendFormat": "{{label_platform_apolo_us_preset}}",
                     "refId": "A"
                 }
             ],

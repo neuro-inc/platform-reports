@@ -97,7 +97,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_neuromation_io_nodepool,node) (kube_node_price_total{job= \"neuro-metrics-exporter\"} * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_neuromation_io_job=\"true\"})",
+                    "expr": "sum by(label_platform_neuromation_io_nodepool,node) (kube_node_price_total{job= \"neuro-metrics-exporter\"} * on(node) group_left(label_platform_neuromation_io_nodepool) kube_node_labels{job= \"kube-state-metrics\",label_platform_apolo_us_job=\"true\"})",
                     "format": "table",
                     "hide": false,
                     "instant": false,

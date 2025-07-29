@@ -366,7 +366,7 @@
               "label_platform_apolo_us_project 2": true,
               "label_platform_apolo_us_user": false,
               "label_platform_apolo_us_user 2": true,
-              "label_platform_neuromation_io_job": true,
+              "label_platform_apolo_us_job": true,
               "metrics_path": true,
               "name": true,
               "namespace": true,
@@ -402,7 +402,6 @@
               "label_platform_apolo_us_preset": "Preset",
               "label_platform_apolo_us_project": "Project",
               "label_platform_apolo_us_user": "User",
-              "label_platform_neuromation_io_preset": "Preset",
               "pod": "Job"
             }
           }

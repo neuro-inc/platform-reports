@@ -133,7 +133,7 @@
             "pluginVersion": "7.3.5",
             "targets": [
                 {
-                    "expr": "sum by(label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_neuromation_io_user,label_platform_neuromation_io_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_neuromation_io_user,label_platform_neuromation_io_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=~\"^$org_name$\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_neuromation_io_user=~\"^$user_name$\",label_platform_neuromation_io_preset!=\"\"})",
+                    "expr": "sum by(label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_user,label_platform_apolo_us_preset,pod) (kube_pod_credits_total{job=\"neuro-metrics-exporter\",pod=~\"^job-.+\"} * on(pod) group_left(label_platform_apolo_us_org,label_platform_apolo_us_project,label_platform_apolo_us_user,label_platform_apolo_us_preset) kube_pod_labels{job=\"kube-state-metrics\",label_platform_apolo_us_org=~\"^$org_name$\",label_platform_apolo_us_project=~\"^$project_name$\",label_platform_apolo_us_user=~\"^$user_name$\",label_platform_apolo_us_preset!=\"\"})",
                     "format": "table",
                     "hide": false,
                     "instant": false,
@@ -160,7 +160,7 @@
                                 "aggregations": [],
                                 "operation": "groupby"
                             },
-                            "label_platform_neuromation_io_preset": {
+                            "label_platform_apolo_us_preset": {
                                 "aggregations": [],
                                 "operation": "groupby"
                             },
@@ -168,7 +168,7 @@
                                 "aggregations": [],
                                 "operation": "groupby"
                             },
-                            "label_platform_neuromation_io_user": {
+                            "label_platform_apolo_us_user": {
                                 "aggregations": [],
                                 "operation": "groupby"
                             },
@@ -186,17 +186,17 @@
                         "indexByName": {
                             "Value (diff)": 5,
                             "label_platform_apolo_us_org": 0,
-                            "label_platform_neuromation_io_preset": 3,
+                            "label_platform_apolo_us_preset": 3,
                             "label_platform_apolo_us_project": 1,
-                            "label_platform_neuromation_io_user": 2,
+                            "label_platform_apolo_us_user": 2,
                             "pod": 4
                         },
                         "renameByName": {
                             "Value (diff)": "Credits",
                             "label_platform_apolo_us_org": "Organization",
-                            "label_platform_neuromation_io_preset": "Preset",
+                            "label_platform_apolo_us_preset": "Preset",
                             "label_platform_apolo_us_project": "Project",
-                            "label_platform_neuromation_io_user": "User",
+                            "label_platform_apolo_us_user": "User",
                             "pod": "Job"
                         }
                     }
@@ -332,7 +332,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -340,7 +340,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_user": {
+                                    "label_platform_apolo_us_user": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -365,7 +365,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -373,7 +373,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_user": {
+                                    "label_platform_apolo_us_user": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     }
@@ -387,16 +387,16 @@
                                 "indexByName": {
                                     "Value (diff) (sum)": 4,
                                     "label_platform_apolo_us_org": 0,
-                                    "label_platform_neuromation_io_preset": 3,
+                                    "label_platform_apolo_us_preset": 3,
                                     "label_platform_apolo_us_project": 1,
-                                    "label_platform_neuromation_io_user": 2
+                                    "label_platform_apolo_us_user": 2
                                 },
                                 "renameByName": {
                                     "Value (diff) (sum)": "Credits",
                                     "label_platform_apolo_us_org": "Organization",
-                                    "label_platform_neuromation_io_preset": "Preset",
+                                    "label_platform_apolo_us_preset": "Preset",
                                     "label_platform_apolo_us_project": "Project",
-                                    "label_platform_neuromation_io_user": "User"
+                                    "label_platform_apolo_us_user": "User"
                                 }
                             }
                         }
@@ -535,7 +535,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -543,7 +543,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_user": {
+                                    "label_platform_apolo_us_user": {
                                         "aggregations": [],
                                         "operation": null
                                     },
@@ -568,7 +568,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -576,7 +576,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_user": {
+                                    "label_platform_apolo_us_user": {
                                         "aggregations": [],
                                         "operation": null
                                     }
@@ -590,16 +590,16 @@
                                 "indexByName": {
                                     "Value (diff) (sum)": 4,
                                     "label_platform_apolo_us_org": 0,
-                                    "label_platform_neuromation_io_preset": 3,
+                                    "label_platform_apolo_us_preset": 3,
                                     "label_platform_apolo_us_project": 1,
-                                    "label_platform_neuromation_io_user": 2
+                                    "label_platform_apolo_us_user": 2
                                 },
                                 "renameByName": {
                                     "Value (diff) (sum)": "Credits",
                                     "label_platform_apolo_us_org": "Organization",
-                                    "label_platform_neuromation_io_preset": "Preset",
+                                    "label_platform_apolo_us_preset": "Preset",
                                     "label_platform_apolo_us_project": "Project",
-                                    "label_platform_neuromation_io_user": "User"
+                                    "label_platform_apolo_us_user": "User"
                                 }
                             }
                         }
@@ -730,11 +730,11 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_user": {
+                                    "label_platform_apolo_us_user": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
@@ -759,7 +759,7 @@
                                         "aggregations": [],
                                         "operation": "groupby"
                                     },
-                                    "label_platform_neuromation_io_preset": {
+                                    "label_platform_apolo_us_preset": {
                                         "aggregations": [],
                                         "operation": "groupby"
                                     }
@@ -774,7 +774,7 @@
                                 "renameByName": {
                                     "Value (diff) (sum)": "Credits",
                                     "label_platform_apolo_us_org": "Organization",
-                                    "label_platform_neuromation_io_preset": "Preset"
+                                    "label_platform_apolo_us_preset": "Preset"
                                 }
                             }
                         }
@@ -854,7 +854,7 @@
                     "value": "$__all"
                 },
                 "datasource": "Prometheus",
-                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_apolo_us_user)",
                 "error": null,
                 "hide": 0,
                 "includeAll": true,
@@ -862,7 +862,7 @@
                 "multi": false,
                 "name": "user_name",
                 "options": [],
-                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_neuromation_io_user)",
+                "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\"},label_platform_apolo_us_user)",
                 "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,

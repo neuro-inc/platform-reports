@@ -98,8 +98,7 @@ async def cluster_admin_token(user_factory: UserFactory) -> str:
     user = await user_factory(
         "cluster-admin",
         [
-            Permission(uri="role://default/manager", action="manage"),
-            Permission(uri="cluster://default/access", action="read"),
+            Permission(uri="cluster://default", action="read"),
         ],
     )
     return user.token

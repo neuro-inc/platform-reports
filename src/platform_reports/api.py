@@ -287,7 +287,7 @@ class PrometheusProxyHandler:
                 user_name,
                 [
                     Permission(
-                        uri=f"role://{self._config.cluster_name}/manager",
+                        uri=f"cluster://{self._config.cluster_name}",
                         action="read",
                     ),
                 ],

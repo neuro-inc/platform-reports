@@ -95,7 +95,7 @@ class TestDashboards:
         async def get_missing_permissions(
             _: str, permissions: Sequence[Permission]
         ) -> Sequence[Permission]:
-            assert all(p.uri in ("role://default/manager",) for p in permissions)
+            assert all(p.uri in ("cluster://default",) for p in permissions)
             return []
 
         auth_client.get_missing_permissions.side_effect = get_missing_permissions
@@ -162,11 +162,11 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         result = await service.check_permissions(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
         assert result is True
 
@@ -174,15 +174,15 @@ class TestAuthService:
         self, service: AuthService, auth_client: mock.AsyncMock
     ) -> None:
         auth_client.get_missing_permissions.return_value = [
-            Permission(uri="role://default/manager", action="read")
+            Permission(uri="cluster://default", action="read")
         ]
 
         result = await service.check_permissions(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
         assert result is False
 
@@ -193,7 +193,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri="role://default/manager", action="read")],
+            [Permission(uri="cluster://default", action="read")],
         )
 
     async def test_check_jobs_dashboard_permissions(
@@ -282,7 +282,7 @@ class TestAuthService:
         await service.check_dashboard_permissions("user", Dashboard.PRICES, MultiDict())
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_credits_dashboard_with_user_name_permissions(
@@ -351,7 +351,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri="role://default/manager", action="read")],
+            [Permission(uri="cluster://default", action="read")],
         )
 
     async def test_check_node_exporter_query_permissions(
@@ -363,7 +363,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri="role://default/manager", action="read")],
+            [Permission(uri="cluster://default", action="read")],
         )
 
     async def test_check_kube_state_metrics_query_without_pod_permissions(
@@ -374,7 +374,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kube_state_metrics_query_with_empty_pod_permissions(
@@ -386,7 +386,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kube_state_metrics_query_with_multiple_pod_permissions(
@@ -398,7 +398,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kube_state_metrics_query_with_pod_permissions(
@@ -429,7 +429,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kubelet_query_without_pod_permissions(
@@ -441,7 +441,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kubelet_query_with_empty_pod_permissions(
@@ -453,7 +453,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kubelet_query_with_multiple_pod_permissions(
@@ -465,7 +465,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_kubelet_query_with_pod_permissions(
@@ -504,7 +504,7 @@ class TestAuthService:
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
             "user",
-            [Permission(uri="role://default/manager", action="read")],
+            [Permission(uri="cluster://default", action="read")],
         )
 
     async def test_check_nvidia_dcgm_exporter_query_without_pod_permissions(
@@ -515,7 +515,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_nvidia_dcgm_exporter_query_with_empty_pod_permissions(
@@ -527,7 +527,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_nvidia_dcgm_exporter_query_with_multiple_pod_permissions(
@@ -539,7 +539,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_nvidia_dcgm_exporter_query_with_pod_permissions(
@@ -568,7 +568,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_neuro_metrics_exporter_query_with_empty_pod_permissions(
@@ -580,7 +580,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_neuro_metrics_exporter_query_with_multiple_pod_permissions(
@@ -592,7 +592,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_neuro_metrics_exporter_query_with_pod_permissions(
@@ -663,7 +663,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
         api_client.get_job.assert_awaited_once_with(JOB_ID)
 
@@ -790,7 +790,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_join_without_on_for_all_jobs_permissions(
@@ -813,7 +813,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_or_join_for_all_jobs_permissions(
@@ -831,7 +831,7 @@ class TestAuthService:
         )
 
         auth_client.get_missing_permissions.assert_awaited_once_with(
-            "user", [Permission(uri="role://default/manager", action="read")]
+            "user", [Permission(uri="cluster://default", action="read")]
         )
 
     async def test_check_join_for_app_instance_permissions(

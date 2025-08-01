@@ -97,15 +97,15 @@ class AuthService:
         )
         permissions = []
         if dashboard_id == Dashboard.NODES:
-            permissions = [permissions_service.get_cluster_manager_permission()]
+            permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.SERVICES:
-            permissions = [permissions_service.get_cluster_manager_permission()]
+            permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.PRICES:
-            permissions = [permissions_service.get_cluster_manager_permission()]
+            permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.APPS:
-            permissions = [permissions_service.get_cluster_manager_permission()]
+            permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.OVERVIEW:
-            permissions = [permissions_service.get_cluster_manager_permission()]
+            permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
@@ -249,9 +249,9 @@ class PermissionsService:
                 )
             )
         result = self._get_strongest_permissions(permissions)
-        if self.get_cluster_manager_permission() in result:
+        if self.get_cluster_read_permission() in result:
             # Other permissions can be removed, cluster manager covers them.
-            return [self.get_cluster_manager_permission()]
+            return [self.get_cluster_read_permission()]
         return result
 
     async def _get_vector_permissions(self, vector: Vector) -> Sequence[Permission]:
@@ -278,7 +278,7 @@ class PermissionsService:
     ) -> list[Permission]:
         for vector in vectors:
             if vector.is_from_job("node-exporter"):
-                return [self.get_cluster_manager_permission()]
+                return [self.get_cluster_read_permission()]
         return []
 
     async def _get_kube_state_metrics_permissions(
@@ -292,7 +292,7 @@ class PermissionsService:
             if vector.is_from_job("kube-state-metrics"):
                 matcher = vector.get_eq_label_matcher(Matcher.SERVICE_LABEL)
                 if matcher is not None:
-                    return [self.get_cluster_manager_permission()]
+                    return [self.get_cluster_read_permission()]
 
                 job_matcher = self._get_platform_job_matcher(vector)
                 if job_matcher is not None:
@@ -317,7 +317,7 @@ class PermissionsService:
                         )
                     )
                 else:
-                    return [self.get_cluster_manager_permission()]
+                    return [self.get_cluster_read_permission()]
         return [
             *permissions,
             *await self.get_job_permissions(platform_job_ids),
@@ -335,7 +335,7 @@ class PermissionsService:
                 if matcher is not None:
                     platform_job_ids.append(matcher.value)
                 else:
-                    return [self.get_cluster_manager_permission()]
+                    return [self.get_cluster_read_permission()]
 
         return await self.get_job_permissions(platform_job_ids)
 
@@ -350,7 +350,7 @@ class PermissionsService:
                 if matcher is not None:
                     platform_job_ids.append(matcher.value)
                 else:
-                    return [self.get_cluster_manager_permission()]
+                    return [self.get_cluster_read_permission()]
 
         return await self.get_job_permissions(platform_job_ids)
 
@@ -365,7 +365,7 @@ class PermissionsService:
                 if matcher is not None:
                     platform_job_ids.append(matcher.value)
                 else:
-                    return [self.get_cluster_manager_permission()]
+                    return [self.get_cluster_read_permission()]
 
         return await self.get_job_permissions(platform_job_ids)
 
@@ -413,7 +413,7 @@ class PermissionsService:
 
         # We need to remove cluster manager permission because
         # it covers any permission
-        permission = self.get_cluster_manager_permission()
+        permission = self.get_cluster_read_permission()
         if len(result) > 1 and permission in result:
             result.remove(permission)
 
@@ -428,8 +428,8 @@ class PermissionsService:
     def _get_platform_app_matcher(self, vector: InstantVector) -> LabelMatcher | None:
         return vector.get_eq_label_matcher(Matcher.APP_INSTANCE_NAME_LABEL)
 
-    def get_cluster_manager_permission(self) -> Permission:
-        return Permission(uri=f"role://{self._cluster_name}/manager", action="read")
+    def get_cluster_read_permission(self) -> Permission:
+        return Permission(uri=f"cluster://{self._cluster_name}", action="read")
 
     def get_job_permission(
         self, *, org_name: str | None = None, project_name: str | None = None

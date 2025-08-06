@@ -5,11 +5,11 @@ import logging
 import re
 from collections.abc import Iterable, Sequence
 
+from apolo_apps_client import AppsApiClient
 from multidict import MultiMapping
 from neuro_auth_client import AuthClient, Permission
 
 from .platform_api_client import ApiClient
-from .platform_apps_client import AppsApiClient
 from .prometheus_query_parser import (
     InstantVector,
     LabelMatcher,

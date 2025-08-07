@@ -26,8 +26,6 @@ from neuro_config_client import (
     EnergyConfig,
     EnergySchedule,
     EnergySchedulePeriod,
-    NodePool,
-    OnPremCloudProvider,
     OrchestratorConfig,
     ResourcePoolType,
     ResourcePreset,
@@ -1615,10 +1613,14 @@ class TestNodeEnergyConsumptionCollector:
             status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             timezone=UTC,
-            cloud_provider=OnPremCloudProvider(
-                storage=None,
-                node_pools=[
-                    NodePool(
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="test",
+                job_internal_hostname_template="test",
+                job_fallback_hostname="test",
+                job_schedule_timeout_s=1,
+                job_schedule_scale_up_timeout_s=2,
+                resource_pool_types=[
+                    ResourcePoolType(
                         name="node-pool",
                         cpu=1,
                         available_cpu=1,
@@ -1628,7 +1630,7 @@ class TestNodeEnergyConsumptionCollector:
                         available_disk_size=100 * 2**30,
                         cpu_min_watts=10.5,
                         cpu_max_watts=110.0,
-                    ),
+                    )
                 ],
             ),
             energy=EnergyConfig(

@@ -2,7 +2,6 @@ from datetime import datetime
 
 import aiohttp.web
 import pytest
-from neuro_config_client.factories import NodeRole
 
 
 @pytest.fixture
@@ -28,9 +27,14 @@ def platform_config_app() -> aiohttp.web.Application:
                             "min_size": 1,
                             "max_size": 1,
                             "cpu": 1,
+                            "available_cpu": 1,
                             "memory": 4096 * 2**20,
+                            "available_memory": 4096 * 2**20,
                             "price": "0.0",
                             "currency": "USD",
+                            "cpu_min_watts": 1,
+                            "cpu_max_watts": 10,
+                            "co2_grams_eq_per_kwh": 0.5,
                         }
                     ],
                     "resource_presets": [
@@ -48,27 +52,6 @@ def platform_config_app() -> aiohttp.web.Application:
                 "monitoring": {"url": f"https://{name}.org.neu.ro/api/v1/jobs"},
                 "secrets": {"url": f"https://{name}.org.neu.ro/api/v1/secrets"},
                 "metrics": {"url": f"https://metrics.{name}.org.neu.ro"},
-                "cloud_provider": {
-                    "type": "on_prem",
-                    "node_pools": [
-                        {
-                            "name": "minikube-node-pool",
-                            "role": NodeRole.PLATFORM_JOB.value,
-                            "zone": "minikube-zone",
-                            "min_size": 1,
-                            "max_size": 1,
-                            "cpu": 1,
-                            "available_cpu": 1,
-                            "memory": 4096 * 2**20,
-                            "available_memory": 4096 * 2**20,
-                            "price": "0.0",
-                            "currency": "USD",
-                            "cpu_min_watts": 1,
-                            "cpu_max_watts": 10,
-                            "co2_grams_eq_per_kwh": 0.5,
-                        }
-                    ],
-                },
             }
         )
 

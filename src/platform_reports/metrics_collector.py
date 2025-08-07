@@ -925,19 +925,19 @@ class NodeEnergyConsumptionCollector(Collector[Mapping[str, NodeEnergyConsumptio
         self, node: Node, *, co2_grams_eq_per_kwh: float, price_per_kwh: Decimal
     ) -> NodeEnergyConsumption:
         cluster = self._cluster_holder.cluster
-        assert cluster.cloud_provider is not None
+        assert cluster.orchestrator is not None
 
         node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
         energy_consumption = NodeEnergyConsumption(
             co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
             price_per_kwh=price_per_kwh,
         )
-        for node_pool in cluster.cloud_provider.node_pools:
-            if node_pool.name == node_pool_name:
+        for resource_pool in cluster.orchestrator.resource_pool_types:
+            if resource_pool.name == node_pool_name:
                 energy_consumption = replace(
                     energy_consumption,
-                    cpu_min_watts=node_pool.cpu_min_watts,
-                    cpu_max_watts=node_pool.cpu_max_watts,
+                    cpu_min_watts=resource_pool.cpu_min_watts,
+                    cpu_max_watts=resource_pool.cpu_max_watts,
                 )
                 break
         else:

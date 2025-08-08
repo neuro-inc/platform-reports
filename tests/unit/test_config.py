@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pydantic
 import pytest
+from apolo_apps_client import AppsClientConfig
 from yarl import URL
 
 from platform_reports.config import (
@@ -13,7 +14,6 @@ from platform_reports.config import (
     KubeConfig,
     MetricsApiConfig,
     MetricsExporterConfig,
-    PlatformAppsConfig,
     PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -116,8 +116,8 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
-            platform_apps=PlatformAppsConfig(
-                url=URL("https://dev.neu.ro/apis/apps"), token="token"
+            platform_apps=AppsClientConfig(
+                url="https://dev.neu.ro/apis/apps", token="token"
             ),
         )
 
@@ -147,8 +147,8 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
-            platform_apps=PlatformAppsConfig(
-                url=URL("https://dev.neu.ro/apis/apps"), token="token"
+            platform_apps=AppsClientConfig(
+                url="https://dev.neu.ro/apis/apps", token="token"
             ),
         )
 
@@ -174,8 +174,8 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
-            platform_apps=PlatformAppsConfig(
-                url=URL("https://dev.neu.ro/apis/apps"), token="token"
+            platform_apps=AppsClientConfig(
+                url="https://dev.neu.ro/apis/apps", token="token"
             ),
         )
 
@@ -205,8 +205,8 @@ class TestEnvironConfigFactory:
             platform_api=PlatformServiceConfig(
                 url=URL("https://dev.neu.ro/api/v1"), token="token"
             ),
-            platform_apps=PlatformAppsConfig(
-                url=URL("https://dev.neu.ro/apis/apps"), token="token"
+            platform_apps=AppsClientConfig(
+                url="https://dev.neu.ro/apis/apps", token="token"
             ),
         )
 

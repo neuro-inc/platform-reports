@@ -30,6 +30,7 @@ from aiohttp_apispec import (
     setup_aiohttp_apispec,
     validation_middleware,
 )
+from apolo_apps_client import AppsApiClient
 from jose import jwt
 from multidict import CIMultiDict, MultiMapping
 from neuro_auth_client import AuthClient, Permission, check_permissions
@@ -64,7 +65,6 @@ from .metrics_collector import (
 )
 from .metrics_service import GetCreditsUsageRequest, MetricsService
 from .platform_api_client import ApiClient
-from .platform_apps_client import AppsApiClient
 from .prometheus_client import PrometheusClient
 from .schema import (
     ClientErrorSchema,
@@ -664,7 +664,7 @@ def create_prometheus_proxy_app(
 
             LOGGER.info("Initializing Apps client")
             apps_client = await exit_stack.enter_async_context(
-                AppsApiClient(config.platform_apps.url, config.platform_apps.token)
+                AppsApiClient(config=config.platform_apps)
             )
 
             auth_service = AuthService(
@@ -709,7 +709,7 @@ def create_grafana_proxy_app(config: GrafanaProxyConfig) -> aiohttp.web.Applicat
 
             LOGGER.info("Initializing Apps client")
             apps_client = await exit_stack.enter_async_context(
-                AppsApiClient(config.platform_apps.url, config.platform_apps.token)
+                AppsApiClient(config=config.platform_apps)
             )
 
             auth_service = AuthService(

@@ -6,12 +6,12 @@ from unittest import mock
 from uuid import uuid4
 
 import pytest
+from apolo_apps_client import AppInstance, AppsApiClient
 from multidict import MultiDict
 from neuro_auth_client import AuthClient, Permission
 
 from platform_reports.auth import AuthService, Dashboard
 from platform_reports.platform_api_client import ApiClient, Job
-from platform_reports.platform_apps_client import AppInstance, AppsApiClient
 
 
 JOB_ID = "job-00000000-0000-0000-0000-000000000000"
@@ -35,6 +35,7 @@ def app_factory() -> Callable[[str], AppInstance]:
         return AppInstance(
             id=str(uuid4()),
             name=app_name,
+            creator="creator",
             cluster_name="default",
             project_name="project",
             org_name="org",

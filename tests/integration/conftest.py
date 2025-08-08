@@ -9,6 +9,7 @@ from pathlib import Path
 import aiohttp
 import pydantic
 import pytest
+from apolo_apps_client import AppsClientConfig
 from pytest_docker.plugin import Services
 from yarl import URL
 
@@ -23,7 +24,6 @@ from platform_reports.config import (
     KubeConfig,
     MetricsApiConfig,
     MetricsExporterConfig,
-    PlatformAppsConfig,
     PlatformAuthConfig,
     PlatformServiceConfig,
     PrometheusProxyConfig,
@@ -115,9 +115,9 @@ def platform_api_config(
 @pytest.fixture
 def platform_apps_config(
     platform_api_server: URL, service_token: str
-) -> PlatformAppsConfig:
-    return PlatformAppsConfig(
-        url=platform_api_server / "apis/apps", token=service_token
+) -> AppsClientConfig:
+    return AppsClientConfig(
+        url=str(platform_api_server / "apis/apps"), token=service_token
     )
 
 
@@ -183,7 +183,7 @@ def prometheus_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
-    platform_apps_config: PlatformAppsConfig,
+    platform_apps_config: AppsClientConfig,
     thanos_query_url: URL,
 ) -> PrometheusProxyConfig:
     return PrometheusProxyConfig(
@@ -219,7 +219,7 @@ def grafana_proxy_config(
     unused_tcp_port_factory: Callable[[], int],
     platform_auth_config: PlatformAuthConfig,
     platform_api_config: PlatformServiceConfig,
-    platform_apps_config: PlatformAppsConfig,
+    platform_apps_config: AppsClientConfig,
     grafana_url: URL,
 ) -> GrafanaProxyConfig:
     return GrafanaProxyConfig(

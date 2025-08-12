@@ -10,6 +10,7 @@ from typing import Any
 
 import pydantic
 from aiohttp.client import DEFAULT_TIMEOUT, ClientTimeout
+from apolo_apps_client import AppsClientConfig
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from yarl import URL
 
@@ -96,12 +97,6 @@ class PlatformServiceConfig:
 
 
 @dataclass(frozen=True)
-class PlatformAppsConfig:
-    url: URL
-    token: str = field(repr=False)
-
-
-@dataclass(frozen=True)
 class MetricsExporterConfig:
     server: ServerConfig
     kube: KubeConfig
@@ -150,7 +145,7 @@ class PrometheusProxyConfig:
     prometheus_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
-    platform_apps: PlatformAppsConfig
+    platform_apps: AppsClientConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -162,7 +157,7 @@ class GrafanaProxyConfig:
     grafana_url: URL
     platform_auth: PlatformAuthConfig
     platform_api: PlatformServiceConfig
-    platform_apps: PlatformAppsConfig
+    platform_apps: AppsClientConfig
     cluster_name: str
     access_token_cookie_names: Sequence[str]
     timeout: ClientTimeout = DEFAULT_TIMEOUT
@@ -244,9 +239,9 @@ class EnvironConfigFactory:
             url=URL(self._environ["NP_API_URL"]), token=self._environ["NP_TOKEN"]
         )
 
-    def _create_platform_apps_config(self) -> PlatformAppsConfig:
-        return PlatformAppsConfig(
-            url=URL(self._environ["NP_APPS_URL"]),
+    def _create_platform_apps_config(self) -> AppsClientConfig:
+        return AppsClientConfig(
+            url=self._environ["NP_APPS_URL"],
             token=self._environ["NP_TOKEN"],
         )
 

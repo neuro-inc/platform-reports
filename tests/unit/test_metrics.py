@@ -21,13 +21,14 @@ import pytest
 from aiobotocore.client import AioBaseClient
 from aiohttp import web
 from neuro_config_client import (
+    AMDGPUPreset,
     Cluster,
     ClusterStatus,
     EnergyConfig,
     EnergySchedule,
     EnergySchedulePeriod,
-    NodePool,
-    OnPremCloudProvider,
+    NvidiaGPU,
+    NvidiaGPUPreset,
     OrchestratorConfig,
     ResourcePoolType,
     ResourcePreset,
@@ -1033,32 +1034,28 @@ class TestPodCreditsCollectorResourcePresets:
                 cpu=4,
                 memory=1024**16,
                 credits_per_hour=Decimal(100),
-                nvidia_gpu=1,
-                nvidia_gpu_model="nvidia-A100",
+                nvidia_gpu=NvidiaGPUPreset(count=1, model="nvidia-A100"),
             ),
             ResourcePreset(
                 name="nvidia-gpu-large",
                 cpu=32,
                 memory=1024**128,
                 credits_per_hour=Decimal(500),
-                nvidia_gpu=8,
-                nvidia_gpu_model="nvidia-A100",
+                nvidia_gpu=NvidiaGPUPreset(count=8, model="nvidia-A100"),
             ),
             ResourcePreset(
                 name="amd-gpu-small",
                 cpu=4,
                 memory=1024**16,
                 credits_per_hour=Decimal(110),
-                amd_gpu=1,
-                amd_gpu_model="amd-A100",
+                amd_gpu=AMDGPUPreset(count=1, model="amd-A100"),
             ),
             ResourcePreset(
                 name="amd-gpu-large",
                 cpu=32,
                 memory=1024**128,
                 credits_per_hour=Decimal(510),
-                amd_gpu=8,
-                amd_gpu_model="amd-A100",
+                amd_gpu=AMDGPUPreset(count=8, model="amd-A100"),
             ),
         ]
 
@@ -1090,16 +1087,14 @@ class TestPodCreditsCollectorResourcePresets:
                 cpu=4,
                 memory=1024**16,
                 credits_per_hour=Decimal(100),
-                nvidia_gpu=1,
-                nvidia_gpu_model="nvidia-A100",
+                nvidia_gpu=NvidiaGPUPreset(count=1, model="nvidia-A100"),
             ),
             ResourcePreset(
                 name="nvidia-gpu-large",
                 cpu=32,
                 memory=1024**128,
                 credits_per_hour=Decimal(500),
-                nvidia_gpu=8,
-                nvidia_gpu_model="nvidia-A100",
+                nvidia_gpu=NvidiaGPUPreset(count=8, model="nvidia-A100"),
             ),
         ]
 
@@ -1111,16 +1106,14 @@ class TestPodCreditsCollectorResourcePresets:
                 cpu=4,
                 memory=1024**16,
                 credits_per_hour=Decimal(110),
-                amd_gpu=1,
-                amd_gpu_model="amd-A100",
+                amd_gpu=AMDGPUPreset(count=1, model="amd-A100"),
             ),
             ResourcePreset(
                 name="amd-gpu-large",
                 cpu=32,
                 memory=1024**128,
                 credits_per_hour=Decimal(510),
-                amd_gpu=8,
-                amd_gpu_model="amd-A100",
+                amd_gpu=AMDGPUPreset(count=8, model="amd-A100"),
             ),
         ]
 
@@ -1156,7 +1149,7 @@ class TestPodCreditsCollector:
                 resource_pool_types=[
                     ResourcePoolType(
                         name="gpu",
-                        nvidia_gpu_model="nvidia-A100",
+                        nvidia_gpu=NvidiaGPU(count=1, model="nvidia-A100"),
                     )
                 ],
                 resource_presets=[
@@ -1177,16 +1170,14 @@ class TestPodCreditsCollector:
                         cpu=4,
                         memory=1024**16,
                         credits_per_hour=Decimal(100),
-                        nvidia_gpu=1,
-                        nvidia_gpu_model="nvidia-A100",
+                        nvidia_gpu=NvidiaGPUPreset(count=1, model="nvidia-A100"),
                     ),
                     ResourcePreset(
                         name="gpu-large",
                         cpu=32,
                         memory=1024**128,
                         credits_per_hour=Decimal(500),
-                        nvidia_gpu=8,
-                        nvidia_gpu_model="nvidia-A100",
+                        nvidia_gpu=NvidiaGPUPreset(count=8, model="nvidia-A100"),
                     ),
                 ],
             ),
@@ -1615,10 +1606,14 @@ class TestNodeEnergyConsumptionCollector:
             status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             timezone=UTC,
-            cloud_provider=OnPremCloudProvider(
-                storage=None,
-                node_pools=[
-                    NodePool(
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="test",
+                job_internal_hostname_template="test",
+                job_fallback_hostname="test",
+                job_schedule_timeout_s=1,
+                job_schedule_scale_up_timeout_s=2,
+                resource_pool_types=[
+                    ResourcePoolType(
                         name="node-pool",
                         cpu=1,
                         available_cpu=1,
@@ -1628,7 +1623,7 @@ class TestNodeEnergyConsumptionCollector:
                         available_disk_size=100 * 2**30,
                         cpu_min_watts=10.5,
                         cpu_max_watts=110.0,
-                    ),
+                    )
                 ],
             ),
             energy=EnergyConfig(

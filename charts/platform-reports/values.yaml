@@ -2,10 +2,6 @@ platform:
   accessTokenCookieNames: sat,dat
   token: {}
 
-  nodeLabels:
-    job: platform.neuromation.io/job
-
-
 image:
   repository: "$IMAGE_REPO"
   tag: "$IMAGE_TAG"

@@ -19,7 +19,7 @@ from aiobotocore.client import AioBaseClient
 from cachetools import TTLCache
 from google.oauth2.service_account import Credentials
 from googleapiclient import discovery
-from neuro_config_client import Cluster, OrchestratorConfig, ResourcePreset
+from neuro_config_client import Cluster, GPUPreset, OrchestratorConfig, ResourcePreset
 from neuro_logging import new_trace_cm, trace_cm
 from yarl import URL
 
@@ -632,30 +632,30 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
             return self.__class__(resource_presets)
 
         def filter_gpu_models(self, gpu_models: PodCreditsCollector._GPUModels) -> Self:
-            def _check_gpu(
-                gpu_model: str | None,
-                preset_gpu_model: str | None,
-            ) -> bool:
-                if gpu_model and gpu_model != preset_gpu_model:
-                    return False
-                if not gpu_model and preset_gpu_model:
-                    return False
-                return True
-
             if cached_result := self._gpu_resource_presets.get(gpu_models):
                 return cached_result
 
             resource_presets = []
             for p in self._resource_presets:
                 if (
-                    _check_gpu(gpu_models.nvidia, p.nvidia_gpu_model)
-                    and _check_gpu(gpu_models.amd, p.amd_gpu_model)
-                    and _check_gpu(gpu_models.intel, p.intel_gpu_model)
+                    self._filter_gpu_model(gpu_models.nvidia, p.nvidia_gpu)
+                    and self._filter_gpu_model(gpu_models.amd, p.amd_gpu)
+                    and self._filter_gpu_model(gpu_models.intel, p.intel_gpu)
                 ):
                     resource_presets.append(p)
             result = self.__class__(resource_presets)
             self._gpu_resource_presets[gpu_models] = result
             return result
+
+        def _filter_gpu_model(
+            self, gpu_model: str | None, preset_gpu: GPUPreset | None
+        ) -> bool:
+            preset_gpu_model = preset_gpu.model if preset_gpu else None
+            if gpu_model and gpu_model != preset_gpu_model:
+                return False
+            if not gpu_model and preset_gpu_model:
+                return False
+            return True
 
         @cached_property
         def sorted_by_credits_per_hour(self) -> Self:
@@ -823,9 +823,9 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         for rpt in self._cluster_orchestrator.resource_pool_types:
             if rpt.name == node_pool_name:
                 return self._GPUModels(
-                    nvidia=rpt.nvidia_gpu_model,
-                    amd=rpt.amd_gpu_model,
-                    intel=rpt.intel_gpu_model,
+                    nvidia=rpt.nvidia_gpu.model if rpt.nvidia_gpu else None,
+                    amd=rpt.amd_gpu.model if rpt.amd_gpu else None,
+                    intel=rpt.intel_gpu.model if rpt.intel_gpu else None,
                 )
         logger.warning(
             "Node pool %r not found in platform config, ignoring GPU models",
@@ -854,9 +854,15 @@ class PodCreditsCollector(Collector[Mapping[str, Decimal]]):
         return (
             pod_resources.cpu <= preset.cpu
             and pod_resources.memory <= preset.memory
-            and pod_resources.nvidia_gpu <= (preset.nvidia_gpu or 0)
-            and pod_resources.amd_gpu <= (preset.amd_gpu or 0)
-            and pod_resources.intel_gpu <= (preset.intel_gpu or 0)
+            and (
+                pod_resources.nvidia_gpu
+                <= (preset.nvidia_gpu.count if preset.nvidia_gpu else 0)
+            )
+            and pod_resources.amd_gpu <= (preset.amd_gpu.count if preset.amd_gpu else 0)
+            and (
+                pod_resources.intel_gpu
+                <= (preset.intel_gpu.count if preset.intel_gpu else 0)
+            )
         )
 
 
@@ -925,19 +931,19 @@ class NodeEnergyConsumptionCollector(Collector[Mapping[str, NodeEnergyConsumptio
         self, node: Node, *, co2_grams_eq_per_kwh: float, price_per_kwh: Decimal
     ) -> NodeEnergyConsumption:
         cluster = self._cluster_holder.cluster
-        assert cluster.cloud_provider is not None
+        assert cluster.orchestrator is not None
 
         node_pool_name = node.metadata.labels[Label.NEURO_NODE_POOL_KEY]
         energy_consumption = NodeEnergyConsumption(
             co2_grams_eq_per_kwh=co2_grams_eq_per_kwh,
             price_per_kwh=price_per_kwh,
         )
-        for node_pool in cluster.cloud_provider.node_pools:
-            if node_pool.name == node_pool_name:
+        for resource_pool in cluster.orchestrator.resource_pool_types:
+            if resource_pool.name == node_pool_name:
                 energy_consumption = replace(
                     energy_consumption,
-                    cpu_min_watts=node_pool.cpu_min_watts,
-                    cpu_max_watts=node_pool.cpu_max_watts,
+                    cpu_min_watts=resource_pool.cpu_min_watts,
+                    cpu_max_watts=resource_pool.cpu_max_watts,
                 )
                 break
         else:

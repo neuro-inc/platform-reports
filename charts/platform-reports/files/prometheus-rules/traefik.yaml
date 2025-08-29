@@ -22,9 +22,9 @@ groups:
       severity: critical
   - alert: TraefikTlsCertExpiration
     annotations:
-      description: TLS Certificate will expire within the next 30 Days
+      description: TLS Certificate will expire within the next 15 Days
       summary: TLS Certificate will expire soon
-    expr: (traefik_tls_certs_not_after - time()) < 2592000
+    expr: (traefik_tls_certs_not_after - time()) < 1296000
     for: 1h
     labels:
       severity: critical

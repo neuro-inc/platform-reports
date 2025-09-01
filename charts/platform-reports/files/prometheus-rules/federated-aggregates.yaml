@@ -1,0 +1,85 @@
+groups:
+- name: federated-aggregates
+  interval: 30s
+  rules:
+  - record: node:ready:bool
+    expr: max by (node) (kube_node_status_condition{condition="Ready",status="true"})
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: cluster:nodes_ready:count
+    expr: sum(node:ready:bool)
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: cluster:nodes_not_ready:count
+    expr: count(kube_node_status_condition{condition="Ready"}) - sum(node:ready:bool)
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: cluster:nodes_unschedulable:count
+    expr: sum(kube_node_spec_unschedulable == 1)
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: cluster:nodes_pressure:count
+    expr: sum by (condition) (
+            kube_node_status_condition{condition=~"MemoryPressure|DiskPressure|PIDPressure",status="true"}
+          )
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: cluster:nodes_ready:ratio
+    expr: sum(node:ready:bool) / count(kube_node_status_condition{condition="Ready"})
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:container_ready:ratio
+    expr: |
+      sum by (namespace, container) (kube_pod_container_status_ready{condition="true"})
+        /
+      sum by (namespace, container) (kube_pod_container_status_ready)
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:container_restarts:5m
+    expr: sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[5m]))
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:http_requests:rate5m
+    expr: sum by (service, namespace) (rate(http_requests_total[5m]))
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:http_error_ratio:5m
+    expr: |
+      sum by (service, namespace) (rate(http_requests_total{code!~"2.."}[5m]))
+        /
+      sum by (service, namespace) (rate(http_requests_total[5m]))
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:latency_ms:p50
+    expr: 1000 * histogram_quantile(
+            0.50,
+            sum by (service, namespace, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:latency_ms:p95
+    expr: 1000 * histogram_quantile(
+            0.95,
+            sum by (service, namespace, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"
+
+  - record: svc:latency_ms:p99
+    expr: 1000 * histogram_quantile(
+            0.99,
+            sum by (service, namespace, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+    labels:
+      cluster: "{{ .Values.federatedAggregatesClusterName }}"

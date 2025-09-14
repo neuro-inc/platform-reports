@@ -11,7 +11,6 @@ def platform_config_app() -> aiohttp.web.Application:
         return aiohttp.web.json_response(
             {
                 "name": name,
-                "status": "deployed",
                 "created_at": datetime.now().isoformat(),
                 "orchestrator": {
                     "job_hostname_template": f"{{job_id}}.jobs.{name}.org.neu.ro",
@@ -58,7 +57,16 @@ def platform_config_app() -> aiohttp.web.Application:
                 "buckets": {"url": f"https://{name}.org.neu.ro/api/v1/buckets"},
                 "ingress": {"acme_environment": "production"},
                 "dns": {"name": f"{name}.org.neu.ro"},
-                "energy": {"co2_grams_eq_per_kwh": 0},
+                "energy": {
+                    "co2_grams_eq_per_kwh": 0,
+                    "schedules": [
+                        {
+                            "name": "default",
+                            "periods": [],
+                            "price_per_kwh": "10.0",
+                        }
+                    ],
+                },
                 "apps": {
                     "apps_hostname_templates": [f"{{app_name}}.apps.{name}.org.neu.ro"],
                     "app_proxy_url": f"https://proxy.apps.{name}.org.neu.ro",

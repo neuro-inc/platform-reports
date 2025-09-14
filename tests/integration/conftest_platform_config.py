@@ -51,6 +51,18 @@ def platform_config_app() -> aiohttp.web.Application:
                 "monitoring": {"url": f"https://{name}.org.neu.ro/api/v1/jobs"},
                 "secrets": {"url": f"https://{name}.org.neu.ro/api/v1/secrets"},
                 "metrics": {"url": f"https://metrics.{name}.org.neu.ro"},
+                "disks": {
+                    "url": f"https://{name}.org.neu.ro/api/v1/disks",
+                    "storage_limit_per_user": 10240 * 2**30,
+                },
+                "buckets": {"url": f"https://{name}.org.neu.ro/api/v1/buckets"},
+                "ingress": {"acme_environment": "production"},
+                "dns": {"name": f"{name}.org.neu.ro"},
+                "energy": {"co2_grams_eq_per_kwh": 0},
+                "apps": {
+                    "apps_hostname_templates": [f"{{app_name}}.apps.{name}.org.neu.ro"],
+                    "app_proxy_url": f"https://proxy.apps.{name}.org.neu.ro",
+                },
             }
         )
 

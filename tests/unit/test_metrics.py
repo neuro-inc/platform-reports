@@ -21,17 +21,27 @@ import pytest
 from aiobotocore.client import AioBaseClient
 from aiohttp import web
 from neuro_config_client import (
+    ACMEEnvironment,
     AMDGPUPreset,
+    AppsConfig,
+    BucketsConfig,
     Cluster,
-    ClusterStatus,
+    DisksConfig,
+    DNSConfig,
     EnergyConfig,
     EnergySchedule,
     EnergySchedulePeriod,
+    IngressConfig,
+    MetricsConfig,
+    MonitoringConfig,
     NvidiaGPU,
     NvidiaGPUPreset,
     OrchestratorConfig,
+    RegistryConfig,
     ResourcePoolType,
     ResourcePreset,
+    SecretsConfig,
+    StorageConfig,
 )
 from yarl import URL
 
@@ -131,11 +141,9 @@ class TestConfigPriceCollector(_TestNodePriceCollector):
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
-            status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
-                job_internal_hostname_template="",
                 job_fallback_hostname="",
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
@@ -149,6 +157,23 @@ class TestConfigPriceCollector(_TestNodePriceCollector):
                     ),
                 ],
             ),
+            storage=StorageConfig(url=URL("https://default.org.apolo.us")),
+            registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+            buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+            disks=DisksConfig(
+                url=URL("https://default.org.apolo.us"),
+                storage_limit_per_user=10240 * 2**30,
+            ),
+            monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+            dns=DNSConfig(name="default.org.apolo.us"),
+            ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+            secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            apps=AppsConfig(
+                apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+                app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+            ),
+            energy=EnergyConfig(),
         )
 
     @pytest.fixture
@@ -1138,11 +1163,9 @@ class TestPodCreditsCollector:
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
-            status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
-                job_internal_hostname_template="",
                 job_fallback_hostname="",
                 job_schedule_timeout_s=30,
                 job_schedule_scale_up_timeout_s=30,
@@ -1181,6 +1204,23 @@ class TestPodCreditsCollector:
                     ),
                 ],
             ),
+            storage=StorageConfig(url=URL("https://default.org.apolo.us")),
+            registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+            buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+            disks=DisksConfig(
+                url=URL("https://default.org.apolo.us"),
+                storage_limit_per_user=10240 * 2**30,
+            ),
+            monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+            dns=DNSConfig(name="default.org.apolo.us"),
+            ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+            secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            apps=AppsConfig(
+                apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+                app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+            ),
+            energy=EnergyConfig(),
         )
 
     @pytest.fixture
@@ -1603,12 +1643,10 @@ class TestNodeEnergyConsumptionCollector:
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
-            status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             timezone=UTC,
             orchestrator=OrchestratorConfig(
                 job_hostname_template="test",
-                job_internal_hostname_template="test",
                 job_fallback_hostname="test",
                 job_schedule_timeout_s=1,
                 job_schedule_scale_up_timeout_s=2,
@@ -1645,6 +1683,22 @@ class TestNodeEnergyConsumptionCollector:
                         ],
                     ),
                 ],
+            ),
+            storage=StorageConfig(url=URL("https://default.org.apolo.us")),
+            registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+            buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+            disks=DisksConfig(
+                url=URL("https://default.org.apolo.us"),
+                storage_limit_per_user=10240 * 2**30,
+            ),
+            monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+            dns=DNSConfig(name="default.org.apolo.us"),
+            ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+            secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            apps=AppsConfig(
+                apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+                app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
             ),
         )
 

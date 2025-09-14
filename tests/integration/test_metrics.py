@@ -4,11 +4,23 @@ from decimal import Decimal
 
 import pytest
 from neuro_config_client import (
+    ACMEEnvironment,
+    AppsConfig,
+    BucketsConfig,
     Cluster,
-    ClusterStatus,
+    DisksConfig,
+    DNSConfig,
+    EnergyConfig,
+    IngressConfig,
+    MetricsConfig,
+    MonitoringConfig,
     OrchestratorConfig,
+    RegistryConfig,
     ResourcePreset,
+    SecretsConfig,
+    StorageConfig,
 )
+from yarl import URL
 
 from platform_reports.cluster import ClusterHolder
 from platform_reports.kube_client import KubeClient
@@ -30,11 +42,9 @@ class _TestClusterHolder(ClusterHolder):
 def cluster() -> Cluster:
     return Cluster(
         name="default",
-        status=ClusterStatus.DEPLOYED,
         created_at=datetime.now(),
         orchestrator=OrchestratorConfig(
             job_hostname_template="",
-            job_internal_hostname_template="",
             job_fallback_hostname="",
             job_schedule_timeout_s=30,
             job_schedule_scale_up_timeout_s=30,
@@ -47,6 +57,23 @@ def cluster() -> Cluster:
                 )
             ],
         ),
+        storage=StorageConfig(url=URL("https://default.org.apolo.us")),
+        registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+        buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+        disks=DisksConfig(
+            url=URL("https://default.org.apolo.us"),
+            storage_limit_per_user=10240 * 2**30,
+        ),
+        monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+        dns=DNSConfig(name="default.org.apolo.us"),
+        ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+        secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+        metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+        apps=AppsConfig(
+            apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+            app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+        ),
+        energy=EnergyConfig(),
     )
 
 

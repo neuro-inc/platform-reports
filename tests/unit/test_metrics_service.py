@@ -3,8 +3,19 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from neuro_config_client import (
+    ACMEEnvironment,
+    AppsConfig,
+    BucketsConfig,
     Cluster as ClientCluster,
-    ClusterStatus,
+    DisksConfig,
+    DNSConfig,
+    EnergyConfig,
+    IngressConfig,
+    MetricsConfig,
+    MonitoringConfig,
+    OrchestratorConfig,
+    RegistryConfig,
+    SecretsConfig,
     StorageConfig,
     VolumeConfig,
 )
@@ -185,11 +196,32 @@ class TestCreditsUsageFactory:
     def _create_cluster(self, storage_volumes: Sequence[VolumeConfig]) -> Cluster:
         client_cluster = ClientCluster(
             name="default",
-            status=ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             storage=StorageConfig(
-                url=URL("http://platform-storage.platform"), volumes=storage_volumes
+                url=URL("https://default.org.apolo.us"), volumes=storage_volumes
             ),
+            orchestrator=OrchestratorConfig(
+                job_hostname_template="",
+                job_fallback_hostname="",
+                job_schedule_timeout_s=30,
+                job_schedule_scale_up_timeout_s=30,
+            ),
+            registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+            buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+            disks=DisksConfig(
+                url=URL("https://default.org.apolo.us"),
+                storage_limit_per_user=10240 * 2**30,
+            ),
+            monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+            dns=DNSConfig(name="default.org.apolo.us"),
+            ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+            secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            apps=AppsConfig(
+                apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+                app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+            ),
+            energy=EnergyConfig(),
         )
         return Cluster(client_cluster)
 

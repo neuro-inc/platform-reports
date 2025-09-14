@@ -7,7 +7,23 @@ import aiohttp.web
 import pytest
 from aiohttp.test_utils import TestClient
 from aiohttp.web import Application, Request
-from neuro_config_client import Cluster, ClusterStatus, StorageConfig, VolumeConfig
+from neuro_config_client import (
+    ACMEEnvironment,
+    AppsConfig,
+    BucketsConfig,
+    Cluster,
+    DisksConfig,
+    DNSConfig,
+    EnergyConfig,
+    IngressConfig,
+    MetricsConfig,
+    MonitoringConfig,
+    OrchestratorConfig,
+    RegistryConfig,
+    SecretsConfig,
+    StorageConfig,
+    VolumeConfig,
+)
 from yarl import URL
 
 from platform_reports.cluster import ClusterHolder
@@ -80,14 +96,35 @@ class _TestClusterHolder(ClusterHolder):
 def cluster() -> Cluster:
     return Cluster(
         name="default",
-        status=ClusterStatus.DEPLOYED,
         created_at=datetime.now(),
+        orchestrator=OrchestratorConfig(
+            job_hostname_template="",
+            job_fallback_hostname="",
+            job_schedule_timeout_s=30,
+            job_schedule_scale_up_timeout_s=30,
+        ),
         storage=StorageConfig(
-            url=URL("http://platform-storage.platform"),
+            url=URL("https://default.org.apolo.us"),
             volumes=[
                 VolumeConfig(name="default", credits_per_hour_per_gb=Decimal(100))
             ],
         ),
+        registry=RegistryConfig(url=URL("https://default.org.apolo.us")),
+        buckets=BucketsConfig(url=URL("https://default.org.apolo.us")),
+        disks=DisksConfig(
+            url=URL("https://default.org.apolo.us"),
+            storage_limit_per_user=10240 * 2**30,
+        ),
+        monitoring=MonitoringConfig(url=URL("https://default.org.apolo.us")),
+        dns=DNSConfig(name="default.org.apolo.us"),
+        ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
+        secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
+        metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+        apps=AppsConfig(
+            apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
+            app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+        ),
+        energy=EnergyConfig(),
     )
 
 

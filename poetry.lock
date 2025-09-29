@@ -1505,14 +1505,14 @@ python-jose = ">=3.0.1"
 
 [[package]]
 name = "neuro-config-client"
-version = "25.9.1"
+version = "25.9.4"
 description = "Internal client for Neu.ro config service"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "neuro_config_client-25.9.1-py3-none-any.whl", hash = "sha256:8550a37b26d596fc0fdc0c2e1634d7cb5982c4ba081885400240bd19bc486d13"},
-    {file = "neuro_config_client-25.9.1.tar.gz", hash = "sha256:1a16d9302b97cbb0d0478c994f73757739dc693861c52118c46eeac17723fde0"},
+    {file = "neuro_config_client-25.9.4-py3-none-any.whl", hash = "sha256:b2a3ab0bafc494111f38f6f09f6760c96f72487ff61b4e8b1f9ac65685af5ece"},
+    {file = "neuro_config_client-25.9.4.tar.gz", hash = "sha256:ee6b76de0be163ea0cfbbe34edd99a26007f14b797aa2dd19af5412778022418"},
 ]
 
 [package.dependencies]
@@ -3093,4 +3093,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "e6c5f7cdfd3e626a8d0b79b38941b377dcabc20703cac2dc3d398dcd68f96e91"
+content-hash = "a4e33460030bf61696ed5024eac90f1685025b5b8daa13aa2738fac90e06471f"

@@ -48,13 +48,6 @@ spec:
       containers:
         - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           name: metrics-exporter
-          securityContext:
-            {{- with .Values.securityContext }}
-            runAsUser: {{ .runAsUser }}
-            runAsGroup: {{ .runAsGroup }}
-            runAsNonRoot: {{ .runAsNonRoot }}
-            allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
-            {{- end }}
           command: [metrics-exporter]
           env:
             {{- if .Values.logLevel }}
@@ -136,6 +129,15 @@ spec:
               readOnly: true
           {{- end }}
           {{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+        fsGroupChangePolicy: {{ .Values.securityContext.fsGroupChangePolicy}}
+      {{- end }}
       volumes:
         - name: kube-api-data
           projected:

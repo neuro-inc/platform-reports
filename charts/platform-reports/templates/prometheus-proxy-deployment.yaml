@@ -28,13 +28,6 @@ spec:
       containers:
         - name: proxy
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-          securityContext:
-                     {{- if .Values.securityContext.enabled }}
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-            runAsGroup: {{ .Values.securityContext.runAsGroup }}
-            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
-            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
-                     {{- end }}
           command: ["prometheus-proxy"]
           env:
             {{- if .Values.logLevel }}
@@ -86,6 +79,15 @@ spec:
               port: http
             initialDelaySeconds: 3
             periodSeconds: 3
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+        fsGroupChangePolicy: {{ .Values.securityContext.fsGroupChangePolicy}}
+      {{- end }}
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
       {{- end }}

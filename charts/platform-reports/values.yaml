@@ -8,8 +8,6 @@ image:
 
 imagePullSecrets: []
 
-
-
 secrets: []
 
 externalSecrets: []
@@ -465,7 +463,10 @@ sentry: {}
 priorityClassName: ""
 
 securityContext:
+  enabled: false
   runAsUser: 1001
   runAsGroup: 1001
+  fsGroup: 1001
   runAsNonRoot: true
   allowPrivilegeEscalation: false
+  fsGroupChangePolicy: "OnRootMismatch"

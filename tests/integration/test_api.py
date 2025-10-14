@@ -341,12 +341,12 @@ class TestGrafanaProxy:
     async def test_resources_dashboard_allowed(
         self,
         client: aiohttp.ClientSession,
-        cluster_admin_token: str,
+        system_user_token: str,
         grafana_proxy_server: URL,
     ) -> None:
         async with client.get(
             grafana_proxy_server / "api/dashboards/uid/resources",
-            cookies={"dat": cluster_admin_token},
+            cookies={"dat": system_user_token},
         ) as response:
             assert response.status == HTTPOk.status_code
 

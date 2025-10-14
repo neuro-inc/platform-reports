@@ -58,7 +58,7 @@ pytest-docker = "3.2.3"
 ruff ="0.14.0"
 types-cachetools = "6.2.0.20250827"
 types-PyYAML = "6.0.12.20250915"
-types-python-dateutil = "2.9.0.20250822"
+types-python-dateutil = "2.9.0.20251008"
 
 [tool.poetry-dynamic-versioning]
 enable = true

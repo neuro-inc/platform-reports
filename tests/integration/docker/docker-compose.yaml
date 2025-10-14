@@ -53,7 +53,7 @@ services:
     volumes:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/nodes.json:/var/lib/grafana/dashboards/default/nodes.json
-      - ../../../../charts/platform-reports/files/grafana-dashboards/cluster/resources.json:/var/lib/grafana/dashboards/default/resources.json
+      - ./grafana/resources.json:/var/lib/grafana/dashboards/default/resources.json
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ./grafana/dashboardproviders.yaml:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
     ports:

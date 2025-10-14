@@ -44,6 +44,7 @@ class Dashboard(str, enum.Enum):
     PROJECT_CREDITS = "project_credits"
     PROJECT_APPS_CREDITS = "project_apps_credits"
     ORG_CREDITS = "org_credits"
+    RESOURCES = "resources"
 
 
 class Matcher(str, enum.Enum):
@@ -106,6 +107,8 @@ class AuthService:
             permissions = [permissions_service.get_cluster_read_permission()]
         elif dashboard_id == Dashboard.OVERVIEW:
             permissions = [permissions_service.get_cluster_read_permission()]
+        elif dashboard_id == Dashboard.RESOURCES:
+            permissions = [permissions_service.get_system_user_read_permission()]
         elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")
             if job_id and PLATFORM_JOB_RE.match(job_id):
@@ -486,3 +489,6 @@ class PermissionsService:
             result.append(permission)
 
         return result
+
+    def get_system_user_read_permission(self) -> Permission:
+        return Permission(uri="system-user:", action="read")

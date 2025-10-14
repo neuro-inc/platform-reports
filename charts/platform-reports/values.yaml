@@ -147,7 +147,7 @@ kube-prometheus-stack:
       - horizontalpodautoscalers
 
     metricLabelsAllowlist:
-      - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job]
+      - nodes=[platform.neuromation.io/nodepool,platform.neuromation.io/job,platform.neuromation.io/accelerator]
       - pods=[service,platform.neuromation.io/user,platform.neuromation.io/job,platform.apolo.us/org,platform.apolo.us/project,platform.apolo.us/preset,platform.apolo.us/app-instance-name,platform.apolo.us/user]
 
     priorityClassName: ""

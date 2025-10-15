@@ -105,6 +105,17 @@ async def cluster_admin_token(user_factory: UserFactory) -> str:
 
 
 @pytest.fixture
+async def system_user_token(user_factory: UserFactory) -> str:
+    user = await user_factory(
+        "system-user",
+        [
+            Permission(uri="system-user:", action="read"),
+        ],
+    )
+    return user.token
+
+
+@pytest.fixture
 async def regular_user_token(user_factory: UserFactory) -> str:
     user = await user_factory(
         "user",

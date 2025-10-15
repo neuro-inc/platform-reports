@@ -1,6 +1,5 @@
 version: "3"
 services:
-
   platform-auth:
     image: ghcr.io/neuro-inc/platformauthapi:latest
     container_name: platform-auth
@@ -54,6 +53,7 @@ services:
     volumes:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/nodes.json:/var/lib/grafana/dashboards/default/nodes.json
+      - ./grafana/resources.json:/var/lib/grafana/dashboards/default/resources.json
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ./grafana/dashboardproviders.yaml:/etc/grafana/provisioning/dashboards/dashboardproviders.yaml
     ports:

@@ -347,7 +347,7 @@ class GrafanaProxyHandler:
     async def handle_get_dashboard(self, request: Request) -> StreamResponse:
         user_name = _get_user_name(request, self._config.access_token_cookie_names)
         dashboard_id = request.match_info["dashboard_id"]
-        referer_url = URL(request.headers.get("Referer", ""))  # for get query params
+        referer_url = URL(request.headers.get("Referer", request.url))
 
         if not await self._auth_service.check_dashboard_permissions(
             user_name=user_name, dashboard_id=dashboard_id, params=referer_url.query

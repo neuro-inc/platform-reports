@@ -16,7 +16,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": null,
     "links": [],
     "liveNow": false,
     "panels": [
@@ -103,7 +103,7 @@
                 {
                     "datasource": null,
                     "editorMode": "code",
-                    "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_preset) (\n  kube_pod_labels{label_platform_apolo_us_org=\"${org_name}\", label_platform_apolo_us_project=~\"${project_name}\", label_platform_apolo_us_preset!=\"\", job=\"kube-state-metrics\"}\n    * on(pod, uid) group_left()\n      max by (pod, uid) (\n       (kube_pod_status_phase{phase=\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
+                    "expr": "sum by (label_platform_apolo_us_project, label_platform_apolo_us_preset) (\n  kube_pod_labels{label_platform_apolo_us_org=\"$org_name\", label_platform_apolo_us_project=~\"$project_name\", label_platform_apolo_us_preset!=\"\", job=\"kube-state-metrics\"}\n    * on(pod, uid) group_left()\n      max by (pod, uid) (\n       (kube_pod_status_phase{phase=\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
                     "instant": false,
                     "legendFormat": "{{label_platform_apolo_us_project}} - {{label_platform_apolo_us_preset}}",
                     "range": true,
@@ -209,7 +209,7 @@
                         {
                             "datasource": null,
                             "editorMode": "code",
-                            "expr": "sum by (label_platform_apolo_us_project) (\n  kube_pod_container_resource_requests{resource=\"cpu\", job=\"kube-state-metrics\"} \n  * on(namespace, pod, uid) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, uid, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"${org_name}\", label_platform_apolo_us_project=~\"${project_name}\", job=\"kube-state-metrics\"}\n    )\n  * on(namespace, pod, uid) group_left()\n    max by (namespace, pod, uid) (\n      (kube_pod_status_phase{phase=~\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
+                            "expr": "sum by (label_platform_apolo_us_project) (\n  kube_pod_container_resource_requests{resource=\"cpu\", job=\"kube-state-metrics\"} \n  * on(namespace, pod, uid) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, uid, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"$org_name\", label_platform_apolo_us_project=~\"$project_name\", job=\"kube-state-metrics\"}\n    )\n  * on(namespace, pod, uid) group_left()\n    max by (namespace, pod, uid) (\n      (kube_pod_status_phase{phase=~\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
                             "instant": false,
                             "legendFormat": "{{label_platform_apolo_us_project}}",
                             "range": true,
@@ -301,7 +301,7 @@
                         {
                             "datasource": null,
                             "editorMode": "code",
-                            "expr": "sum by (label_platform_apolo_us_project) (\n  kube_pod_container_resource_requests{resource=\"memory\", job=\"kube-state-metrics\"} \n  * on(namespace, pod, uid) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, uid, label_platform_apolo_us_org, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"${org_name}\", label_platform_apolo_us_project=~\"${project_name}\", job=\"kube-state-metrics\"}\n    )\n  * on(namespace, pod, uid) group_left()\n      max by (namespace, pod, uid) (\n      (kube_pod_status_phase{phase=~\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
+                            "expr": "sum by (label_platform_apolo_us_project) (\n  kube_pod_container_resource_requests{resource=\"memory\", job=\"kube-state-metrics\"} \n  * on(namespace, pod, uid) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, uid, label_platform_apolo_us_org, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"$org_name\", label_platform_apolo_us_project=~\"$project_name\", job=\"kube-state-metrics\"}\n    )\n  * on(namespace, pod, uid) group_left()\n      max by (namespace, pod, uid) (\n      (kube_pod_status_phase{phase=~\"Running\", job=\"kube-state-metrics\"} == 1)\n    )\n)",
                             "instant": false,
                             "legendFormat": "{{label_platform_apolo_us_project}}",
                             "range": true,
@@ -395,7 +395,7 @@
                         {
                             "datasource": null,
                             "editorMode": "code",
-                            "expr": "sum by (label_platform_apolo_us_project, label_platform_neuromation_io_accelerator) (\n  kube_pod_container_resource_requests{resource=~\".*gpu.*\", job=\"kube-state-metrics\"}\n  * on(namespace, pod) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"${org_name}\", label_platform_apolo_us_project=~\"${project_name}\", job=\"kube-state-metrics\"}\n    )\n  * on(pod) group_left()\n    max by (pod) (\n      kube_pod_status_phase{phase=\"Running\", job=\"kube-state-metrics\"} == 1\n    )\n  * on(node) group_left(label_platform_neuromation_io_accelerator)\n    max by (node, label_platform_neuromation_io_accelerator) (\n      kube_node_labels{label_platform_neuromation_io_accelerator!=\"\", job=\"kube-state-metrics\"}\n    )\n)",
+                            "expr": "sum by (label_platform_apolo_us_project, label_platform_neuromation_io_accelerator) (\n  kube_pod_container_resource_requests{resource=~\".*gpu.*\", job=\"kube-state-metrics\"}\n  * on(node) group_left(label_platform_neuromation_io_accelerator)\n    max by (node, label_platform_neuromation_io_accelerator) (\n      kube_node_labels{label_platform_neuromation_io_accelerator!=\"\", job=\"kube-state-metrics\"}\n    )\n  * on(namespace, pod) group_left(label_platform_apolo_us_project)\n    max by (namespace, pod, label_platform_apolo_us_project) (\n      kube_pod_labels{label_platform_apolo_us_org=\"$org_name\", label_platform_apolo_us_project=~\"$project_name\", job=\"kube-state-metrics\"}\n    )\n  * on(pod) group_left()\n    max by (pod) (\n      kube_pod_status_phase{phase=\"Running\", job=\"kube-state-metrics\"} == 1\n    )\n)",
                             "instant": false,
                             "legendFormat": "{{label_platform_apolo_us_project}} - {{label_platform_neuromation_io_accelerator}}",
                             "range": true,
@@ -481,7 +481,7 @@
                         "h": 8,
                         "w": 24,
                         "x": 0,
-                        "y": 14
+                        "y": 30
                     },
                     "id": 7,
                     "options": {
@@ -503,8 +503,9 @@
                     },
                     "targets": [
                         {
+                            "datasource": null,
                             "editorMode": "code",
-                            "expr": "sum by (org_name) (\n avg by (org_name, project_name) (storage_used_bytes{org_name=~\"${org_name}\", job=\"platform-storage-metrics\"})\n)",
+                            "expr": "sum by (org_name) (\n avg by (org_name, project_name) (storage_used_bytes{org_name=~\"$org_name\", job=\"platform-storage-metrics\"})\n)",
                             "instant": false,
                             "legendFormat": "{{org_name}}",
                             "range": true,
@@ -525,34 +526,12 @@
     "templating": {
         "list": [
             {
-                "allValue": ".*",
-                "current": {
-                    "selected": true,
-                    "text": [
-                        "apolo"
-                    ],
-                    "value": [
-                        "apolo"
-                    ]
-                },
-                "datasource": null,
-                "definition": "label_values(storage_used_bytes{job=\"platform-storage-metrics\", org_name!=\"no_org\"},org_name)",
                 "hide": 2,
-                "includeAll": true,
                 "label": "Organization",
-                "multi": true,
                 "name": "org_name",
-                "options": [],
-                "query": {
-                    "qryType": 1,
-                    "query": "label_values(storage_used_bytes{job=\"platform-storage-metrics\", org_name!=\"no_org\"},org_name)",
-                    "refId": "PrometheusVariableQueryEditor-VariableQuery"
-                },
-                "refresh": 2,
-                "regex": "",
+                "query": "no_org",
                 "skipUrlSync": false,
-                "sort": 1,
-                "type": "query"
+                "type": "constant"
             },
             {
                 "allValue": ".*",
@@ -566,7 +545,7 @@
                     ]
                 },
                 "datasource": null,
-                "definition": "label_values(storage_used_bytes{job=\"platform-storage-metrics\", org_name=\"$org_name\"},project_name)",
+                "definition": "label_values(kube_pod_labels{job=\"kube-state-metrics\", label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_project)",
                 "hide": 0,
                 "includeAll": true,
                 "label": "Project",
@@ -575,7 +554,7 @@
                 "options": [],
                 "query": {
                     "qryType": 1,
-                    "query": "label_values(storage_used_bytes{job=\"platform-storage-metrics\", org_name=\"$org_name\"},project_name)",
+                    "query": "label_values(kube_pod_labels{job=\"kube-state-metrics\", label_platform_apolo_us_org=\"$org_name\"},label_platform_apolo_us_project)",
                     "refId": "PrometheusVariableQueryEditor-VariableQuery"
                 },
                 "refresh": 2,

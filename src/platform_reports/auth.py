@@ -117,7 +117,7 @@ class AuthService:
             permissions = [
                 permissions_service.get_org_manager_permission(
                     org_name=dashboard_org_name,
-                )
+                ),
             ]
         elif dashboard_id == Dashboard.JOB:
             job_id = params.get("var-job_id")

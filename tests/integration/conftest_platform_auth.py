@@ -137,3 +137,14 @@ async def other_cluster_user_token(user_factory: UserFactory) -> str:
         ],
     )
     return user.token
+
+
+@pytest.fixture
+async def org_manager_token(user_factory: UserFactory) -> str:
+    user = await user_factory(
+        "org-manager",
+        [
+            Permission(uri="role://org/manager", action="read"),
+        ],
+    )
+    return user.token

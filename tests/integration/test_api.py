@@ -362,6 +362,44 @@ class TestGrafanaProxy:
         ) as response:
             assert response.status == HTTPForbidden.status_code
 
+    async def test_org_resources_dashboard_allowed(
+        self,
+        client: aiohttp.ClientSession,
+        org_manager_token: str,
+        grafana_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            grafana_proxy_server / "api/dashboards/uid/org_resources",
+            cookies={"dat": org_manager_token},
+            params={"var-org_name": "org"},
+        ) as response:
+            assert response.status == HTTPOk.status_code
+
+    async def test_org_resources_dashboard_forbidden(
+        self,
+        client: aiohttp.ClientSession,
+        regular_user_token: str,
+        grafana_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            grafana_proxy_server / "api/dashboards/uid/org_resources",
+            cookies={"dat": regular_user_token},
+            params={"var-org_name": "org"},
+        ) as response:
+            assert response.status == HTTPForbidden.status_code
+
+    async def test_org_resources_dashboard_without_org_name_forbidden(
+        self,
+        client: aiohttp.ClientSession,
+        org_manager_token: str,
+        grafana_proxy_server: URL,
+    ) -> None:
+        async with client.get(
+            grafana_proxy_server / "api/dashboards/uid/org_resources",
+            cookies={"dat": org_manager_token},
+        ) as response:
+            assert response.status == HTTPForbidden.status_code, await response.text()
+
 
 class TestMetricsApi:
     @pytest.fixture

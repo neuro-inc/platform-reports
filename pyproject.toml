@@ -22,7 +22,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-aiobotocore = "2.25.0"
+aiobotocore = "2.25.1"
 aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.13.1", extras = ["speedups"] }
 cachetools = "6.2.1"

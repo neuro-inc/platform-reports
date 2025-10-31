@@ -26,7 +26,7 @@ aiobotocore = "2.25.1"
 aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.13.2", extras = ["speedups"] }
 cachetools = "6.2.1"
-google-api-python-client = "2.185.0"
+google-api-python-client = "2.186.0"
 lark = "1.3.1"
 marshmallow = "3.26.1"
 neuro-auth-client = "25.8.2"

@@ -50,7 +50,7 @@ grafana-proxy = "platform_reports.api:run_grafana_proxy"
 [tool.poetry.group.dev.dependencies]
 mypy = "1.18.2"
 pre-commit = "4.4.0"
-pytest = "8.4.2"
+pytest = "9.0.0"
 pytest-aiohttp = "1.1.0"
 pytest-asyncio = "0.21.2"
 pytest-cov = "7.0.0"

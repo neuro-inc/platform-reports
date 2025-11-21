@@ -155,9 +155,9 @@ kube-prometheus-stack:
     prometheus:
       monitor:
         metricRelabelings:
-        - sourceLabels:
-          - label_beta_kubernetes_io_instance_type
-          targetLabel: label_node_kubernetes_io_instance_type
+          - sourceLabels:
+              - label_beta_kubernetes_io_instance_type
+            targetLabel: label_node_kubernetes_io_instance_type
         additionalLabels:
           platform.apolo.us/scrape-metrics: "true"
 
@@ -345,7 +345,7 @@ thanos:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 10Gi
+            storage: 15Gi
     labels:
       service: thanos-compact
 
@@ -410,7 +410,7 @@ grafana:
     dashboardproviders.yaml:
       apiVersion: 1
       providers:
-        - name: 'sidecarProvider'
+        - name: "sidecarProvider"
           orgId: 1
           type: file
           disableDeletion: false

@@ -76,6 +76,8 @@ prometheus:
 
   remoteStorageEnabled: true
 
+kubePrometheusStackEnabled: true
+
 kube-prometheus-stack:
   nameOverride: prometheus
   fullnameOverride: prometheus
@@ -295,6 +297,8 @@ kube-prometheus-stack:
   grafana:
     enabled: false
 
+thanosEnabled: true
+
 thanos:
   nameOverride: thanos
   fullnameOverride: thanos
@@ -368,6 +372,8 @@ thanos:
       app.kubernetes.io/name: prometheus
 
   priorityClassName: ""
+
+grafanaEnabled: true
 
 grafana:
   nameOverride: grafana

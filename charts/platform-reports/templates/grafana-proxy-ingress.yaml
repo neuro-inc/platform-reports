@@ -1,20 +1,16 @@
 {{- if .Values.grafanaProxy.ingress.enabled }}
-{{- $ingressApiIsStable := eq (include "k8s.ingress.isStable" .) "true" -}}
 {{- $ingressClassName := .Values.grafanaProxy.ingress.ingressClassName -}}
-apiVersion: {{ include "k8s.ingress.apiVersion" . }}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "platformReports.grafanaProxy.fullname" . }}
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
   annotations:
-    {{- if and (not $ingressApiIsStable) $ingressClassName }}
-    kubernetes.io/ingress.class: {{ $ingressClassName }}
-    {{- end }}
 {{- with .Values.grafanaProxy.ingress.annotations }}
 {{ toYaml . | indent 4 }}
 {{- end }}
 spec:
-  {{- if and $ingressApiIsStable $ingressClassName }}
+  {{- if $ingressClassName }}
   ingressClassName: {{ $ingressClassName }}
   {{- end }}
   rules:
@@ -23,52 +19,31 @@ spec:
       http:
         paths:
           - backend:
-              {{- if $ingressApiIsStable }}
               service:
                 name: {{ include "platformReports.grafanaProxy.fullname" $ }}
                 port:
                   name: http
-              {{- else }}
-              serviceName: {{ include "platformReports.grafanaProxy.fullname" $ }}
-              servicePort: http
-              {{- end }}
             path: /api/dashboards
-            {{- if $ingressApiIsStable }}
             pathType: Prefix
-            {{- end }}
     - host: {{ . | quote }}
       http:
         paths:
           - backend:
-              {{- if $ingressApiIsStable }}
               service:
                 name: {{ include "platformReports.grafanaProxy.fullname" $ }}
                 port:
                   name: http
-              {{- else }}
-              serviceName: {{ include "platformReports.grafanaProxy.fullname" $ }}
-              servicePort: http
-              {{- end }}
             path: /ping
-            {{- if $ingressApiIsStable }}
             pathType: Prefix
-            {{- end }}
     - host: {{ . | quote }}
       http:
         paths:
           - backend:
-              {{- if $ingressApiIsStable }}
               service:
                 name: {{ include "platformReports.grafana.fullname" $ }}
                 port:
                   number: 80
-              {{- else }}
-              serviceName: {{ include "platformReports.grafana.fullname" $ }}
-              servicePort: 80
-              {{- end }}
             path: /
-            {{- if $ingressApiIsStable }}
             pathType: Prefix
-            {{- end }}
     {{- end }}
 {{- end }}

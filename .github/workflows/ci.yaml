@@ -50,7 +50,7 @@ jobs:
     name: Deploy
     needs: release
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    uses: neuro-inc/reuse/.github/workflows/deploy-service.yaml@v25.4.0
+    uses: neuro-inc/reuse/.github/workflows/deploy-service.yaml@v25.12.0
     secrets:
       tf_api_token: ${{ secrets.TF_API_TOKEN }}
     with:

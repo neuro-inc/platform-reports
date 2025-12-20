@@ -75,7 +75,6 @@ spec:
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         fsGroup: {{ .Values.securityContext.fsGroup }}
-        allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
         fsGroupChangePolicy: {{ .Values.securityContext.fsGroupChangePolicy}}
       {{- end }}
       {{- if .Values.priorityClassName }}

@@ -16,9 +16,7 @@ classifiers = [
 ]
 
 packages = [{ include = "platform_reports", from = "src" }]
-include = [
-    "src/platform_reports/py.typed",
-]
+include = ["src/platform_reports/py.typed"]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
@@ -55,7 +53,7 @@ pytest-aiohttp = "1.1.0"
 pytest-asyncio = "0.21.2"
 pytest-cov = "7.0.0"
 pytest-docker = "3.2.5"
-ruff ="0.14.10"
+ruff = "0.14.10"
 types-cachetools = "6.2.0.20251022"
 types-PyYAML = "6.0.12.20250915"
 types-python-dateutil = "2.9.0.20251115"
@@ -69,12 +67,31 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = [
-    "E", "F", "I", "C90", "UP", "B", "ASYNC", "N", "FBT", "A", "C4", "EM", "FA", "ICN",
-    "G", "PIE", "T20", "PYI", "PT", "RET", "PTH"
+    "E",
+    "F",
+    "I",
+    "C90",
+    "UP",
+    "B",
+    "ASYNC",
+    "N",
+    "FBT",
+    "A",
+    "C4",
+    "EM",
+    "FA",
+    "ICN",
+    "G",
+    "PIE",
+    "T20",
+    "PYI",
+    "PT",
+    "RET",
+    "PTH",
 ]
 ignore = [
-    "A003",  # Class attribute "..." is shadowing a Python builtin
-    "N818"
+    "A003", # Class attribute "..." is shadowing a Python builtin
+    "N818",
 ]
 
 [tool.ruff.lint.isort]

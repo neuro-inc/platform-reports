@@ -474,5 +474,4 @@ securityContext:
   runAsGroup: 1001
   fsGroup: 1001
   runAsNonRoot: true
-  allowPrivilegeEscalation: false
   fsGroupChangePolicy: "OnRootMismatch"

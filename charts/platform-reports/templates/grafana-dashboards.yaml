@@ -5,6 +5,8 @@ metadata:
   labels: {{ include "platformReports.labels.standard" . | nindent 4 }}
     grafana_dashboard: "true"
     service: grafana
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
 data:
 {{ (.Files.Glob "files/grafana-dashboards/home.json").AsConfig | indent 2 }}
 ---
@@ -16,6 +18,7 @@ metadata:
     grafana_dashboard: "true"
     service: grafana
   annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
     grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/Cluster
 data:
 {{ (.Files.Glob "files/grafana-dashboards/cluster/*.json").AsConfig | indent 2 }}
@@ -28,6 +31,7 @@ metadata:
     grafana_dashboard: "true"
     service: grafana
   annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
     grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/Project
 data:
 {{ (.Files.Glob "files/grafana-dashboards/project/*.json").AsConfig | indent 2 }}
@@ -40,6 +44,7 @@ metadata:
     grafana_dashboard: "true"
     service: grafana
   annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
     grafana_folder: {{ .Values.grafana.sidecar.dashboards.folder }}/platform/Organization
 data:
 {{ (.Files.Glob "files/grafana-dashboards/org/*.json").AsConfig | indent 2 }}

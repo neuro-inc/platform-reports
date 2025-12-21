@@ -49,12 +49,12 @@ jobs:
   deploy:
     name: Deploy
     needs: release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    uses: neuro-inc/reuse/.github/workflows/deploy-service.yaml@v25.12.0
+    uses: neuro-inc/reuse/.github/workflows/deploy-service.yaml@v25.12.1
     secrets:
       tf_api_token: ${{ secrets.TF_API_TOKEN }}
     with:
-      environment: dev
+      environment: ${{ needs.release.outputs.prerelease == 'true' && 'dev' || 'prod' }}
       dev_workspace: ${{ vars.DEV_TFC_WORKSPACE_JSON }}
+      prod_workspaces: ${{ vars.PROD_TFC_WORKSPACES_JSON }}
       variables: |
         platform_reports_version=${{ needs.release.outputs.version }}

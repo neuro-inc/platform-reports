@@ -20,7 +20,7 @@ include = ["src/platform_reports/py.typed"]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-aiobotocore = "3.0.0"
+aiobotocore = "3.1.0"
 aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.13.3", extras = ["speedups"] }
 cachetools = "6.2.4"

@@ -37,7 +37,7 @@ python-jose = "3.5.0"
 uvloop = "0.22.1"
 yarl = "1.22.0"
 apolo-apps-client = "25.8.1"
-setuptools = "^80.9.0"
+setuptools = "^80.10.1"
 
 [tool.poetry.scripts]
 metrics-api = "platform_reports.api:run_metrics_api"

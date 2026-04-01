@@ -22,7 +22,7 @@ include = ["src/platform_reports/py.typed"]
 python = ">=3.12,<4.0"
 aiobotocore = "3.3.0"
 aiohttp-apispec = "2.2.3"
-aiohttp = { version = "3.13.4", extras = ["speedups"] }
+aiohttp = { version = "3.13.5", extras = ["speedups"] }
 cachetools = "7.0.5"
 google-api-python-client = "2.193.0"
 lark = "1.3.1"

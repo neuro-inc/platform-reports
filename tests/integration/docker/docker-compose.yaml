@@ -1,4 +1,3 @@
-version: "3"
 services:
   platform-auth:
     image: ghcr.io/neuro-inc/platformauthapi:latest

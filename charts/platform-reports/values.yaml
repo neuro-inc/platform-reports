@@ -1,5 +1,22 @@
 platform:
   accessTokenCookieNames: sat,dat
+
+# SeaweedFS S3 config (active):
+s3:
+  region: "us-east-1"
+  endpoint: "http://seaweedfs-s3:9000"
+  bucket: "platform-reports"
+  accessKeyId:
+    valueFrom:
+      secretKeyRef:
+        name: seaweedfs-s3-secret
+        key: admin_access_key_id
+  secretAccessKey:
+    valueFrom:
+      secretKeyRef:
+        name: seaweedfs-s3-secret
+        key: admin_secret_access_key
+  # For readonly access, use read_access_key_id / read_secret_access_key from the seaweedfs-s3-secret.
   token: {}
 
 image:
@@ -271,6 +288,11 @@ kube-prometheus-stack:
       externalLabels:
         cluster: ""
 
+      thanos:
+        objectStorageConfig:
+          name: seaweedfs-s3-secret
+          key: seaweedfs_s3_config
+
       priorityClassName: ""
 
     serviceMonitor:
@@ -302,6 +324,11 @@ thanosEnabled: true
 thanos:
   nameOverride: thanos
   fullnameOverride: thanos
+
+  existingObjstoreSecret: seaweedfs-s3-secret
+  existingObjstoreSecretItems:
+  - key: seaweedfs_s3_config
+    path: objstore.yml
 
   image:
     repository: quay.io/thanos/thanos

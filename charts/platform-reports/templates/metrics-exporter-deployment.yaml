@@ -72,19 +72,35 @@ spec:
 {{- if .Values.platform.token }}
 {{ toYaml .Values.platform.token | indent 14 }}
 {{- end }}
-            - name: NP_CLUSTER_NAME
-              value: {{ .Values.platform.clusterName }}
-            {{- if .Values.cloudProvider }}
-            - name: NP_CLOUD_PROVIDER
-              value: {{ .Values.cloudProvider.type | quote }}
-            - name: NP_REGION
-              value: {{ .Values.cloudProvider.region | quote }}
-            {{- if eq .Values.cloudProvider.type "gcp" }}
-            - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
-              value: /var/run/secrets/gcp/key.json
-            {{- end }}
-            {{- end }}
-            {{- if .Values.sentry }}
+             - name: NP_CLUSTER_NAME
+               value: {{ .Values.platform.clusterName }}
+             - name: S3_REGION
+               value: {{ .Values.s3.region | quote }}
+             - name: S3_ENDPOINT
+               value: {{ .Values.s3.endpoint | quote }}
+             - name: S3_BUCKET
+               value: {{ .Values.s3.bucket | quote }}
+             - name: S3_ACCESS_KEY_ID
+               valueFrom:
+                 secretKeyRef:
+                   name: seaweedfs-s3-secret
+                   key: admin_access_key_id
+             - name: S3_SECRET_ACCESS_KEY
+               valueFrom:
+                 secretKeyRef:
+                   name: seaweedfs-s3-secret
+                   key: admin_secret_access_key
+             {{- if .Values.cloudProvider }}
+             - name: NP_CLOUD_PROVIDER
+               value: {{ .Values.cloudProvider.type | quote }}
+             - name: NP_REGION
+               value: {{ .Values.cloudProvider.region | quote }}
+             {{- if eq .Values.cloudProvider.type "gcp" }}
+             - name: NP_GCP_SERVICE_ACCOUNT_KEY_PATH
+               value: /var/run/secrets/gcp/key.json
+             {{- end }}
+             {{- end }}
+             {{- if .Values.sentry }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn }}
             - name: SENTRY_CLUSTER_NAME

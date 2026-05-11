@@ -380,7 +380,7 @@ description = "Backport of compression.zstd"
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["main"]
-markers = "python_version < \"3.14\" and platform_python_implementation == \"CPython\""
+markers = "platform_python_implementation == \"CPython\" and python_version < \"3.14\""
 files = [
     {file = "backports_zstd-1.0.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:34cd28f44f6b8f70ea5d86c2b3ba26d0d51f94606bd1f0c80bde1f820e8c82b2"},
     {file = "backports_zstd-1.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:5f7ccfd860da6b4c0c1f0f68dc917483977383e1207bdee262d40369fe616fc8"},
@@ -3075,14 +3075,14 @@ files = [
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.9.0.20260408"
+version = "2.9.0.20260508"
 description = "Typing stubs for python-dateutil"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "types_python_dateutil-2.9.0.20260408-py3-none-any.whl", hash = "sha256:473139d514a71c9d1fbd8bb328974bedcb1cc3dba57aad04ffa4157f483c216f"},
-    {file = "types_python_dateutil-2.9.0.20260408.tar.gz", hash = "sha256:8b056ec01568674235f64ecbcef928972a5fac412f5aab09c516dfa2acfbb582"},
+    {file = "types_python_dateutil-2.9.0.20260508-py3-none-any.whl", hash = "sha256:bfc6fd2d81aa86e5ac97206a64304f6bd247426eedbca9b98619bbc48c6a1c10"},
+    {file = "types_python_dateutil-2.9.0.20260508.tar.gz", hash = "sha256:596a6d63d81f587bf04c8254fb78df9d2344e915ce67948d7400512e3a6206d5"},
 ]
 
 [[package]]
@@ -3510,4 +3510,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "4dd711008beb6db1544645357d084c4ae7cc01a4b7f6129f6e4e39b357c90bf2"
+content-hash = "ee5f401e9f38dd9ff283eb92f6654663ee6aee13604272e1ddec5ee1c90d377a"

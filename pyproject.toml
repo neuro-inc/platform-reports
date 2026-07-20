@@ -35,7 +35,7 @@ pydantic-settings = "2.14.2"
 python-dateutil = "2.9.0.post0"
 python-jose = "3.5.0"
 uvloop = "0.22.1"
-yarl = "1.24.2"
+yarl = "1.24.5"
 apolo-apps-client = "25.8.1"
 setuptools = ">=82.0.1,<84.0.0"
 

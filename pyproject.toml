@@ -19,7 +19,7 @@ packages = [{ include = "platform_reports", from = "src" }]
 include = ["src/platform_reports/py.typed"]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4.0"
+python = ">=3.13,<4.0"
 aiobotocore = "3.9.1"
 aiohttp-apispec = "2.2.3"
 aiohttp = { version = "3.14.3", extras = ["speedups"] }
@@ -29,7 +29,7 @@ lark = "1.3.1"
 marshmallow = "3.26.2"
 neuro-auth-client = "25.8.2"
 neuro-config-client = "25.11.0"
-neuro-logging = "25.10.0"
+neuro-logging = ">=26.9,<27.0"
 pydantic = "2.13.5"
 pydantic-settings = "2.15.0"
 python-dateutil = "2.9.0.post0"

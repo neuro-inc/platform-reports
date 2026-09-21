@@ -1,0 +1,24 @@
+groups:
+- name: log-streams
+  rules:
+  - alert: LogStreamStoppedReporting
+    annotations:
+      summary: A log stream that was reporting has gone silent
+      description: '{{$labels.namespace}}/{{$labels.app}} has shipped no log lines
+        for two hours, after shipping steadily before that. Its workload may be fine
+        while its logs are not reaching Loki.'
+    expr: |
+      (
+        sum by (namespace, app) (
+          increase(loki_process_custom_log_lines[8h] offset 2h)
+        ) > 100
+      )
+      unless
+      (
+        sum by (namespace, app) (
+          increase(loki_process_custom_log_lines[2h])
+        ) > 0
+      )
+    for: 30m
+    labels:
+      severity: warning

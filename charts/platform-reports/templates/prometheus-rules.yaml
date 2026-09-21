@@ -51,3 +51,12 @@ metadata:
     {{- include "platformReports.labels.standard" . | nindent 4 }}
 spec:
 {{ .Files.Get "files/prometheus-rules/traefik.yaml" | indent 2 }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platformReports.fullname" . }}-log-streams
+  labels:
+    {{- include "platformReports.labels.standard" . | nindent 4 }}
+spec:
+{{ .Files.Get "files/prometheus-rules/log-streams.yaml" | indent 2 }}

@@ -57,6 +57,8 @@ kind: PrometheusRule
 metadata:
   name: {{ include "platformReports.fullname" . }}-log-streams
   labels:
-    {{- include "platformReports.labels.standard" . | nindent 4 }}
+    {{- $labels := include "platformReports.labels.standard" . | fromYaml -}}
+    {{- $_ := set $labels "release" .Values.prometheusRuleSelectorRelease -}}
+    {{- toYaml $labels | nindent 4 }}
 spec:
 {{ .Files.Get "files/prometheus-rules/log-streams.yaml" | indent 2 }}

@@ -475,3 +475,6 @@ securityContext:
   fsGroup: 1001
   runAsNonRoot: true
   fsGroupChangePolicy: "OnRootMismatch"
+
+# Value of the release label the Prometheus ruleSelector matches on.
+prometheusRuleSelectorRelease: prometheus

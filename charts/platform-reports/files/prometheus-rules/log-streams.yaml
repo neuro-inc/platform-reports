@@ -3,20 +3,24 @@ groups:
   rules:
   - alert: LogStreamStoppedReporting
     annotations:
-      summary: A log stream that was reporting has gone silent
-      description: '{{$labels.namespace}}/{{$labels.app}} has shipped no log lines
-        for two hours, after shipping steadily before that. Its workload may be fine
-        while its logs are not reaching Loki.'
+      summary: A log stream that was reporting steadily has gone silent
+      description: '{{$labels.namespace}}/{{$labels.app}} shipped log entries in every
+        hour of the preceding six, and has shipped none for two hours. The workload
+        may be healthy while its logs are no longer reaching Loki.'
     expr: |
       (
-        sum by (namespace, app) (
-          increase(loki_process_custom_log_lines[8h] offset 2h)
-        ) > 100
+        min_over_time(
+          (
+            sum by (namespace, app) (
+              increase(loki_process_custom_log_entries_total[1h])
+            )
+          )[6h:1h] offset 2h
+        ) > 10
       )
       unless
       (
         sum by (namespace, app) (
-          increase(loki_process_custom_log_lines[2h])
+          increase(loki_process_custom_log_entries_total[2h])
         ) > 0
       )
     for: 30m

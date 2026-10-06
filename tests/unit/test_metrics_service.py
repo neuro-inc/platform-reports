@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+import pytest
 from neuro_config_client import (
     ACMEEnvironment,
     AppsConfig,
@@ -56,6 +57,30 @@ class TestPrometheusQueryFactory:
         assert query == (
             'storage_used_bytes{org_name="test-org",project_name="test-project"}'
         )
+
+
+class TestPodCreditsMetric:
+    @pytest.mark.parametrize(
+        "label",
+        ["label_platform_apolo_us_user", "label_platform_neuromation_io_user"],
+    )
+    @pytest.mark.parametrize(
+        ("user_name", "expected"),
+        [
+            ("test-user", "test-user"),
+            ("user/service-accounts/launcher", "user/service-accounts/launcher"),
+            ("user--service-accounts--launcher", "user/service-accounts/launcher"),
+        ],
+    )
+    def test_user_name(self, label: str, user_name: str, expected: str) -> None:
+        metric = PodCreditsMetric(labels={label: user_name}, values=[])
+
+        assert metric.user_name == expected
+
+    def test_user_name__missing(self) -> None:
+        metric = PodCreditsMetric(labels={}, values=[])
+
+        assert metric.user_name is None
 
 
 class TestCreditsUsageFactory:

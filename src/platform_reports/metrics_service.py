@@ -154,9 +154,10 @@ class PodCreditsMetric(Metric):
 
     @property
     def user_name(self) -> str | None:
-        return self.labels.get(PrometheusLabel.APOLO_USER_KEY) or self.labels.get(
+        user_name = self.labels.get(PrometheusLabel.APOLO_USER_KEY) or self.labels.get(
             PrometheusLabel.NEURO_USER_KEY
         )
+        return user_name.replace("--", "/") if user_name else user_name
 
 
 class StorageUsedMetric(Metric):

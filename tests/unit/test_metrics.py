@@ -31,12 +31,13 @@ from neuro_config_client import (
     EnergyConfig,
     EnergySchedule,
     EnergySchedulePeriod,
+    GrafanaConfig,
     IngressConfig,
-    MetricsConfig,
     MonitoringConfig,
     NvidiaGPU,
     NvidiaGPUPreset,
     OrchestratorConfig,
+    PrometheusConfig,
     RegistryConfig,
     ResourcePoolType,
     ResourcePreset,
@@ -141,6 +142,7 @@ class TestConfigPriceCollector(_TestNodePriceCollector):
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
+            grafana=GrafanaConfig(url=URL("https://default.org.apolo.us")),
             created_at=datetime.now(),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
@@ -168,10 +170,11 @@ class TestConfigPriceCollector(_TestNodePriceCollector):
             dns=DNSConfig(name="default.org.apolo.us"),
             ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
             secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
-            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            prometheus=PrometheusConfig(url=URL("https://default.org.apolo.us")),
             apps=AppsConfig(
                 apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
                 app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+                launchpad_use_subdomain=False,
             ),
             energy=EnergyConfig(),
         )
@@ -1163,6 +1166,7 @@ class TestPodCreditsCollector:
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
+            grafana=GrafanaConfig(url=URL("https://default.org.apolo.us")),
             created_at=datetime.now(),
             orchestrator=OrchestratorConfig(
                 job_hostname_template="",
@@ -1215,10 +1219,11 @@ class TestPodCreditsCollector:
             dns=DNSConfig(name="default.org.apolo.us"),
             ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
             secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
-            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            prometheus=PrometheusConfig(url=URL("https://default.org.apolo.us")),
             apps=AppsConfig(
                 apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
                 app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+                launchpad_use_subdomain=False,
             ),
             energy=EnergyConfig(),
         )
@@ -1643,6 +1648,7 @@ class TestNodeEnergyConsumptionCollector:
     def cluster(self) -> Cluster:
         return Cluster(
             name="default",
+            grafana=GrafanaConfig(url=URL("https://default.org.apolo.us")),
             created_at=datetime.now(),
             timezone=UTC,
             orchestrator=OrchestratorConfig(
@@ -1695,10 +1701,11 @@ class TestNodeEnergyConsumptionCollector:
             dns=DNSConfig(name="default.org.apolo.us"),
             ingress=IngressConfig(acme_environment=ACMEEnvironment.PRODUCTION),
             secrets=SecretsConfig(url=URL("https://default.org.apolo.us")),
-            metrics=MetricsConfig(url=URL("https://default.org.apolo.us")),
+            prometheus=PrometheusConfig(url=URL("https://default.org.apolo.us")),
             apps=AppsConfig(
                 apps_hostname_templates=["{app_name}.apps.default.org.apolo.us"],
                 app_proxy_url=URL("https://proxy.apps.default.org.apolo.us"),
+                launchpad_use_subdomain=False,
             ),
         )
 

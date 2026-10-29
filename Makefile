@@ -46,7 +46,7 @@ clean-dist:
 
 .PHONY: build/image
 build/image: .python-version dist
-	docker build \
+	docker build --pull --no-cache \
 		--build-arg PY_VERSION=$$(cat .python-version) \
 		-t $(IMAGE_NAME):latest .
 

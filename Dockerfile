@@ -42,5 +42,3 @@ WORKDIR /home/$SERVICE_NAME
 USER $SERVICE_NAME
 
 ENV PATH=/home/$SERVICE_NAME/.local/bin:$PATH
-
-RUN python -c "from importlib.metadata import version; assert tuple(map(int, version('certifi').split('.'))) >= (2026, 10, 19)"

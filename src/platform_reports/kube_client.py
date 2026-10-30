@@ -174,7 +174,7 @@ class PodPhase(enum.StrEnum):
     def parse(cls, value: str) -> Self:
         try:
             return cls(value)
-        except (KeyError, ValueError):
+        except KeyError, ValueError:
             return cls(cls.UNKNOWN.value)
 
 
@@ -232,7 +232,7 @@ class PodCondition:
         def parse(cls, value: str) -> Self:
             try:
                 return cls(value)
-            except (KeyError, ValueError):
+            except KeyError, ValueError:
                 return cls(cls.UNKNOWN.value)
 
     type: Type

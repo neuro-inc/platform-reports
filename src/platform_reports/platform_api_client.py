@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from types import TracebackType
+from typing import Self
 
 import aiohttp
 from yarl import URL
@@ -30,7 +31,7 @@ class ApiClient:
         self._timeout = timeout
         self._trace_configs = trace_configs
 
-    async def __aenter__(self) -> "ApiClient":
+    async def __aenter__(self) -> Self:
         self._client = self._create_http_client()
         return self
 

@@ -12,7 +12,7 @@ from functools import cached_property
 from importlib.resources import files
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generic, Self, TypeVar
+from typing import Any, Self
 
 import aiohttp
 from aiobotocore.client import AioBaseClient
@@ -60,9 +60,6 @@ class NodeEnergyConsumption:
     price_per_kwh: Decimal = Decimal("0")
 
 
-_TValue = TypeVar("_TValue")
-
-
 def _get_node_region(node: Node) -> str:
     return (
         node.metadata.labels.get(Label.FAILURE_DOMAIN_REGION_KEY)
@@ -88,16 +85,16 @@ def _is_preemptible_node(node: Node) -> bool:
     return Label.NEURO_PREEMPTIBLE_KEY in node.metadata.labels
 
 
-class Collector(Generic[_TValue]):
-    def __init__(self, initial_value: _TValue, interval_s: float = 3600) -> None:
+class Collector[TValue]:
+    def __init__(self, initial_value: TValue, interval_s: float = 3600) -> None:
         self._interval_s = interval_s
         self._value = initial_value
 
     @property
-    def current_value(self) -> _TValue:
+    def current_value(self) -> TValue:
         return self._value
 
-    async def get_latest_value(self) -> _TValue:
+    async def get_latest_value(self) -> TValue:
         return self._value
 
     async def start(self) -> Awaitable[None]:

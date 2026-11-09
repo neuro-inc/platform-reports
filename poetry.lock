@@ -3526,14 +3526,14 @@ files = [
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.9.0.20261029"
+version = "2.9.0.20261104"
 description = "Typing stubs for python-dateutil"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "types_python_dateutil-2.9.0.20261029-py3-none-any.whl", hash = "sha256:8fd04c6e1722d2523a74d6670596fc0007077651465b686f144ae1d200dcacf5"},
-    {file = "types_python_dateutil-2.9.0.20261029.tar.gz", hash = "sha256:3258b491686c441d8074cfc8712308741900c9ff128a06421baec3767c503511"},
+    {file = "types_python_dateutil-2.9.0.20261104-py3-none-any.whl", hash = "sha256:f6ee76c91c547716b4795373a53d4c07e8e06cf98384ecb89fcf134d212de2ad"},
+    {file = "types_python_dateutil-2.9.0.20261104.tar.gz", hash = "sha256:5d0495702a5f7343741f5d842c531bcd1c941da8b4a85307d52ef43ba80252db"},
 ]
 
 [[package]]
@@ -4006,4 +4006,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<3.15"
-content-hash = "81fcf437dbbb0dd575e2355695f8a27c1416ae5b58a997b0fc012f44b6183087"
+content-hash = "4f22c74a325e74cd4d94323a8d7238305b9984a90997a30787e1e389b1f007b1"

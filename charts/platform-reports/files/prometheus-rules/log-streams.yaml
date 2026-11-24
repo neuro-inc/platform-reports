@@ -5,5 +5,5 @@ groups:
   - record: namespace_app:loki_log_lines:count1m
     expr: |
       sum by (namespace, app) (
-        increase(loki_process_custom_log_entries_total[1m])
+        rate(loki_process_custom_log_entries_total[74999ms]) * 60
       )
